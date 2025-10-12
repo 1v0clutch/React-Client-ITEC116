@@ -62,9 +62,9 @@ function App() {
             <Route path="/procurement/invoices" element={<Invoices />} />
 
             {/* Inventory */}
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/transactions" element={<Transaction />} />
-            <Route path="/warehouse" element={<Warehouse />} />
+            <Route path="/inventory/inventory-management" element={<Inventory />} />
+            <Route path="/inventory/transactions" element={<Transaction />} />
+            <Route path="/inventory/warehouse" element={<Warehouse />} />
 
             {/* Finance */}
             <Route path="/finance/general-finance" element={<Finance />} />
