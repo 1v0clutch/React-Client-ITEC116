@@ -2,15 +2,14 @@ import React, { useEffect, useState } from "react";
 import Sidebar from "./components/layouts/Sidebar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import Procurement from "./pages/Dashboard/Procurement";
 import Suppliers from "./pages/Procurement/Suppliers";
 import Requisition from "./pages/Procurement/Requisition";
 import PurchaseOrders from "./pages/Procurement/PurchaseOrders";
 import Invoices from "./pages/Procurement/Invoices";
 
-import Inventory from "./pages/Dashboard/Inventory";
-import Transaction from "./pages/Dashboard/Transaction";
-import Warehouse from "./pages/Dashboard/Warehouse";
+import Inventory from "./pages/Inventory/Inventory";
+import Transaction from "./pages/Inventory/Transaction";
+import Warehouse from "./pages/Inventory/Warehouse";
 
 import Finance from "./pages/Finance/FinanceHead";
 import Payroll from "./pages/Finance/EmployeePayroll";
@@ -55,7 +54,6 @@ function App() {
         <div className="ml-56 p-5 w-full bg-gray-50 min-h-screen">
           <Routes>
             {/* Procurement */}
-            <Route path="/procurement" element={<Procurement />} />
             <Route path="/procurement/suppliers" element={<Suppliers />} />
             <Route path="/procurement/requisition" element={<Requisition />} />
             <Route path="/procurement/purchase-orders" element={<PurchaseOrders />} />

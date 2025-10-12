@@ -6,7 +6,6 @@ const categories = [
   {
     label: "Procurement",
     links: [
-      { path: "/procurement", label: "Procurement Home" },
       { path: "/procurement/suppliers", label: "Suppliers" },
       { path: "/procurement/requisition", label: "Requisition" },
       { path: "/procurement/purchase-orders", label: "Purchase Orders" },
@@ -16,9 +15,9 @@ const categories = [
   {
     label: "Inventory",
     links: [
-      { path: "/inventory", label: "Inventory" },
-      { path: "/transactions", label: "Transactions" },
-      { path: "/warehouse", label: "Warehouse" },
+      { path: "/inventory/inventory-management", label: "Inventory" },
+      { path: "/inventory/transactions", label: "Transactions" },
+      { path: "/inventory/warehouse", label: "Warehouse" },
     ],
   },
   {
