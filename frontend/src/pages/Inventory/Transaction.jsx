@@ -47,20 +47,30 @@ const Transaction = () => {
   const recordTransaction = async () => {
     try {
       const transactionData = {
-        ...currentTransaction,
-        purchaseOrderId:
-          currentTransaction.purchaseOrderId.trim() === ""
-            ? null
-            : currentTransaction.purchaseOrderId,
+        productId: "N/A", // Set as N/A since productId is not allowed
+        transactionType: currentTransaction.type,
+        quantity: currentTransaction.quantity,
+        remarks: currentTransaction.remarks,
+        purchaseOrderId: currentTransaction.purchaseOrderId || "",
+        date: new Date().toISOString(),
+        unitPrice: 0, // or omit if not needed
       };
 
+      // Send to Inventory/Transaction API
       const response = await fetch(`${API_TRANSACTIONS}/addTransactionRecord`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(currentTransaction),
+      });
+
+      const data = await response.json();
+
+      // Send to Finance API
+      await fetch("http://localhost:8000/api/finance/inventory-transaction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(transactionData),
       });
-
-      const data = await response.json();
 
       if (response.ok) {
         setMessage(data.message);

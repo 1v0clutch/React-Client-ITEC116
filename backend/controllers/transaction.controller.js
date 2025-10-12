@@ -1,6 +1,7 @@
 const Transaction = require("../models/Transaction");
 const Inventory = require("../models/Inventory");
 const { validateTransaction } = require("../utils/validation");
+const axios = require('axios');
 
 // Record stock-in or stock-out
 exports.recordTransaction = async (req, res) => {
@@ -56,6 +57,30 @@ exports.getTransactions = async (req, res) => {
     .populate("purchaseOrderId", "status orderDate");
 
     res.json(transactions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.createTransaction = async (req, res) => {
+  try {
+    const { productId, quantity, transactionType, unitPrice, date, remarks, purchaseOrderId } = req.body;
+    // Save transaction in Inventory DB
+    const transaction = new Transaction({ productId, quantity, transactionType, unitPrice, date, remarks, purchaseOrderId });
+    await transaction.save();
+
+    // Send transaction to Finance
+    await axios.post('http://localhost:8000/api/finance/inventory-transaction', {
+      productId,
+      quantity,
+      transactionType,
+      unitPrice,
+      date,
+      remarks,
+      purchaseOrderId
+    });
+
+    res.status(201).json(transaction);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

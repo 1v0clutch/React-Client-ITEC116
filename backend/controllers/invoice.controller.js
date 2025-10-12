@@ -2,8 +2,39 @@ const Invoice = require("../models/Invoice");
 const PurchaseOrder = require("../models/PurchaseOrder");
 const Transaction = require("../models/Transaction");
 const { validateInvoice } = require("../utils/validation");
+const axios = require('axios');
 
+async function notifyFinance(invoiceData) {
+  try {
+    await axios.post('http://localhost:8000/api/finance/recordInvoice', invoiceData);
+  } catch (err) {
+    console.error('Failed to notify Finance:', err.message);
+  }
+}
+async function testFinanceRecordInvoice() {
+  const invoiceData = {
+    invoiceNumber: 'INV-2024-001',
+    totalAmount: 15000,
+    supplierId: '664f...abc',
+    dateIssued: new Date().toISOString(),
+    purchaseOrderId: '664f...xyz',
+    items: [{ itemId: '664f...itm', quantity: 10, unitPrice: 1500 }],
+    status: 'approved'
+  };
 
+  try {
+    const response = await fetch('http://localhost:8000/api/finance/recordInvoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(invoiceData)
+    });
+    const result = await response.json();
+    console.log(result);
+    // Optionally show result in your UI
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
 exports.createInvoice = async (req, res) => {
   try {
     // Validate input
@@ -102,6 +133,17 @@ exports.createInvoice = async (req, res) => {
         await po.save();
       }
 
+      // Notify Finance
+      await notifyFinance({
+        invoiceNumber,
+        totalAmount,
+        supplierId,
+        dateIssued: new Date(),
+        purchaseOrderId,
+        items,
+        status: "approved"
+      });
+
       return res.status(201).json({ invoice, match: "matched" });
     } else {
       invoice.status = "mismatched";
@@ -137,3 +179,4 @@ exports.getInvoiceById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+

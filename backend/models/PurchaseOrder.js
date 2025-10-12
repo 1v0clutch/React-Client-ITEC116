@@ -6,7 +6,7 @@ const PurchaseOrderSchema = new mongoose.Schema(
     supplierId: { type: mongoose.Schema.Types.ObjectId, ref: "Supplier", required: true },
     items: [
       {
-        itemId: { type: mongoose.Schema.Types.ObjectId, ref: "Inventory", required: true},
+        itemId: { type: String, required: true }, // product name string from supplier
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
       },

@@ -68,10 +68,11 @@ const validateSupplier = (data) => {
 const validateRequisition = (data) => {
   const schema = Joi.object({
     requester: Joi.string().required(),
+    supplierId: Joi.string().hex().length(24).required(), // ✅ Supplier reference
     items: Joi.array()
       .items(
         Joi.object({
-          itemId: Joi.string().hex().length(24).required(), // Inventory _id
+          itemId: Joi.string().required(), // ✅ plain string, product name
           quantity: Joi.number().min(1).required(),
         })
       )
@@ -93,7 +94,7 @@ const validatePurchaseOrder = (data) => {
     items: Joi.array()
       .items(
         Joi.object({
-          itemId: Joi.string().hex().length(24).required(),
+          itemId: Joi.string().min(1).required(),
           quantity: Joi.number().integer().positive().required(),
           price: Joi.number().positive().required(),
         })
@@ -118,19 +119,21 @@ const validateInvoice = (data) => {
     items: Joi.array()
       .items(
         Joi.object({
-          itemId: Joi.string().hex().length(24).required(),
+          itemId: Joi.string().min(1).required(), // product name string
           quantity: Joi.number().integer().min(1).required(),
           unitPrice: Joi.number().positive().required(),
         })
       )
       .min(1)
       .required(),
+    totalAmount: Joi.number().positive().required(),
     status: Joi.string().valid("pending", "approved", "paid").default("pending"),
-    remarks: Joi.string().optional(),
+    remarks: Joi.string().allow("", null).optional(), // ✅ now empty string is valid
   });
 
-  return schema.validate(data);
+  return schema.validate(data, { abortEarly: false });
 };
+
 
 module.exports = { validateInvoice };
 

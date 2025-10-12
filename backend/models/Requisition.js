@@ -2,18 +2,27 @@ const mongoose = require("mongoose");
 
 const RequisitionSchema = new mongoose.Schema(
   {
-    requester: String, // later can link to User module
+    requester: { type: String, required: true },
+
+    supplierId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Supplier",
+      required: true, // ✅ kailangan para alam kung kanino magre-request
+    },
+
     items: [
       {
-        itemId: { type: mongoose.Schema.Types.ObjectId, ref: "Inventory" }, // link to Module 1
+        itemId: { type: String, required: true }, // ✅ plain string (product name)
         quantity: { type: Number, required: true },
       },
     ],
+
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+
     approvalHistory: [
       {
         approver: String,
