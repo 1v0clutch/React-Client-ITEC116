@@ -34,6 +34,8 @@ import CMmanagement from "./pages/SalesCustomer/CMmanagement";
 import SalesOrder from "./pages/SalesCustomer/Salesorder";
 import SalesReport from "./pages/SalesCustomer/salerep";
 
+import Project from "./pages/ProjectManagement/Project";
+import ProjectForm from "./pages/ProjectManagement/ProjectForm";
 
 function App() {
   const loadData = () => {
@@ -53,9 +55,8 @@ function App() {
   useEffect(() => {
     localStorage.setItem("ems_data_v1", JSON.stringify(data));
   }, [data]);
-  
 
-   return (
+  return (
     <Router>
       <div className="flex">
         <Sidebar />
@@ -65,7 +66,10 @@ function App() {
             <Route path="/procurement" element={<Procurement />} />
             <Route path="/procurement/suppliers" element={<Suppliers />} />
             <Route path="/procurement/requisition" element={<Requisition />} />
-            <Route path="/procurement/purchase-orders" element={<PurchaseOrders />} />
+            <Route
+              path="/procurement/purchase-orders"
+              element={<PurchaseOrders />}
+            />
             <Route path="/procurement/invoices" element={<Invoices />} />
 
             {/* Inventory */}
@@ -76,30 +80,66 @@ function App() {
             {/* Finance */}
             <Route path="/finance/general-finance" element={<Finance />} />
             <Route path="/finance/employee-payroll" element={<Payroll />} />
-            <Route path="/finance/supplier-report" element={<SupplierReport />} />
+            <Route
+              path="/finance/supplier-report"
+              element={<SupplierReport />}
+            />
             <Route path="/finance/customer-report" element={<Customer />} />
             <Route path="/finance/finance-report" element={<Report />} />
-            <Route path="/finance/inventory-report" element={<InventoryReport />} />
-            <Route path="/finance/payroll-report" element={<EmployeePayrollReport />} />
+            <Route
+              path="/finance/inventory-report"
+              element={<InventoryReport />}
+            />
+            <Route
+              path="/finance/payroll-report"
+              element={<EmployeePayrollReport />}
+            />
 
             {/* HR */}
-            <Route path="/hr/attendance" element={<Attendance data={data} setData={setData} />} />
-            <Route path="/hr/dashboard" element={<Dashboard data={data} setData={setData} />} />
-            <Route path="/hr/departments" element={<Departments data={data} setData={setData} />} />
-            <Route path="/hr/employees" element={<Employees data={data} setData={setData} />} />
-            <Route path="/hr/leaves" element={<Leaves data={data} setData={setData} />} />
-            <Route path="/hr/payroll-employee" element={<PayrollEmployee data={data} setData={setData} />} />
-            <Route path="/hr/salary" element={<Salary data={data} setData={setData} />} />
+            <Route
+              path="/hr/attendance"
+              element={<Attendance data={data} setData={setData} />}
+            />
+            <Route
+              path="/hr/dashboard"
+              element={<Dashboard data={data} setData={setData} />}
+            />
+            <Route
+              path="/hr/departments"
+              element={<Departments data={data} setData={setData} />}
+            />
+            <Route
+              path="/hr/employees"
+              element={<Employees data={data} setData={setData} />}
+            />
+            <Route
+              path="/hr/leaves"
+              element={<Leaves data={data} setData={setData} />}
+            />
+            <Route
+              path="/hr/payroll-employee"
+              element={<PayrollEmployee data={data} setData={setData} />}
+            />
+            <Route
+              path="/hr/salary"
+              element={<Salary data={data} setData={setData} />}
+            />
 
             {/* Customer Service / Helpdesk */}
             <Route path="/customer-service" element={<CustomerService />} />
 
-
-            {/* Sales - Customer Management */}            
-            <Route path="/sales/customer-management" element={<CMmanagement />} />
+            {/* Sales - Customer Management */}
+            <Route
+              path="/sales/customer-management"
+              element={<CMmanagement />}
+            />
             <Route path="/sales/after-sales" element={<AfterSales />} />
             <Route path="/sales/sales-order" element={<SalesOrder />} />
             <Route path="/sales/sales-report" element={<SalesReport />} />
+
+            {/* Project Management */}
+            <Route path="/project-management/project" element={<Project />} />
+            <Route path="/project-management/form" element={<ProjectForm />} />
           </Routes>
         </div>
       </div>
