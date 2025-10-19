@@ -57,8 +57,16 @@ const categories = [
       { path: "/hr/leaves", label: "Leaves" },
       { path: "/hr/payroll-employee", label: "Payroll" },
       { path: "/hr/salary", label: "Salary" },
+
     ],
   },
+{
+   label: "Report",
+    links: [
+      { path: "/report", label: "Reports" },
+      
+    ]
+}
 ];
 
 function Sidebar() {

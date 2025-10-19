@@ -33,7 +33,7 @@ import AfterSales from "./pages/SalesCustomer/AfterSales";
 import CMmanagement from "./pages/SalesCustomer/CMmanagement";
 import SalesOrder from "./pages/SalesCustomer/Salesorder";
 import SalesReport from "./pages/SalesCustomer/salerep";
-
+import ReportPage from "./pages/Report/ReportPage";
 
 function App() {
   const loadData = () => {
@@ -100,6 +100,9 @@ function App() {
             <Route path="/sales/after-sales" element={<AfterSales />} />
             <Route path="/sales/sales-order" element={<SalesOrder />} />
             <Route path="/sales/sales-report" element={<SalesReport />} />
+          
+           {/* Report */}  
+             <Route path="/report" element={<ReportPage />} />
           </Routes>
         </div>
       </div>
