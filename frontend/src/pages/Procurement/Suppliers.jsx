@@ -1,260 +1,195 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-function Suppliers() {
+export default function Supplier() {
   const [suppliers, setSuppliers] = useState([]);
   const [form, setForm] = useState({
     name: "",
-    phone: "",
+    contactPerson: "",
     email: "",
+    phone: "",
     address: "",
-    rating: 0,
-    contractTerms: "",
-    productCatalog: []
+    paymentTerms: "",
   });
-  const [newProduct, setNewProduct] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
 
-  // ✅ common input style
-  const inputStyle = {
-    width: "100%",
-    padding: "8px",
-    marginBottom: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    fontSize: "14px",
+  const fetchSuppliers = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/api/suppliers");
+      const data = await res.json();
+      if (Array.isArray(data)) setSuppliers(data);
+    } catch (err) {
+      console.error("Fetch suppliers error:", err);
+    }
   };
 
-  // Fetch suppliers
   useEffect(() => {
-    fetch("http://localhost:8000/api/suppliers/getSupplier")
-      .then(res => res.json())
-      .then(data => setSuppliers(data))
-      .catch(err => console.error("Error fetching suppliers:", err));
+    fetchSuppliers();
   }, []);
 
-  // Add / Update supplier
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = {
-      name: form.name,
-      contactInfo: `${form.phone} | ${form.email} | ${form.address}`,
-      rating: Number(form.rating) || 0,
-      contractTerms: form.contractTerms,
-      productCatalog: form.productCatalog
-    };
+    const method = editingId ? "PUT" : "POST";
+    const url = editingId
+      ? `http://localhost:8000/api/suppliers/${editingId}`
+      : "http://localhost:8000/api/suppliers";
 
     try {
-      if (editingId) {
-        const res = await fetch(
-          `http://localhost:8000/api/suppliers/updateSupplier/${editingId}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }
-        );
-        const updated = await res.json();
-        if (!res.ok) return alert("Error: " + updated.error);
-        setSuppliers(suppliers.map(s => (s._id === editingId ? updated : s)));
-        setEditingId(null);
-      } else {
-        const res = await fetch("http://localhost:8000/api/suppliers/addSupplier", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const newSupplier = await res.json();
-        if (!res.ok) return alert("Error: " + newSupplier.error);
-        setSuppliers([...suppliers, newSupplier]);
-      }
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-      // Reset form
+      if (!res.ok) throw new Error("Failed to save supplier");
+      await fetchSuppliers();
+
       setForm({
         name: "",
-        phone: "",
+        contactPerson: "",
         email: "",
+        phone: "",
         address: "",
-        rating: 0,
-        contractTerms: "",
-        productCatalog: []
+        paymentTerms: "",
       });
-      setNewProduct("");
+      setEditingId(null);
     } catch (err) {
-      console.error("Request failed:", err);
-      alert("Something went wrong. Check server logs.");
+      console.error("Submit supplier error:", err);
+      alert("Error saving supplier.");
     }
   };
 
-  // Edit supplier
-  const handleEdit = (supplier) => {
-    const [phone = "", email = "", address = ""] =
-      supplier.contactInfo?.split(" | ") || [];
-    setForm({
-      name: supplier.name,
-      phone,
-      email,
-      address,
-      rating: supplier.rating || 0,
-      contractTerms: supplier.contractTerms || "",
-      productCatalog: supplier.productCatalog || []
-    });
-    setEditingId(supplier._id);
-  };
-
-  // Delete supplier
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this supplier?")) return;
-    await fetch(`http://localhost:8000/api/suppliers/deleteSupplier/${id}`, {
-      method: "DELETE",
-    });
-    setSuppliers(suppliers.filter(s => s._id !== id));
+    if (!window.confirm("Delete this supplier?")) return;
+    await fetch(`http://localhost:8000/api/suppliers/${id}`, { method: "DELETE" });
+    fetchSuppliers();
   };
 
-  // Add product to catalog
-  const handleAddProduct = () => {
-    if (newProduct.trim() !== "") {
-      setForm({
-        ...form,
-        productCatalog: [...form.productCatalog, newProduct.trim()],
-      });
-      setNewProduct("");
-    }
+  const handleEdit = (s) => {
+    setForm(s);
+    setEditingId(s._id);
   };
 
-  // Remove product from catalog
-  const handleRemoveProduct = (product) => {
-    setForm({
-      ...form,
-      productCatalog: form.productCatalog.filter((p) => p !== product),
-    });
-  };
-
-  // Filter suppliers by search
-  const filteredSuppliers = suppliers.filter((s) => {
-    const query = search.toLowerCase();
-    return (
-      s.name.toLowerCase().includes(query) ||
-      s.productCatalog?.some((p) => p.toLowerCase().includes(query))
-    );
-  });
+  const filtered = suppliers.filter((s) =>
+    [s.name, s.contactPerson, s.email, s.address]
+      .join(" ")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Supplier Management</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6">Supplier Management</h2>
 
       {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "20px",
-          marginBottom: "20px",
-          maxWidth: "800px",
-          background: "#f9f9f9",
-          padding: "20px",
-          border: "1px solid #ddd",
-          borderRadius: "6px",
-        }}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-6 rounded-lg shadow-md mb-6"
       >
-        {/* Left column */}
-        <div>
-          <label>Supplier Name</label>
-          <input style={inputStyle} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-
-          <label>Phone</label>
-          <input style={inputStyle} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-
-          <label>Email</label>
-          <input style={inputStyle} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-
-          <label>Address</label>
-          <input style={inputStyle} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-        </div>
-
-        {/* Right column */}
-        <div>
-          <label>Rating (0-5)</label>
-          <input style={inputStyle} type="number" min="0" max="5" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
-
-          <label>Contract Terms</label>
-          <input style={inputStyle} value={form.contractTerms} onChange={(e) => setForm({ ...form, contractTerms: e.target.value })} />
-
-          <label>Products</label>
-          <div style={{ display: "flex", gap: "5px", marginBottom: "10px" }}>
-            <input style={{ ...inputStyle, marginBottom: 0 }} value={newProduct} onChange={(e) => setNewProduct(e.target.value)} placeholder="Add product" />
-            <button type="button" onClick={handleAddProduct}>+ Add</button>
-          </div>
-
-          <ul style={{ paddingLeft: "18px" }}>
-            {form.productCatalog.map((p, i) => (
-              <li key={i}>
-                {p}{" "}
-                <button type="button" onClick={() => handleRemoveProduct(p)}>x</button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Submit button */}
-        <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
+        <input
+          type="text"
+          placeholder="Supplier Name"
+          className="border p-2 rounded"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Contact Person"
+          className="border p-2 rounded"
+          value={form.contactPerson}
+          onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          className="border p-2 rounded"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Phone Number"
+          className="border p-2 rounded"
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Address"
+          className="border p-2 rounded col-span-full"
+          value={form.address}
+          onChange={(e) => setForm({ ...form, address: e.target.value })}
+        />
+        <input
+          type="text"
+          placeholder="Payment Terms"
+          className="border p-2 rounded col-span-full"
+          value={form.paymentTerms}
+          onChange={(e) => setForm({ ...form, paymentTerms: e.target.value })}
+        />
+        <div className="col-span-full text-right">
           <button
             type="submit"
-            style={{
-              backgroundColor: "#007bff",
-              color: "#fff",
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "bold"
-            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
           >
             {editingId ? "Update Supplier" : "Add Supplier"}
           </button>
         </div>
-        </form>
+      </form>
 
       {/* SEARCH */}
       <input
-        style={inputStyle}
-        placeholder="Search by name or product..."
+        type="text"
+        placeholder="Search suppliers..."
+        className="border p-2 rounded w-full mb-4"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* LIST */}
-      <table border="1" cellPadding="8" style={{ marginTop: "15px", width: "100%", borderCollapse: "collapse" }}>
-        <thead style={{ background: "#f0f0f0" }}>
-          <tr>
-            <th>Supplier Name</th>
-            <th>Products</th>
-            <th>Contact Info</th>
-            <th>Rating</th>
-            <th>Contract Terms</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredSuppliers.map((s) => (
-            <tr key={s._id}>
-              <td>{s.name}</td>
-              <td>{s.productCatalog?.length > 0 ? s.productCatalog.join(", ") : "No products"}</td>
-              <td>{s.contactInfo}</td>
-              <td>{s.rating}</td>
-              <td>{s.contractTerms}</td>
-              <td>
-                <button onClick={() => handleEdit(s)}>Edit</button>
-                <button onClick={() => handleDelete(s._id)}>Delete</button>
-              </td>
+      {/* TABLE */}
+      <div className="overflow-x-auto">
+        <table className="w-full border border-gray-300 text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-2">Name</th>
+              <th className="border p-2">Contact Person</th>
+              <th className="border p-2">Email</th>
+              <th className="border p-2">Phone</th>
+              <th className="border p-2">Payment Terms</th>
+              <th className="border p-2">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filtered.map((s) => (
+              <tr key={s._id} className="hover:bg-gray-50">
+                <td className="border p-2">{s.name}</td>
+                <td className="border p-2">{s.contactPerson}</td>
+                <td className="border p-2">{s.email}</td>
+                <td className="border p-2">{s.phone}</td>
+                <td className="border p-2">{s.paymentTerms}</td>
+                <td className="border p-2 text-center">
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleEdit(s)}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded text-xs hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(s._id)}
+                      className="bg-gray-700 text-white px-3 py-1 rounded text-xs hover:bg-gray-800"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-export default Suppliers;

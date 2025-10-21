@@ -1,80 +1,112 @@
 import { useState, useEffect } from "react";
 
-function Requisition() {
+export default function Requisition() {
   const [requisitions, setRequisitions] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);   // ✅ Suppliers list
-  const [items, setItems] = useState([]);           // ✅ Products from selected supplier
   const [form, setForm] = useState({
-    requester: "",
-    supplierId: "",
-    items: [{ itemId: "", quantity: 1 }],
+    name: "",
+    department: "",
+    contact: "",
+    description: "",
+    quantity: 1,
+    unitPrice: "",
+    purpose: "",
+    budgetCode: "",
+    date: "",
+    deliveryDate: "",
+    deliveryLocation: "",
   });
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
 
-  const inputStyle = {
-    width: "100%",
-    padding: "8px",
-    marginBottom: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    fontSize: "14px",
-  };
+  //Fetch requisitions
+  const fetchRequisitions = () => {
+  fetch("http://localhost:8000/api/requisitions")
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data)) setRequisitions(data);
+      else setRequisitions([]);
+    })
+    .catch((err) => console.error("Error fetching requisitions:", err));
+};
 
-  // ✅ Fetch requisitions
+
   useEffect(() => {
-    fetch("http://localhost:8000/api/requisitions/getRequisition")
-      .then(res => res.json())
-      .then(data => setRequisitions(data))
-      .catch(err => console.error(err));
+    fetchRequisitions();
   }, []);
 
-  // ✅ Fetch suppliers
-  useEffect(() => {
-    fetch("http://localhost:8000/api/suppliers/getSupplier")
-      .then((res) => res.json())
-      .then((data) => setSuppliers(data))
-      .catch((err) => console.error("Error fetching suppliers:", err));
-  }, []);
-
-  // ✅ Fetch products from selected supplier
-  useEffect(() => {
-    if (form.supplierId) {
-      fetch(`http://localhost:8000/api/suppliers/${form.supplierId}/products`)
-        .then((res) => res.json())
-        .then((data) => setItems(data))
-        .catch((err) => console.error("Error fetching supplier items:", err));
-    } else {
-      setItems([]);
-    }
-  }, [form.supplierId]);
-
-  // Add / Update requisition
+  //Submit form (Add or Update)
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const method = editingId ? "PUT" : "POST";
+    const url = editingId
+      ? `http://localhost:8000/api/requisitions/${editingId}`
+      : "http://localhost:8000/api/requisitions";
 
     try {
-      const res = await fetch("http://localhost:8000/api/requisitions/addRequisition", {
-        method: "POST",
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const newReq = await res.json();
-      if (!res.ok) return alert("Error: " + newReq.error);
-      setRequisitions([...requisitions, newReq]);
-      setForm({ requester: "", items: [{ itemId: "", quantity: 1 }] });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert("Error: " + (data.message || "Failed to save requisition"));
+        return;
+      }
+
+      fetchRequisitions(); //Refresh
+      setForm({
+        name: "",
+        department: "",
+        contact: "",
+        description: "",
+        quantity: 1,
+        unitPrice: "",
+        purpose: "",
+        budgetCode: "",
+        date: "",
+        deliveryDate: "",
+        deliveryLocation: "",
+      });
+      setEditingId(null);
     } catch (err) {
       console.error("Request failed:", err);
+      alert("Something went wrong while submitting.");
     }
   };
 
-  // Edit requisition
-  const handleEdit = (req) => {
-    setForm({
-      requester: req.requester,
-      supplierId: req.supplierId || "",
-      items: req.items.length > 0 ? req.items : [{ itemId: "", quantity: 1 }],
+  //Update status
+  const handleStatusUpdate = async (id, status) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/requisitions/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const updated = await res.json();
+      if (res.ok) {
+        setRequisitions((prev) =>
+          prev.map((r) => (r._id === id ? updated : r))
+        );
+      }
+    } catch (err) {
+      console.error("Error updating status:", err);
+    }
+  };
+
+  //Delete
+  {/*const handleDelete = async (id) => {
+    if (!window.confirm("Delete this requisition?")) return;
+    await fetch(`http://localhost:8000/api/requisitions/${id}`, {
+      method: "DELETE",
     });
+    setRequisitions((prev) => prev.filter((r) => r._id !== id));
+  };*/}
+
+  //Edit
+  const handleEdit = (req) => {
+    setForm(req);
     setEditingId(req._id);
   };
 
@@ -107,167 +139,207 @@ function Requisition() {
   });
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Purchase Requisition</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6">Purchase Requisition & Approval</h2>
 
       {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "20px",
-          marginBottom: "20px",
-          maxWidth: "800px",
-          background: "#f9f9f9",
-          padding: "20px",
-          border: "1px solid #ddd",
-          borderRadius: "6px",
-        }}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-6 rounded-lg shadow-md mb-6"
       >
-        {/* Left column */}
+        {/* Requester Info */}
         <div>
-          <label>Requester</label>
+          <h3 className="font-semibold mb-2">Requester Information</h3>
           <input
-            style={inputStyle}
-            value={form.requester}
-            onChange={(e) => setForm({ ...form, requester: e.target.value })}
+            type="text"
+            placeholder="Name"
+            className="w-full border rounded p-2 mb-2"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
-
-          <label>Supplier</label>
-          <select
-            style={inputStyle}
-            value={form.supplierId}
-            onChange={(e) =>
-              setForm({ ...form, supplierId: e.target.value, items: [{ itemId: "", quantity: 1 }] })
-            }
+          <input
+            type="text"
+            placeholder="Department"
+            className="w-full border rounded p-2 mb-2"
+            value={form.department}
+            onChange={(e) => setForm({ ...form, department: e.target.value })}
             required
-          >
-            <option value="">-- Select Supplier --</option>
-            {suppliers.map((s) => (
-              <option key={s._id} value={s._id}>{s.name}</option>
-            ))}
-          </select>
-
-          <label>Item</label>
-          <select
-            style={inputStyle}
-            value={form.items[0].itemId}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                items: [{ ...form.items[0], itemId: e.target.value }],
-              })
-            }
+          />
+          <input
+            type="text"
+            placeholder="Contact Details"
+            className="w-full border rounded p-2 mb-2"
+            value={form.contact}
+            onChange={(e) => setForm({ ...form, contact: e.target.value })}
             required
-          >
-            <option value="">-- Select Item --</option>
-            {items.map((product, idx) => (
-              <option key={idx} value={product}>
-                {product}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
-        {/* Right column */}
+        {/* Item Details */}
         <div>
-          <label>Quantity</label>
+          <h3 className="font-semibold mb-2">Item / Service Details</h3>
           <input
-            style={inputStyle}
+            type="text"
+            placeholder="Description"
+            className="w-full border rounded p-2 mb-2"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            required
+          />
+          <input
             type="number"
+            placeholder="Quantity"
             min="1"
-            value={form.items[0].quantity}
+            className="w-full border rounded p-2 mb-2"
+            value={form.quantity}
+            onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+            required
+          />
+          <input
+            type="number"
+            placeholder="Unit Price"
+            step="0.01"
+            min="0"
+            className="w-full border rounded p-2 mb-2"
+            value={form.unitPrice}
+            onChange={(e) => setForm({ ...form, unitPrice: e.target.value })}
+            required
+          />
+        </div>
+
+        {/* Purpose and Budget */}
+        <div>
+          <h3 className="font-semibold mb-2">Purpose and Budget</h3>
+          <textarea
+            placeholder="Purpose"
+            className="w-full border rounded p-2 mb-2"
+            value={form.purpose}
+            onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Budget / Cost Center"
+            className="w-full border rounded p-2 mb-2"
+            value={form.budgetCode}
+            onChange={(e) => setForm({ ...form, budgetCode: e.target.value })}
+            required
+          />
+          <input
+            type="date"
+            className="w-full border rounded p-2 mb-2"
+            value={form.date}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+          />
+        </div>
+
+        {/* Delivery Info */}
+        <div>
+          <h3 className="font-semibold mb-2">Delivery Information</h3>
+          <input
+            type="date"
+            className="w-full border rounded p-2 mb-2"
+            value={form.deliveryDate}
+            onChange={(e) => setForm({ ...form, deliveryDate: e.target.value })}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Delivery Location"
+            className="w-full border rounded p-2 mb-2"
+            value={form.deliveryLocation}
             onChange={(e) =>
-              setForm({
-                ...form,
-                items: [
-                  { ...form.items[0], quantity: Number(e.target.value) },
-                ],
-              })
+              setForm({ ...form, deliveryLocation: e.target.value })
             }
             required
           />
         </div>
 
-        {/* Submit button */}
-        <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
+        {/* Submit */}
+        <div className="col-span-full text-right">
           <button
             type="submit"
-            style={{
-              backgroundColor: "#007bff",
-              color: "#fff",
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "bold",
-            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
           >
-            {editingId ? "Update Requisition" : "Add Requisition"}
+            {editingId ? "Update Requisition" : "Submit Requisition"}
           </button>
         </div>
       </form>
 
       {/* SEARCH */}
       <input
-        style={inputStyle}
-        placeholder="Search by requester or item..."
+        type="text"
+        placeholder="Search requisitions..."
+        className="border p-2 rounded w-full mb-4"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* LIST */}
-      <table
-        border="1"
-        cellPadding="8"
-        style={{
-          marginTop: "15px",
-          width: "100%",
-          borderCollapse: "collapse",
-        }}
-      >
-        <thead style={{ background: "#f0f0f0" }}>
-          <tr>
-            <th>Requester</th>
-            <th>Supplier</th>
-            <th>Items</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredRequisitions.map((r) => (
-            <tr key={r._id}>
-              <td>{r.requester}</td>
-              <td>{suppliers.find(s => s._id === r.supplierId)?.name || r.supplierId}</td>
-              <td>
-                {r.items
-                  .map((i) => `${i.itemId} (x${i.quantity})`)
-                  .join(", ")}
-              </td>
-              <td>{r.status}</td>
-              <td>
-                {r.status === "pending" && (
-                  <>
-                    <button onClick={() => handleUpdateStatus(r._id, "approved")}>
-                      Approve
-                    </button>
-                    <button onClick={() => handleUpdateStatus(r._id, "rejected")}>
-                      Reject
-                    </button>
-                  </>
-                )}
-                <button onClick={() => handleDelete(r._id)}>Delete</button>
-              </td>
+      {/* TABLE */}
+      <div className="overflow-x-auto">
+        <table className="w-full border border-gray-300 text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border">Requester</th>
+              <th className="p-2 border">Department</th>
+              <th className="p-2 border">Description</th>
+              <th className="p-2 border">Purpose</th>
+              <th className="p-2 border">Budget</th>
+              <th className="p-2 border">Status</th>
+              <th className="p-2 border">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredRequisitions.map((r) => (
+              <tr key={r._id} className="hover:bg-gray-50">
+                <td className="border p-2">{r.name}</td>
+                <td className="border p-2">{r.department}</td>
+                <td className="border p-2">{r.description}</td>
+                <td className="border p-2">{r.purpose}</td>
+                <td className="border p-2">{r.budgetCode}</td>
+                <td className="border p-2 text-center text-gray-700 font-medium">
+                  {r.status || "pending"}
+                </td>
+
+                {/* Buttons aligned & uniform */}
+                <td className="border p-2">
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    {r.status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => handleStatusUpdate(r._id, "approved")}
+                          className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(r._id, "rejected")}
+                          className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => handleEdit(r)}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded text-xs hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r._id)}
+                      className="bg-gray-700 text-white px-3 py-1 rounded text-xs hover:bg-gray-800"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-export default Requisition;

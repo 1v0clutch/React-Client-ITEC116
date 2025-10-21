@@ -11,9 +11,12 @@ const supplierRoutes = require("./routes/supplier.routes");
 const requisitionRoutes = require("./routes/requisition.routes");
 const purchaseOrderRoutes = require("./routes/purchaseOrder.routes");
 const invoiceRoutes = require("./routes/invoice.routes");
-const financeRoutes = require("./routes/finance");
-
+const financeRoutes = require('./routes/finance.routes');
+const attendanceRoutes = require("./routes/attendance.routes");
+const leaveRoutes = require("./routes/leave.routes");
+const hrRoutes = require("./routes/hr.routes");
 const app = express();
+
 
 //Middleware
 app.use(
@@ -30,6 +33,9 @@ app.use(express.json());
 connectDB();
 
 //Routes
+
+app.use("/api/hr", hrRoutes);
+
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/warehouses", warehouseRoutes);
@@ -38,6 +44,9 @@ app.use("/api/requisitions", requisitionRoutes);
 app.use("/api/purchase-orders", purchaseOrderRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/finance", financeRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/leaves", leaveRoutes);
+app.use("/api/hr", hrRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

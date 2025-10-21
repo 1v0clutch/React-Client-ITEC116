@@ -1,35 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
+import FinanceLayout from "./FinanceLayout";
 
 export default function SupplierReport() {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch("http://localhost:8000/api/finance/supplier-report")
+        .then((res) => res.json())
+        .then(setData)
+        .catch(console.error);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div>
-      <h1 className='justify-items-center m-5'>Finance Report</h1>
-            <nav className="flex gap-6 mb-5 text-blue-700 justify-center">
-              <a href='/finance/general-finance'><p className="cursor-pointer hover:underline ">General Ledger</p></a>
-              <a href='/finance/supplier-report'><p className="cursor-pointer hover:underline">Accounts Payable (Supplier)</p></a>
-              <a href='/finance/customer-report'><p className="cursor-pointer hover:underline">Accounts Receivable (Customer)</p></a>
-              <a href='/finance/finance-report'><p className="cursor-pointer hover:underline">Reports and Compliance</p></a>
-              <a href='/finance/employee-payroll'><p className="cursor-pointer hover:underline">Employee Payroll (HR)</p></a>
-              <a href='/finance/inventory-report'><p className="cursor-pointer hover:underline">Inventory Report</p></a>
-            </nav>
-            <table className="table-auto w-full border border-gray-400 border-collapse [&_*]:border [&_*]:border-gray-400 [&_*]:px-4 [&_*]:py-2">
-               <thead className="bg-gray-100"> {/*Ilalagay Sa for loop based on how many iterations  ang napupurchase through procurement*/}
-                <tr> 
-                  <th>Test</th>
-                  <th>Test</th>
-                  <th>Test</th>
-                  <th>Test</th>
-                  <th>Test</th>
-                </tr>
-              </thead>
-              <tr>
-                <td>Test</td>
-                <td>Test</td>
-                <td>Test</td>
-                <td>Test</td>
-                <td>Test</td>
+    <FinanceLayout title="Supplier Report">
+      <table className="min-w-full border border-gray-300 text-sm text-gray-700">
+        <thead className="bg-blue-100 text-blue-900">
+          <tr>
+            <th className="p-3 text-left">Supplier</th>
+            <th className="p-3 text-left">PO #</th>
+            <th className="p-3 text-center">Status</th>
+            <th className="p-3 text-right">Total</th>
+            <th className="p-3 text-center">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.length > 0 ? (
+            data.map((po) => (
+              <tr key={po._id} className="border-t hover:bg-gray-50 transition">
+                <td className="p-3">{po.supplierId?.name || "—"}</td>
+                <td className="p-3">{po.poNumber}</td>
+                <td className="p-3 text-center">{po.status || "—"}</td>
+                <td className="p-3 text-right">₱{po.totalAmount?.toLocaleString()}</td>
+                <td className="p-3 text-center">
+                  {new Date(po.createdAt).toLocaleDateString()}
+                </td>
               </tr>
-            </table>
-    </div>
-  )
+            ))
+          ) : (
+            <tr>
+              <td className="p-3 text-center text-gray-500" colSpan="5">
+                No supplier data available
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </FinanceLayout>
+  );
 }

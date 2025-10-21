@@ -2,13 +2,17 @@ const express = require("express");
 const router = express.Router();
 const poController = require("../controllers/purchaseOrder.controller");
 
-// CRUD
-router.post("/addPurchaseOrder", poController.createPurchaseOrder);
-router.get("/getPurchaseOrder", poController.getPurchaseOrders);
-router.get("/getPurchaseOrder/:id", poController.getPurchaseOrderById);
+// Create
+router.post("/", poController.createPO);
 
-// update status (e.g. delivered, cancelled)
-router.put("/updatePurchaseOrder/:id/status", poController.updatePurchaseOrderStatus);  
-router.delete("/deletePurchaseOrder/:id", poController.deletePurchaseOrder);
+// Read
+router.get("/", poController.getPOs);
+router.get("/:id", poController.getPOById);
+
+// Update
+router.put("/:id", poController.updatePO);
+
+// Delete
+router.delete("/:id", poController.deletePO);
 
 module.exports = router;

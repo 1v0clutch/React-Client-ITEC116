@@ -1,11 +1,18 @@
 import React, { useState } from "react";
 
-export default function Payroll({ data, setData }) {
+export default function Payroll({ data }) {
   const [records, setRecords] = useState([]);
   const [period, setPeriod] = useState({ from: "", to: "" });
   const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({ base: 0, ot: 0, adj: 0, deductions: {} }); // 📌 may deductions na
+  const [editForm, setEditForm] = useState({ base: 0, ot: 0, adj: 0, deductions: {} });
 
+  // 🧮 Compute Net Pay
+  const computeNetPay = (r) => {
+    const totalDed = Object.values(r.deductions).reduce((a, b) => a + b, 0);
+    return r.base + r.ot + r.adj - totalDed;
+  };
+
+  // 🧾 Generate Payroll
   const generatePayroll = () => {
     if (!period.from || !period.to) return alert("Select payroll period first");
 
@@ -27,13 +34,42 @@ export default function Payroll({ data, setData }) {
       }));
 
     setRecords(newRecords);
+
+    // Automatically save after generation (optional)
+    savePayrollToBackend(newRecords);
   };
 
-  const computeNetPay = (r) => {
-    const totalDed = Object.values(r.deductions).reduce((a, b) => a + b, 0);
-    return r.base + r.ot + r.adj - totalDed;
+  // 💾 Save Payroll to Backend
+  const savePayrollToBackend = async (recordsToSave = records) => {
+    try {
+      if (recordsToSave.length === 0) return alert("No payroll records to save.");
+
+      await Promise.all(
+        recordsToSave.map((r) =>
+          fetch("http://localhost:8000/api/hr/payroll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              employeeId: r.id,
+              name: r.name,
+              department: r.dept,
+              payPeriod: `${period.from} - ${period.to}`,
+              grossPay: r.base + r.ot + r.adj,
+              deductions: Object.values(r.deductions).reduce((a, b) => a + b, 0),
+              netPay: computeNetPay(r),
+            }),
+          })
+        )
+      );
+
+      alert("Payroll records saved successfully!");
+    } catch (err) {
+      console.error("Error saving payroll:", err);
+      alert("Failed to save payroll records.");
+    }
   };
 
+  // 🧾 Open Payslip
   const openPayslip = (rec) => {
     const netPay = computeNetPay(rec);
     const newWin = window.open("", "_blank", "width=600,height=700");
@@ -79,19 +115,20 @@ export default function Payroll({ data, setData }) {
     newWin.document.close();
   };
 
+  // 🧩 Edit Payroll
   const startEdit = (rec) => {
     setEditing(rec.id);
-    setEditForm({ base: rec.base, ot: rec.ot, adj: rec.adj, deductions: { ...rec.deductions } }); // 📌 kasama deductions
+    setEditForm({ base: rec.base, ot: rec.ot, adj: rec.adj, deductions: { ...rec.deductions } });
   };
 
   const saveEdit = () => {
     setRecords(
-      records.map((r) =>
-        r.id === editing ? { ...r, ...editForm } : r
-      )
+      records.map((r) => (r.id === editing ? { ...r, ...editForm } : r))
     );
     setEditing(null);
   };
+
+  // ✅ Removed generatePayroll() and savePayrollToBackend() from render here
 
   return (
     <div className="p-6">
@@ -209,7 +246,7 @@ export default function Payroll({ data, setData }) {
               </div>
             </div>
 
-            {/* 📌 Editable deductions */}
+            {/* Editable deductions */}
             <div className="grid grid-cols-4 gap-3 mb-2">
               {Object.keys(editForm.deductions).map((key) => (
                 <div key={key}>

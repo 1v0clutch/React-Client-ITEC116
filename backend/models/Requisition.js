@@ -2,31 +2,29 @@ const mongoose = require("mongoose");
 
 const RequisitionSchema = new mongoose.Schema(
   {
-    requester: { type: String, required: true },
+    name: { type: String, required: true },
+    department: { type: String, required: true },
+    contact: { type: String, required: true },
+    description: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    unitPrice: { type: Number, required: true },
+    purpose: { type: String, required: true },
+    budgetCode: { type: String, required: true },
+    date: { type: String },
+    deliveryDate: { type: String, required: true },
+    deliveryLocation: { type: String, required: true },
 
-    supplierId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Supplier",
-      required: true, // ✅ kailangan para alam kung kanino magre-request
-    },
-
-    items: [
-      {
-        itemId: { type: String, required: true }, // ✅ plain string (product name)
-        quantity: { type: Number, required: true },
-      },
-    ],
-
+    // Approval flow
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
-
     approvalHistory: [
       {
         approver: String,
         status: String,
+        remarks: String,
         date: { type: Date, default: Date.now },
       },
     ],

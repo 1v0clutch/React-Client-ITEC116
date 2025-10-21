@@ -4,6 +4,12 @@ import { Link, useLocation } from "react-router-dom";
 
 const categories = [
   {
+    label: "Customer Service",
+    links: [
+      { path: "/customer-service", label: "Helpdesk" }
+    ]
+  },
+  {
     label: "Procurement",
     links: [
       { path: "/procurement/suppliers", label: "Suppliers" },
@@ -57,7 +63,7 @@ function Sidebar() {
 
   return (
     <nav className="fixed left-0 top-0 h-screen w-56 bg-[#222e3c] text-white overflow-y-auto z-50">
-      <h2 className="text-center mb-5 text-lg font-bold">EMS Navigation</h2>
+      <h2 className="m-5 text-center mb-5 text-lg font-bold">EMS Navigation</h2>
 
       {categories.map((cat) => {
         const isOpen = openCategories.includes(cat.label);

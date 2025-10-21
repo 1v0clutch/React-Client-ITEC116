@@ -1,305 +1,302 @@
 import { useState, useEffect } from "react";
 
-function PurchaseOrders() {
+export default function PurchaseOrders() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [requisitions, setRequisitions] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
-  const [items, setItems] = useState([]); // ✅ products of selected supplier
   const [form, setForm] = useState({
     requisitionId: "",
     supplierId: "",
-    items: [{ itemId: "", quantity: 1, price: 0 }],
+    description: "",
+    quantity: 1,
+    unitPrice: "",
+    expectedDelivery: "",
+    notes: "",
   });
+  const [editingId, setEditingId] = useState(null);
 
-  const inputStyle = {
-    width: "100%",
-    padding: "8px",
-    marginBottom: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    fontSize: "14px",
+  // Fetch data
+  const fetchData = async () => {
+    try {
+      const [poRes, reqRes, supRes] = await Promise.all([
+        fetch("http://localhost:8000/api/purchase-orders"),
+        fetch("http://localhost:8000/api/requisitions"),
+        fetch("http://localhost:8000/api/suppliers"),
+      ]);
+
+      const [pos, reqs, sups] = await Promise.all([
+        poRes.json(),
+        reqRes.json(),
+        supRes.json(),
+      ]);
+
+      setPurchaseOrders(pos);
+      setRequisitions(
+        (reqs.data || reqs).filter((r) => r.status === "approved")
+      );
+      setSuppliers(sups.data || sups);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    }
   };
 
-  // ✅ Fetch requisitions
   useEffect(() => {
-    fetch("http://localhost:8000/api/requisitions/getRequisition")
-      .then((res) => res.json())
-      .then((data) => setRequisitions(data))
-      .catch((err) => console.error("Error fetching requisitions:", err));
+    fetchData();
   }, []);
 
-  // ✅ Fetch suppliers
-  useEffect(() => {
-    fetch("http://localhost:8000/api/suppliers/getSupplier")
-      .then((res) => res.json())
-      .then((data) => setSuppliers(data))
-      .catch((err) => console.error("Error fetching suppliers:", err));
-  }, []);
+  // 🔹 Fetch requisition details when selected
+  const handleRequisitionSelect = async (id) => {
+    setForm((prev) => ({ ...prev, requisitionId: id }));
 
-  // ✅ Fetch items from selected supplier
-  useEffect(() => {
-    if (form.supplierId) {
-      fetch(`http://localhost:8000/api/suppliers/${form.supplierId}/products`)
-        .then((res) => res.json())
-        .then((data) => setItems(data))
-        .catch((err) => console.error("Error fetching supplier items:", err));
-    } else {
-      setItems([]);
+    if (!id) return;
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/requisitions/${id}`);
+      const data = await res.json();
+
+      // Autofill details from requisition
+      setForm((prev) => ({
+        ...prev,
+        description: data.description || "",
+        quantity: data.quantity || 1,
+        unitPrice: data.unitPrice || "",
+        expectedDelivery: data.expectedDelivery || data.deliveryDate || "",
+      }));
+    } catch (error) {
+      console.error("Error fetching requisition details:", error);
     }
-  }, [form.supplierId]);
+  };
 
-  // ✅ Fetch purchase orders
-  useEffect(() => {
-    fetch("http://localhost:8000/api/purchase-orders/getPurchaseOrder")
-      .then((res) => res.json())
-      .then((data) => setPurchaseOrders(data))
-      .catch((err) => console.error("Error fetching POs:", err));
-  }, []);
-
-  // ✅ Add purchase order
+  // Submit form (Add or Update)
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const items = [
+      {
+        description: form.description,
+        quantity: Number(form.quantity),
+        unitPrice: Number(form.unitPrice),
+        total: Number(form.quantity) * Number(form.unitPrice),
+      },
+    ];
+
+    const body = {
+      requisitionId: form.requisitionId,
+      supplierId: form.supplierId,
+      items,
+      expectedDelivery: form.expectedDelivery,
+      notes: form.notes,
+    };
+
+    const method = editingId ? "PUT" : "POST";
+    const url = editingId
+      ? `http://localhost:8000/api/purchase-orders/${editingId}`
+      : "http://localhost:8000/api/purchase-orders";
+
     try {
-      const res = await fetch(
-        "http://localhost:8000/api/purchase-orders/addPurchaseOrder",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        }
-      );
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
       const data = await res.json();
+      console.log("PO Response:", data);
+
       if (!res.ok) {
-        return alert("Error: " + data.error);
+        alert("Error: " + (data.error || "Failed to save PO"));
+        return;
       }
 
-      // backend returns { message, po }
-      setPurchaseOrders([...purchaseOrders, data.po]);
-
-      // reset form
+      await fetchData(); // refresh table
       setForm({
         requisitionId: "",
         supplierId: "",
-        items: [{ itemId: "", quantity: 1, price: 0 }],
+        description: "",
+        quantity: 1,
+        unitPrice: "",
+        expectedDelivery: "",
+        notes: "",
       });
+      setEditingId(null);
     } catch (err) {
-      console.error("Error adding PO:", err);
+      console.error("Submit error:", err);
+      alert("Something went wrong while submitting the PO.");
     }
   };
 
-  // ✅ Update status
-  const handleUpdateStatus = async (id, status) => {
-    const res = await fetch(
-      `http://localhost:8000/api/purchase-orders/updatePurchaseOrder/${id}/status`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      }
-    );
-    const updated = await res.json();
-    setPurchaseOrders(
-      purchaseOrders.map((po) => (po._id === id ? updated : po))
-    );
+  // Delete PO
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this purchase order?")) return;
+    await fetch(`http://localhost:8000/api/purchase-orders/${id}`, {
+      method: "DELETE",
+    });
+    fetchData();
   };
 
-  // ✅ Delete PO
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this Purchase Order?")) return;
-    await fetch(
-      `http://localhost:8000/api/purchase-orders/deletePurchaseOrder/${id}`,
-      { method: "DELETE" }
-    );
-    setPurchaseOrders(purchaseOrders.filter((po) => po._id !== id));
+  // Edit PO
+  const handleEdit = (po) => {
+    setForm({
+      requisitionId: po.requisitionId?._id || "",
+      supplierId: po.supplierId?._id || "",
+      description: po.items[0]?.description || "",
+      quantity: po.items[0]?.quantity || 1,
+      unitPrice: po.items[0]?.unitPrice || "",
+      expectedDelivery: po.expectedDelivery || "",
+      notes: po.notes || "",
+    });
+    setEditingId(po._id);
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Purchase Orders</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6">Purchase Order Management</h2>
 
       {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "20px",
-          marginBottom: "20px",
-          maxWidth: "800px",
-          background: "#f9f9f9",
-          padding: "20px",
-          border: "1px solid #ddd",
-          borderRadius: "6px",
-        }}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-6 rounded-lg shadow mb-6"
       >
-        {/* Left Column */}
-        <div>
-          <label>Requester (Requisition)</label>
-          <select
-            style={inputStyle}
-            value={form.requisitionId}
-            onChange={(e) =>
-              setForm({ ...form, requisitionId: e.target.value })
-            }
-            required
-          >
-            <option value="">-- Select Requisition --</option>
-            {requisitions.map((req) => (
-              <option key={req._id} value={req._id}>
-                {req.requester} ({req.status})
-              </option>
-            ))}
-          </select>
+        {/* Approved Requisition Dropdown */}
+        <select
+          className="border p-2 rounded"
+          value={form.requisitionId}
+          onChange={(e) => handleRequisitionSelect(e.target.value)}
+          required
+        >
+          <option value="">Select Approved Requisition</option>
+          {requisitions.map((r) => (
+            <option key={r._id} value={r._id}>
+              {r.name} - {r.description}
+            </option>
+          ))}
+        </select>
 
-          <label>Supplier</label>
-          <select
-            style={inputStyle}
-            value={form.supplierId}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                supplierId: e.target.value,
-                items: [{ itemId: "", quantity: 1, price: 0 }], // reset items when supplier changes
-              })
-            }
-            required
-          >
-            <option value="">-- Select Supplier --</option>
-            {suppliers.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Supplier Dropdown */}
+        <select
+          className="border p-2 rounded"
+          value={form.supplierId}
+          onChange={(e) => setForm({ ...form, supplierId: e.target.value })}
+          required
+        >
+          <option value="">Select Supplier</option>
+          {suppliers.map((s) => (
+            <option key={s._id} value={s._id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
 
-        {/* Right Column */}
-        <div>
-          <label>Item</label>
-          <select
-            style={inputStyle}
-            value={form.items[0].itemId}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                items: [{ ...form.items[0], itemId: e.target.value }],
-              })
-            }
-            required
-          >
-            <option value="">-- Select Item --</option>
-            {items.map((product, idx) => (
-              <option key={idx} value={product}>
-                {product}
-              </option>
-            ))}
-          </select>
+        {/* Item Description */}
+        <input
+          type="text"
+          placeholder="Item Description"
+          className="border p-2 rounded"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          required
+        />
 
-          <label>Quantity</label>
-          <input
-            style={inputStyle}
-            type="number"
-            min="1"
-            value={form.items[0].quantity}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                items: [
-                  { ...form.items[0], quantity: Number(e.target.value) },
-                ],
-              })
-            }
-            required
-          />
+        {/* Quantity */}
+        <input
+          type="number"
+          placeholder="Quantity"
+          className="border p-2 rounded"
+          min="1"
+          value={form.quantity}
+          onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+          required
+        />
 
-          <label>Price</label>
-          <input
-            style={inputStyle}
-            type="number"
-            min="0"
-            value={form.items[0].price}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                items: [{ ...form.items[0], price: Number(e.target.value) }],
-              })
-            }
-            required
-          />
-        </div>
+        {/* Unit Price */}
+        <input
+          type="number"
+          placeholder="Unit Price"
+          className="border p-2 rounded"
+          min="0"
+          value={form.unitPrice}
+          onChange={(e) => setForm({ ...form, unitPrice: e.target.value })}
+          required
+        />
 
-        {/* Submit */}
-        <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
+        {/* Expected Delivery (auto-filled if available) */}
+        <input
+          type="date"
+          className="border p-2 rounded"
+          value={form.expectedDelivery}
+          onChange={(e) =>
+            setForm({ ...form, expectedDelivery: e.target.value })
+          }
+        />
+
+        {/* Notes / Terms */}
+        <textarea
+          placeholder="Notes / Terms"
+          className="border p-2 rounded col-span-full"
+          value={form.notes}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+        />
+
+        <div className="col-span-full text-right">
           <button
             type="submit"
-            style={{
-              backgroundColor: "#007bff",
-              color: "#fff",
-              padding: "10px 20px",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "bold",
-            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
           >
-            Add Purchase Order
+            {editingId ? "Update PO" : "Create Purchase Order"}
           </button>
         </div>
       </form>
 
-      {/* LIST */}
-      <table
-        border="1"
-        cellPadding="8"
-        style={{ marginTop: "15px", width: "100%", borderCollapse: "collapse" }}
-      >
-        <thead style={{ background: "#f0f0f0" }}>
-          <tr>
-            <th>Requester</th>
-            <th>Supplier</th>
-            <th>Items</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {purchaseOrders.map((po) => (
-            <tr key={po._id}>
-              <td>{po.requisitionId?.requester}</td>
-              <td>{po.supplierId?.name}</td>
-              <td>
-                {po.items
-                  .map(
-                    (i) => `${i.itemId} (x${i.quantity}) ₱${i.price}`
-                  )
-                  .join(", ")}
-              </td>
-              <td>{po.status}</td>
-              <td>
-                {po.status === "draft" && (
-                  <button
-                    onClick={() => handleUpdateStatus(po._id, "sent")}
-                  >
-                    Send
-                  </button>
-                )}
-                {po.status === "sent" && (
-                  <button
-                    onClick={() => handleUpdateStatus(po._id, "confirmed")}
-                  >
-                    Confirm
-                  </button>
-                )}
-                <button onClick={() => handleDelete(po._id)}>Delete</button>
-              </td>
+      {/* TABLE */}
+      <div className="overflow-x-auto">
+        <table className="w-full border border-gray-300 text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-2 border">PO #</th>
+              <th className="p-2 border">Requisition</th>
+              <th className="p-2 border">Supplier</th>
+              <th className="p-2 border">Item</th>
+              <th className="p-2 border">Qty</th>
+              <th className="p-2 border">Total</th>
+              <th className="p-2 border">Status</th>
+              <th className="p-2 border">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {purchaseOrders.map((po) => (
+              <tr key={po._id} className="hover:bg-gray-50">
+                <td className="border p-2">{po.poNumber}</td>
+                <td className="border p-2">{po.requisitionId?.name || "—"}</td>
+                <td className="border p-2">{po.supplierId?.name || "—"}</td>
+                <td className="border p-2">{po.items[0]?.description}</td>
+                <td className="border p-2 text-center">
+                  {po.items[0]?.quantity}
+                </td>
+                <td className="border p-2 text-right">
+                  ₱{po.totalAmount?.toLocaleString()}
+                </td>
+                <td className="border p-2 text-center">{po.status}</td>
+                <td className="border p-2 text-center">
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleEdit(po)}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded text-xs hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(po._id)}
+                      className="bg-gray-700 text-white px-3 py-1 rounded text-xs hover:bg-gray-800"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
-
-export default PurchaseOrders;
