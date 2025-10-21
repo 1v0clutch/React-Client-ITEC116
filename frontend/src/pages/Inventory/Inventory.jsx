@@ -342,7 +342,7 @@ const Inventory = () => {
                       Delete
                     </button>
                     <button
-                      onClick={() => (window.location.href = `/transactions`)}
+                      onClick={() => (window.location.href = `/inventory/transactions`)}
                       className="px-2.5 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
                     >
                       View Transactions
