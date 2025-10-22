@@ -96,35 +96,10 @@ exports.handleInventoryTransaction = async (req, res) => {
 
 exports.getInventoryTransactions = async (req, res) => {
   try {
-    const financeTransactions = await FinanceInventoryTransaction.find().lean();
-    const transactionIds = financeTransactions
-      .map((entry) => entry.transactionId)
-      .filter((value) => Boolean(value));
-
-    const missingItemIds = Array.from(
-      new Set(
-        financeTransactions
-          .filter((entry) => !entry.transactionId && entry.itemId)
-          .map((entry) => entry.itemId.toString())
-      )
-    );
-
-    const [inventoryItems, sourceTransactions, fallbackTransactions] = await Promise.all([
+    const [transactions, inventoryItems, sourceTransactions] = await Promise.all([
+      FinanceInventoryTransaction.find().lean(),
       Inventory.find().select("name sku").lean().catch(() => []),
-      transactionIds.length
-        ? Transaction.find({ _id: { $in: transactionIds } })
-            .populate("itemId", "name sku")
-            .populate("purchaseOrderId", "poNumber status orderDate referenceNumber")
-            .lean()
-            .catch(() => [])
-        : Promise.resolve([]),
-      missingItemIds.length
-        ? Transaction.find({ itemId: { $in: missingItemIds } })
-            .populate("itemId", "name sku")
-            .populate("purchaseOrderId", "poNumber status orderDate referenceNumber")
-            .lean()
-            .catch(() => [])
-        : Promise.resolve([]),
+      Transaction.find().select("itemId type quantity remarks transactionDate purchaseOrderId").lean().catch(() => []),
     ]);
 
     const itemMap = Array.isArray(inventoryItems)
@@ -134,93 +109,77 @@ exports.getInventoryTransactions = async (req, res) => {
         }, {})
       : {};
 
-    const transactionMap = Array.isArray(sourceTransactions)
+    const transactionLookup = Array.isArray(sourceTransactions)
       ? sourceTransactions.reduce((acc, entry) => {
           acc[entry._id.toString()] = entry;
-          return acc;
-        }, {})
-      : {};
-
-    const fallbackTransactionMap = Array.isArray(fallbackTransactions)
-      ? fallbackTransactions.reduce((acc, entry) => {
-          const key = entry.itemId?._id ? entry.itemId._id.toString() : entry.itemId?.toString();
-          if (!key) return acc;
-          const existing = acc[key];
-          if (!existing || new Date(entry.transactionDate || 0) > new Date(existing.transactionDate || 0)) {
-            acc[key] = entry;
+          if (entry.itemId) {
+            const key = entry.itemId.toString();
+            if (!acc[key]) acc[key] = entry;
           }
           return acc;
         }, {})
       : {};
 
-    const normalized = financeTransactions.map((tx) => {
+    const normalized = transactions.map((tx) => {
       const itemIdKey = tx.itemId ? tx.itemId.toString() : "";
       const itemSource = itemMap[itemIdKey] || {};
-      const linkedTransaction = tx.transactionId ? transactionMap[tx.transactionId] : undefined;
-      const fallbackTransaction = linkedTransaction ? undefined : fallbackTransactionMap[itemIdKey];
-      const transactionItem = linkedTransaction?.itemId || fallbackTransaction?.itemId;
-      const transactionPurchaseOrder = linkedTransaction?.purchaseOrderId || fallbackTransaction?.purchaseOrderId;
+      const linked = tx.transactionId ? transactionLookup[tx.transactionId] : undefined;
+      const fallback = !linked && itemIdKey ? transactionLookup[itemIdKey] : undefined;
+
+      const transactionItemId = linked?.itemId || fallback?.itemId;
+      const transactionItem = transactionItemId ? itemMap[transactionItemId.toString()] : undefined;
 
       const baseItem =
         (tx.item && tx.item !== "—" && tx.item) ||
-        tx.itemName ||
-        tx.name ||
         transactionItem?.name ||
         itemSource.name ||
         "—";
       const skuValue = transactionItem?.sku || itemSource.sku;
-      const itemWithSku = baseItem !== "—" && skuValue ? `${baseItem} (${skuValue})` : baseItem;
+      const itemValue = baseItem !== "—" && skuValue ? `${baseItem} (${skuValue})` : baseItem;
+
       const typeValue =
         tx.type ||
         tx.transactionType ||
         tx.category ||
-        tx.movementType ||
-        tx.eventType ||
-        tx.operation ||
-        linkedTransaction?.type ||
-        fallbackTransaction?.type ||
-        fallbackTransaction?.transactionType ||
+        linked?.type ||
+        fallback?.type ||
         "—";
-      const quantityRaw =
+
+      const quantityValue =
         typeof tx.quantity === "number"
           ? tx.quantity
           : Number(
               tx.quantity ??
                 tx.qty ??
                 tx.count ??
-                linkedTransaction?.quantity ??
-                fallbackTransaction?.quantity
-            );
-      const remarksValue =
-        tx.remarks ||
-        tx.notes ||
-        linkedTransaction?.remarks ||
-        fallbackTransaction?.remarks ||
-        "";
-      const fallbackPurchaseOrder = fallbackTransaction?.purchaseOrderId;
+                linked?.quantity ??
+                fallback?.quantity
+            ) || 0;
+
+      const remarksValue = tx.remarks || tx.notes || linked?.remarks || fallback?.remarks || "";
+
       const purchaseOrderValue =
         tx.purchaseOrderId ||
         tx.purchaseOrder ||
         tx.reference ||
-        (transactionPurchaseOrder?.poNumber || transactionPurchaseOrder?._id) ||
-        (typeof fallbackPurchaseOrder === "object"
-          ? fallbackPurchaseOrder?.poNumber || fallbackPurchaseOrder?._id
-          : fallbackPurchaseOrder) ||
+        (linked?.purchaseOrderId ? linked.purchaseOrderId.toString() : undefined) ||
+        (fallback?.purchaseOrderId ? fallback.purchaseOrderId.toString() : undefined) ||
         "";
+
       const dateValue =
         tx.date ||
         tx.transactionDate ||
         tx.createdAt ||
         tx.updatedAt ||
-        linkedTransaction?.transactionDate ||
-        fallbackTransaction?.transactionDate ||
+        linked?.transactionDate ||
+        fallback?.transactionDate ||
         null;
 
       return {
         ...tx,
-        item: itemWithSku,
+        item: itemValue,
         type: typeValue,
-        quantity: Number.isFinite(quantityRaw) ? quantityRaw : 0,
+        quantity: Number.isFinite(quantityValue) ? quantityValue : 0,
         remarks: remarksValue,
         purchaseOrderId: purchaseOrderValue,
         date: dateValue,

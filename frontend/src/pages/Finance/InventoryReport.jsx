@@ -151,23 +151,6 @@ export default function InventoryReport() {
     downloadFile(csv, "text/csv", "csv");
   };
 
-  const exportExcel = () => {
-    const headers = ["Item", "Type", "Quantity", "Remarks", "Purchase Order", "Date"];
-    const rows = sortedData
-      .map((entry) => [
-        sanitize(entry.item),
-        sanitize(entry.type),
-        entry.quantity,
-        sanitize(entry.remarks),
-        sanitize(entry.purchaseOrderId),
-        sanitize(formatDate(entry.date)),
-      ])
-      .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`)
-      .join("");
-    const table = `<table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`;
-    downloadFile(table, "application/vnd.ms-excel", "xls");
-  };
-
   const sortedData = useMemo(() => {
     return [...data].sort((a, b) => {
       const dateA = parseDate(a.date)?.getTime() || 0;
@@ -186,14 +169,6 @@ export default function InventoryReport() {
           disabled={isFetching || !sortedData.length}
         >
           Download CSV
-        </button>
-        <button
-          type="button"
-          onClick={exportExcel}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-          disabled={isFetching || !sortedData.length}
-        >
-          Download Excel
         </button>
       </div>
 
