@@ -141,10 +141,6 @@ function App() {
             {/* Project Management */}
             <Route path="/project-management/project" element={<Project />} />
             <Route path="/project-management/form" element={<ProjectForm />} />
-            <Route
-              path="/project-management/gantt-chart"
-              element={<ProjectGantt />}
-            />
           </Routes>
         </div>
       </div>
