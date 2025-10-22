@@ -1,33 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./Module_8style/Sales_order.css";
 
 function SalesOrderManagement() {
-  // Dummy customers
-  const customers = [
+  const [customers, setCustomers] = useState([
     { id: 1, name: "Alice Johnson", creditStatus: "Good" },
     { id: 2, name: "Bob Smith", creditStatus: "Overdue" },
-  ];
-
-  // Dummy products (inventory simulation)
-  const [products, setProducts] = useState([
-    { id: 1, name: "Product A", price: 100, stock: 10 },
-    { id: 2, name: "Product B", price: 200, stock: 5 },
   ]);
 
-  // Orders state
-  const [orders, setOrders] = useState([
-    {
-      id: 1,
-      customerId: 1,
-      productId: 1,
-      quantity: 2,
-      discount: 10,
-      tax: 12,
-      status: "pending",
-      totalAmount: "196.80",
-      invoiceStatus: "unpaid",
-    },
-  ]);
+  // 🧩 PRODUCTS from Module 1 (Inventory)
+  const [products, setProducts] = useState([]);
+
+  // 🧩 Orders
+  const [orders, setOrders] = useState([]);
 
   const [newOrder, setNewOrder] = useState({
     customerId: "",
@@ -38,20 +22,27 @@ function SalesOrderManagement() {
     status: "pending",
   });
 
-  // ✅ DUMMY FINANCE MODULE (Read integration)
+  // ✅ FETCH PRODUCTS FROM MODULE 1 (Inventory)
+  useEffect(() => {
+    fetch("http://localhost:8000/api/inventory/getItems")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched products:", data);
+        setProducts(data);
+      })
+      .catch((err) => console.error("Error fetching inventory:", err));
+  }, []);
+
+  // ✅ FINANCE MODULE READ SIMULATION
   const checkCustomerCredit = (customerId) => {
     const customer = customers.find((c) => c.id === parseInt(customerId));
-    if (!customer) {
-      alert("Customer not found!");
-      return;
-    }
-    // TODO: Replace with actual Finance API call (Module 5)
+    if (!customer) return alert("Customer not found!");
     alert(`Finance Check: ${customer.name} has ${customer.creditStatus} credit standing.`);
   };
 
-  // ✅ Create new order (includes dummy Inventory Read & Write logic)
-  const createOrder = () => {
-    const product = products.find((p) => p.id === parseInt(newOrder.productId));
+  // ✅ CREATE NEW ORDER (READ + WRITE Integration with Inventory)
+  const createOrder = async () => {
+    const product = products.find((p) => p._id === newOrder.productId);
     const customer = customers.find((c) => c.id === parseInt(newOrder.customerId));
 
     if (!product || !customer) {
@@ -59,14 +50,15 @@ function SalesOrderManagement() {
       return;
     }
 
-    // 🔹 INVENTORY READ SIMULATION (Check stock before order)
-    if (newOrder.quantity > product.stock) {
-      alert(`Not enough stock! Only ${product.stock} left in inventory.`);
+    // 🔹 INVENTORY READ (check stock)
+    if (newOrder.quantity > product.quantity) {
+      alert(`Not enough stock! Only ${product.quantity} left in inventory.`);
       return;
     }
 
-    // 🔹 PRICE CALCULATION
-    const baseAmount = product.price * newOrder.quantity;
+    // For demo, assume price = 100 per item (since backend doesn't have price)
+    const basePrice = 100;
+    const baseAmount = basePrice * newOrder.quantity;
     const discountAmount = (baseAmount * newOrder.discount) / 100;
     const taxedAmount = (baseAmount - discountAmount) * (newOrder.tax / 100);
     const totalAmount = baseAmount - discountAmount + taxedAmount;
@@ -74,7 +66,7 @@ function SalesOrderManagement() {
     const newOrderData = {
       id: orders.length + 1,
       customerId: parseInt(newOrder.customerId),
-      productId: parseInt(newOrder.productId),
+      productId: product._id,
       quantity: newOrder.quantity,
       discount: newOrder.discount,
       tax: newOrder.tax,
@@ -83,32 +75,28 @@ function SalesOrderManagement() {
       invoiceStatus: "unpaid",
     };
 
-    // 🔹 INVENTORY WRITE SIMULATION (Deduct stock after order)
-    setProducts(
-      products.map((p) =>
-        p.id === product.id
-          ? { ...p, stock: p.stock - newOrder.quantity }
-          : p
-      )
-    );
+    // 🔹 INVENTORY WRITE (deduct stock using API)
+    try {
+      await fetch(`http://localhost:8000/api/inventory/updateItem/${product._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: product.quantity - newOrder.quantity }),
+      });
+      alert("Stock updated in Module 1!");
+    } catch (error) {
+      console.error("Error updating inventory:", error);
+    }
 
     setOrders([...orders, newOrderData]);
     alert("Order/Quotation Created!");
-
-    // TODO: Replace inventory logic with real API calls to Module 1
-    // Example:
-    // fetch(`/api/inventory/updateStock/${product.id}`, { method: "POST", body: JSON.stringify({ quantity: newOrder.quantity }) });
   };
 
-  const updateStatus = (id, status) => {
+  const updateStatus = (id, status) =>
     setOrders(orders.map((o) => (o.id === id ? { ...o, status } : o)));
-  };
 
-  const updateInvoiceStatus = (id, invoiceStatus) => {
+  const updateInvoiceStatus = (id, invoiceStatus) =>
     setOrders(orders.map((o) => (o.id === id ? { ...o, invoiceStatus } : o)));
-  };
 
-  // ✅ Delete order
   const deleteOrder = (id) => {
     setOrders(orders.filter((o) => o.id !== id));
     alert(`Order #${id} deleted.`);
@@ -116,7 +104,7 @@ function SalesOrderManagement() {
 
   const generateInvoice = (order) => {
     const customer = customers.find((c) => c.id === order.customerId)?.name;
-    const product = products.find((p) => p.id === order.productId)?.name;
+    const product = products.find((p) => p._id === order.productId)?.name;
     alert(`Invoice Generated:\nCustomer: ${customer}\nProduct: ${product}`);
   };
 
@@ -124,7 +112,6 @@ function SalesOrderManagement() {
     <div className="container">
       <h2>Sales Order Management</h2>
 
-      {/* FORM */}
       <div className="form-card">
         <label>Customer</label>
         <select
@@ -144,8 +131,8 @@ function SalesOrderManagement() {
         >
           <option value="">Select Product</option>
           {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} (Stock: {p.stock})
+            <option key={p._id} value={p._id}>
+              {p.name} (Stock: {p.quantity})
             </option>
           ))}
         </select>
@@ -191,7 +178,7 @@ function SalesOrderManagement() {
           <p>
             <strong>Order #{o.id}</strong><br />
             Customer: {customers.find((c) => c.id === o.customerId)?.name}<br />
-            Product: {products.find((p) => p.id === o.productId)?.name}<br />
+            Product: {products.find((p) => p._id === o.productId)?.name}<br />
             Quantity: {o.quantity}<br />
             Discount: {o.discount}%<br />
             Tax: {o.tax}%<br />
