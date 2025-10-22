@@ -15,28 +15,62 @@ export default function Employees({ data = {}, setData }) {
     status: "Active",
   });
 
-  // 🧮 Generate Employee ID (EMP-001, EMP-002, etc.)
+  // 🧮 Generate Employee ID (EMP-001, EMP-002, etc.) with gap detection
   const generateEmployeeID = () => {
-    const nextNum = employees.length + 1;
+    if (employees.length === 0) return "EMP-001";
+
+    const existingNums = employees
+      .map((e) => parseInt(e.empId?.split("-")[1]))
+      .filter((num) => !isNaN(num))
+      .sort((a, b) => a - b);
+
+    let nextNum = 1;
+    for (let num of existingNums) {
+      if (num !== nextNum) break;
+      nextNum++;
+    }
+
     return `EMP-${nextNum.toString().padStart(3, "0")}`;
   };
 
+  // Generate a new ID only for new employees
   useEffect(() => {
-    if (!emp.empId) {
-      setEmp((prev) => ({ ...prev, empId: generateEmployeeID() }));
+    if (!emp.id) {
+      setEmp((prev) => ({
+        ...prev,
+        empId: generateEmployeeID(),
+      }));
     }
   }, [employees]);
 
   const addEmployee = () => {
-    if (!emp.name || !emp.designation || !emp.department || !emp.employmentType || !emp.hireDate) {
+    if (
+      !emp.name ||
+      !emp.designation ||
+      !emp.department ||
+      !emp.employmentType ||
+      !emp.hireDate
+    ) {
       alert("Please fill in all fields.");
       return;
     }
 
-    const newEmp = { id: Date.now(), ...emp };
+    let updatedEmployees;
 
-    setData({ ...data, employees: [...employees, newEmp] });
+    if (emp.id) {
+      // 🛠 Update existing employee
+      updatedEmployees = employees.map((e) =>
+        e.id === emp.id ? emp : e
+      );
+    } else {
+      // ➕ Add new employee
+      const newEmp = { id: Date.now(), ...emp };
+      updatedEmployees = [...employees, newEmp];
+    }
 
+    setData({ ...data, employees: updatedEmployees });
+
+    // Reset form after add/update
     setEmp({
       id: "",
       empId: generateEmployeeID(),
@@ -50,6 +84,9 @@ export default function Employees({ data = {}, setData }) {
   };
 
   const deleteEmployee = (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this employee?");
+    if (!confirmDelete) return;
+
     setData({
       ...data,
       employees: employees.filter((e) => e.id !== id),
@@ -59,11 +96,8 @@ export default function Employees({ data = {}, setData }) {
   const editEmployee = (id) => {
     const toEdit = employees.find((e) => e.id === id);
     if (toEdit) {
+      // Load employee data into form WITHOUT deleting from the list
       setEmp(toEdit);
-      setData({
-        ...data,
-        employees: employees.filter((e) => e.id !== id),
-      });
     }
   };
 
@@ -114,7 +148,9 @@ export default function Employees({ data = {}, setData }) {
         <select
           className="border p-2 rounded"
           value={emp.employmentType}
-          onChange={(e) => setEmp({ ...emp, employmentType: e.target.value })}
+          onChange={(e) =>
+            setEmp({ ...emp, employmentType: e.target.value })
+          }
         >
           <option value="">Select Employment Type</option>
           <option value="Full Time">Full Time</option>
