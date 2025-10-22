@@ -1,50 +1,55 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
+import FinanceLayout from "./FinanceLayout";
 
 export default function InventoryReport() {
-  const [transactions, setTransactions] = useState([]);
+  const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/finance/inventory-transactions')
-      .then(res => res.json())
-      .then(data => setTransactions(data))
-      .catch(err => console.error(err));
+    const interval = setInterval(() => {
+      fetch("http://localhost:8000/api/finance/inventory-transactions")
+        .then((res) => res.json())
+        .then(setData)
+        .catch(console.error);
+    }, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div>
-      <h1 className='justify-items-center m-5'>Inventory Report</h1>
-      <nav className="flex gap-6 mb-5 text-blue-700 justify-center">
-        <a href='/finance/general-finance'><p className="cursor-pointer hover:underline ">General Ledger</p></a>
-        <a href='/finance/supplier-report'><p className="cursor-pointer hover:underline">Accounts Payable (Supplier)</p></a>
-        <a href='/finance/customer-report'><p className="cursor-pointer hover:underline">Accounts Receivable (Customer)</p></a>
-        <a href='/finance/finance-report'><p className="cursor-pointer hover:underline">Reports and Compliance</p></a>
-        <a href='/finance/employee-payroll'><p className="cursor-pointer hover:underline">Employee Payroll (HR)</p></a>
-        <a href='/finance/inventory-report'><p className="cursor-pointer hover:underline">Inventory Report</p></a>
-      </nav>
-      <table className="table-auto w-full border border-gray-400 border-collapse [&_*]:border [&_*]:border-gray-400 [&_*]:px-4 [&_*]:py-2">
-        <thead className="bg-gray-100">
+    <FinanceLayout title="Inventory Transactions">
+      <table className="min-w-full border border-gray-300 text-sm text-gray-700">
+        <thead className="bg-blue-100 text-blue-900">
           <tr>
-            <th>Item</th>
-            <th>Type</th>
-            <th>Quantity</th>
-            <th>Remarks</th>
-            <th>Purchase Order</th>
-            <th>Date</th>
+            <th className="p-3 text-left">Item</th>
+            <th className="p-3 text-center">Type</th>
+            <th className="p-3 text-right">Quantity</th>
+            <th className="p-3 text-left">Remarks</th>
+            <th className="p-3 text-left">Purchase Order</th>
+            <th className="p-3 text-center">Date</th>
           </tr>
         </thead>
         <tbody>
-          {transactions.map(tx => (
-            <tr key={tx._id}>
-              <td>{tx.productId}</td>
-              <td>{tx.transactionType}</td>
-              <td>{tx.quantity}</td>
-              <td>{tx.remarks}</td>
-              <td>{tx.purchaseOrderId}</td>
-              <td>{new Date(tx.date).toLocaleDateString()}</td>
+          {data.length > 0 ? (
+            data.map((tx, i) => (
+              <tr key={i} className="border-t hover:bg-gray-50 transition">
+                <td className="p-3">{tx.item}</td>
+                <td className="p-3 text-center">{tx.type}</td>
+                <td className="p-3 text-right">{tx.quantity}</td>
+                <td className="p-3">{tx.remarks}</td>
+                <td className="p-3">{tx.purchaseOrderId || "—"}</td>
+                <td className="p-3 text-center">
+                  {new Date(tx.date).toLocaleDateString()}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td className="p-3 text-center text-gray-500" colSpan="6">
+                No inventory data available
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
-    </div>
+    </FinanceLayout>
   );
 }

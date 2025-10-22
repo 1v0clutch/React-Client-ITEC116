@@ -1,6 +1,7 @@
 const PurchaseOrder = require("../models/PurchaseOrder");
 const Requisition = require("../models/Requisition");
 const Supplier = require("../models/Supplier");
+const axios = require("axios");
 
 //Helper to auto-generate PO number
 async function generatePONumber() {
@@ -89,3 +90,4 @@ exports.deletePO = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+

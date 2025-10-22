@@ -13,12 +13,12 @@ import Transaction from "./pages/Dashboard/Transaction";
 import Warehouse from "./pages/Dashboard/Warehouse";
 
 import Finance from "./pages/Finance/FinanceHead";
-import Payroll from "./pages/Finance/EmployeePayroll";
-import Supplier from "./pages/Finance/SupplierReport";
+import Payroll from "./pages/Finance/EmployeePayrollReport";
+import SupplierReport from "./pages/Finance/SupplierReport";
 import Customer from "./pages/Finance/CustomerReport";
 import Report from "./pages/Finance/FinanceReport";
 import InventoryReport from "./pages/Finance/InventoryReport";
-
+import EmployeePayrollReport from "./pages/Finance/EmployeePayrollReport";
 
 import Attendance from "./pages/HR/Attendance";
 import Dashboard from "./pages/HR/Dashboard";
@@ -76,10 +76,11 @@ function App() {
             {/* Finance */}
             <Route path="/finance/general-finance" element={<Finance />} />
             <Route path="/finance/employee-payroll" element={<Payroll />} />
-            <Route path="/finance/supplier-report" element={<Supplier />} />
+            <Route path="/finance/supplier-report" element={<SupplierReport />} />
             <Route path="/finance/customer-report" element={<Customer />} />
             <Route path="/finance/finance-report" element={<Report />} />
             <Route path="/finance/inventory-report" element={<InventoryReport />} />
+            <Route path="/finance/payroll-report" element={<EmployeePayrollReport />} />
 
             {/* HR */}
             <Route path="/hr/attendance" element={<Attendance data={data} setData={setData} />} />
