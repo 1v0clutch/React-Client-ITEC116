@@ -40,6 +40,13 @@ import CMmanagement from "./pages/SalesCustomer/CMmanagement";
 import SalesOrder from "./pages/SalesCustomer/Salesorder";
 import SalesReport from "./pages/SalesCustomer/salerep";
 
+// SupplyChain
+import DemandForecast from "./pages/SupplyChain/DemandForecast";
+import InventorySupplyChain from "./pages/SupplyChain/InventorySupplyChain";
+import Logistics from "./pages/SupplyChain/Logistics";
+import ProcurementSupplyChain from "./pages/SupplyChain/ProcurementSupplyChain";
+import SupplyChainMain from "./pages/SupplyChain/SupplyChainMain";
+
 const API_BASE = "http://localhost:5000/api";
 
 function App() {
@@ -142,6 +149,13 @@ function App() {
             <Route path="/sales/after-sales" element={<AfterSales />} />
             <Route path="/sales/sales-order" element={<SalesOrder />} />
             <Route path="/sales/sales-report" element={<SalesReport />} />
+
+            {/* SupplyChain */}
+            <Route path="/supply-chain/demand-forecast" element={<DemandForecast />} />
+            <Route path="/supply-chain/inventory-supply-chain" element={<InventorySupplyChain />} />
+            <Route path="/supply-chain/logistics" element={<Logistics />} />
+            <Route path="/supply-chain/procurement-supply-chain" element={<ProcurementSupplyChain />} />
+            <Route path="/supply-chain/supply-chain-main" element={<SupplyChainMain />} />
           </Routes>
         </div>
       </div>
