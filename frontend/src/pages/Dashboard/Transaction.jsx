@@ -46,17 +46,6 @@ const Transaction = () => {
   // Record new transaction
   const recordTransaction = async () => {
     try {
-      const transactionData = {
-        productId: "N/A", // Set as N/A since productId is not allowed
-        transactionType: currentTransaction.type,
-        quantity: currentTransaction.quantity,
-        remarks: currentTransaction.remarks,
-        purchaseOrderId: currentTransaction.purchaseOrderId || "",
-        date: new Date().toISOString(),
-        unitPrice: 0, // or omit if not needed
-      };
-
-      // Send to Inventory/Transaction API
       const response = await fetch(`${API_TRANSACTIONS}/addTransactionRecord`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,20 +54,14 @@ const Transaction = () => {
 
       const data = await response.json();
 
-      // Send to Finance API
-      await fetch("http://localhost:8000/api/finance/inventory-transaction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(transactionData),
-      });
-
-      if (response.ok) {
-        setMessage(data.message);
-        resetForm();
-        fetchTransactions();
-      } else {
+      if (!response.ok) {
         setMessage(data.error || "Failed to record transaction");
+        return;
       }
+
+      setMessage(data.message);
+      resetForm();
+      fetchTransactions();
     } catch (error) {
       setMessage(`Error recording transaction: ${error.message}`);
     }
