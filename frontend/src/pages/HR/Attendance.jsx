@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
 
-export default function LeaveAttendance({ data, setData }) {
+const API_BASE = "http://localhost:5000/api";
+
+export default function LeaveAttendance({ data = {} }) {
   const [activeTab, setActiveTab] = useState("attendance");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [attendanceSearch, setAttendanceSearch] = useState("");
+  const [leaveSearch, setLeaveSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [leaveRecords, setLeaveRecords] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showAttendanceDropdown, setShowAttendanceDropdown] = useState(false);
+  const [showLeaveDropdown, setShowLeaveDropdown] = useState(false);
 
   const [leaveForm, setLeaveForm] = useState({
     type: "",
@@ -15,72 +19,97 @@ export default function LeaveAttendance({ data, setData }) {
     endDate: "",
   });
 
-  // ✅ Load saved data from localStorage (para di nawawala after refresh)
+  // Fetch attendance and leave records
   useEffect(() => {
-    const savedAttendance = JSON.parse(localStorage.getItem("attendanceRecords")) || [];
-    const savedLeaves = JSON.parse(localStorage.getItem("leaveRecords")) || [];
-    setAttendanceRecords(savedAttendance);
-    setLeaveRecords(savedLeaves);
+    fetch(`${API_BASE}/attendance`)
+      .then((res) => res.json())
+      .then(setAttendanceRecords)
+      .catch(() => console.error("Error fetching attendance"));
+
+    fetch(`${API_BASE}/leaves`)
+      .then((res) => res.json())
+      .then(setLeaveRecords)
+      .catch(() => console.error("Error fetching leaves"));
   }, []);
 
-  // ✅ Auto-save to localStorage
-  useEffect(() => {
-    localStorage.setItem("attendanceRecords", JSON.stringify(attendanceRecords));
-  }, [attendanceRecords]);
+  // Filters
+  const employees = data?.employees || [];
 
-  useEffect(() => {
-    localStorage.setItem("leaveRecords", JSON.stringify(leaveRecords));
-  }, [leaveRecords]);
+  const filteredAttendanceEmployees = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(attendanceSearch.toLowerCase()) ||
+      emp.empId.toLowerCase().includes(attendanceSearch.toLowerCase())
+  );
 
-  // ✅ Filter employees by name or employee ID
-  const filteredEmployees =
-    data?.employees?.filter(
-      (emp) =>
-        emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.empId.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+  const filteredLeaveEmployees = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(leaveSearch.toLowerCase()) ||
+      emp.empId.toLowerCase().includes(leaveSearch.toLowerCase())
+  );
 
-  // ✅ Record attendance with overtime computation
-  const handleRecordAttendance = (type) => {
+  // Record attendance
+  const handleRecordAttendance = async (type) => {
     if (!selectedEmployee) return alert("Please select an employee.");
     const now = new Date();
-    let updated = [...attendanceRecords];
-    const existingIndex = updated.findIndex(
-      (r) => r.employeeId === selectedEmployee.id && !r.timeOut
-    );
 
     if (type === "in") {
-      if (existingIndex !== -1) return alert("Already timed in!");
-      updated.push({
-        employeeId: selectedEmployee.id,
+      const alreadyIn = attendanceRecords.find(
+        (r) => r.empId === selectedEmployee.empId && !r.timeOut
+      );
+      if (alreadyIn) return alert("Already timed in!");
+
+      const newRecord = {
         empId: selectedEmployee.empId,
         name: selectedEmployee.name,
         timeIn: now,
         timeOut: null,
         overtime: "0 hours",
+      };
+
+      const res = await fetch(`${API_BASE}/attendance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newRecord),
       });
+      const saved = await res.json();
+      setAttendanceRecords([...attendanceRecords, saved]);
     } else if (type === "out") {
-      if (existingIndex === -1) return alert("No time-in record found.");
-      const timeIn = new Date(updated[existingIndex].timeIn);
+      const lastRecord = attendanceRecords.find(
+        (r) => r.empId === selectedEmployee.empId && !r.timeOut
+      );
+      if (!lastRecord) return alert("No time-in record found.");
+
+      const timeIn = new Date(lastRecord.timeIn);
       const diffHours = (now - timeIn) / (1000 * 60 * 60);
       const overtime = diffHours > 8 ? (diffHours - 8).toFixed(1) : 0;
-      updated[existingIndex].timeOut = now;
-      updated[existingIndex].overtime = `${overtime} hours`;
+
+      const res = await fetch(`${API_BASE}/attendance/${lastRecord._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          timeOut: now,
+          overtime: `${overtime} hours`,
+        }),
+      });
+      const updated = await res.json();
+      setAttendanceRecords(
+        attendanceRecords.map((rec) =>
+          rec._id === updated._id ? updated : rec
+        )
+      );
     }
 
-    setAttendanceRecords(updated);
     setSelectedEmployee(null);
-    setSearchQuery("");
+    setAttendanceSearch("");
   };
 
-  // ✅ Apply leave with dropdown leave type
-  const handleApplyLeave = () => {
+  // Apply Leave
+  const handleApplyLeave = async () => {
     if (!selectedEmployee) return alert("Please select an employee.");
     if (!leaveForm.type || !leaveForm.reason || !leaveForm.startDate || !leaveForm.endDate)
       return alert("Please fill all leave details.");
 
     const newLeave = {
-      employeeId: selectedEmployee.id,
       empId: selectedEmployee.empId,
       name: selectedEmployee.name,
       type: leaveForm.type,
@@ -90,20 +119,39 @@ export default function LeaveAttendance({ data, setData }) {
       status: "Pending",
     };
 
-    setLeaveRecords([...leaveRecords, newLeave]);
+    const res = await fetch(`${API_BASE}/leaves`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newLeave),
+    });
+    const saved = await res.json();
+    setLeaveRecords([...leaveRecords, saved]);
     setLeaveForm({ type: "", reason: "", startDate: "", endDate: "" });
     setSelectedEmployee(null);
-    setSearchQuery("");
+    setLeaveSearch("");
   };
 
-  const handleLeaveAction = (index, action) => {
-    let updated = [...leaveRecords];
+  // Approve / Reject / Delete Leave
+  const handleLeaveAction = async (index, action) => {
+    const leave = leaveRecords[index];
     if (action === "delete") {
-      updated.splice(index, 1);
-    } else {
-      updated[index].status = action === "approve" ? "Approved" : "Rejected";
+      setLeaveRecords(leaveRecords.filter((_, i) => i !== index));
+      return;
     }
-    setLeaveRecords(updated);
+
+    const res = await fetch(`${API_BASE}/leaves/${leave._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: action === "approve" ? "Approved" : "Rejected",
+      }),
+    });
+    const updated = await res.json();
+    setLeaveRecords(
+      leaveRecords.map((rec) =>
+        rec._id === updated._id ? updated : rec
+      )
+    );
   };
 
   return (
@@ -112,7 +160,11 @@ export default function LeaveAttendance({ data, setData }) {
         {/* Tabs */}
         <div className="flex gap-4 mb-4">
           <button
-            onClick={() => setActiveTab("attendance")}
+            onClick={() => {
+              setActiveTab("attendance");
+              setSelectedEmployee(null);
+              setShowAttendanceDropdown(false);
+            }}
             className={`px-4 py-2 rounded ${
               activeTab === "attendance" ? "bg-blue-500 text-white" : "bg-gray-200"
             }`}
@@ -120,7 +172,11 @@ export default function LeaveAttendance({ data, setData }) {
             Attendance
           </button>
           <button
-            onClick={() => setActiveTab("leaves")}
+            onClick={() => {
+              setActiveTab("leaves");
+              setSelectedEmployee(null);
+              setShowLeaveDropdown(false);
+            }}
             className={`px-4 py-2 rounded ${
               activeTab === "leaves" ? "bg-blue-500 text-white" : "bg-gray-200"
             }`}
@@ -134,40 +190,42 @@ export default function LeaveAttendance({ data, setData }) {
           <div>
             <h2 className="font-semibold mb-2">Record Attendance</h2>
 
-            {/* Search bar */}
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search employee by name or ID..."
-                value={searchQuery}
+                value={attendanceSearch}
                 onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowDropdown(true);
+                  setAttendanceSearch(e.target.value);
+                  setShowAttendanceDropdown(true);
                   setSelectedEmployee(null);
                 }}
                 className="border p-2 w-full mb-2 rounded"
               />
 
-              {showDropdown && searchQuery && filteredEmployees.length > 0 && !selectedEmployee && (
-                <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
-                  {filteredEmployees.map((emp) => (
-                    <li
-                      key={emp.id}
-                      onClick={() => {
-                        setSelectedEmployee(emp);
-                        setSearchQuery(`${emp.name} (${emp.empId})`);
-                        setShowDropdown(false);
-                      }}
-                      className="p-2 hover:bg-gray-100 cursor-pointer border-b"
-                    >
-                      <div className="font-semibold">{emp.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {emp.empId} — {emp.department} — Hired: {emp.hireDate}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {showAttendanceDropdown &&
+                attendanceSearch &&
+                filteredAttendanceEmployees.length > 0 &&
+                !selectedEmployee && (
+                  <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
+                    {filteredAttendanceEmployees.map((emp) => (
+                      <li
+                        key={emp.empId}
+                        onClick={() => {
+                          setSelectedEmployee(emp);
+                          setAttendanceSearch(`${emp.name} (${emp.empId})`);
+                          setShowAttendanceDropdown(false);
+                        }}
+                        className="p-2 hover:bg-gray-100 cursor-pointer border-b"
+                      >
+                        <div className="font-semibold">{emp.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {emp.empId} — {emp.department} — Hired: {emp.hireDate}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
             </div>
 
             {selectedEmployee && (
@@ -187,7 +245,6 @@ export default function LeaveAttendance({ data, setData }) {
               </div>
             )}
 
-            {/* Attendance Table */}
             <table className="w-full mt-4 border text-sm">
               <thead>
                 <tr className="bg-gray-200">
@@ -222,96 +279,96 @@ export default function LeaveAttendance({ data, setData }) {
           <div>
             <h2 className="font-semibold mb-2">Apply Leave</h2>
 
-            {/* Search bar */}
             <div className="relative mb-3">
               <input
                 type="text"
                 placeholder="Search employee by name or ID..."
-                value={searchQuery}
+                value={leaveSearch}
                 onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowDropdown(true);
+                  setLeaveSearch(e.target.value);
+                  setShowLeaveDropdown(true);
                   setSelectedEmployee(null);
                 }}
                 className="border p-2 w-full rounded"
               />
 
-              {showDropdown && searchQuery && filteredEmployees.length > 0 && !selectedEmployee && (
-                <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
-                  {filteredEmployees.map((emp) => (
-                    <li
-                      key={emp.id}
-                      onClick={() => {
-                        setSelectedEmployee(emp);
-                        setSearchQuery(`${emp.name} (${emp.empId})`);
-                        setShowDropdown(false);
-                      }}
-                      className="p-2 hover:bg-gray-100 cursor-pointer border-b"
-                    >
-                      <div className="font-semibold">{emp.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {emp.empId} — {emp.department} — Hired: {emp.hireDate}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {showLeaveDropdown &&
+                leaveSearch &&
+                filteredLeaveEmployees.length > 0 &&
+                !selectedEmployee && (
+                  <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
+                    {filteredLeaveEmployees.map((emp) => (
+                      <li
+                        key={emp.empId}
+                        onClick={() => {
+                          setSelectedEmployee(emp);
+                          setLeaveSearch(`${emp.name} (${emp.empId})`);
+                          setShowLeaveDropdown(false);
+                        }}
+                        className="p-2 hover:bg-gray-100 cursor-pointer border-b"
+                      >
+                        <div className="font-semibold">{emp.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {emp.empId} — {emp.department} — Hired: {emp.hireDate}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
             </div>
 
-            {/* Leave Form */}
             {selectedEmployee && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-                <select
-                  value={leaveForm.type}
-                  onChange={(e) =>
-                    setLeaveForm({ ...leaveForm, type: e.target.value })
-                  }
-                  className="border p-2 rounded"
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                  <select
+                    value={leaveForm.type}
+                    onChange={(e) =>
+                      setLeaveForm({ ...leaveForm, type: e.target.value })
+                    }
+                    className="border p-2 rounded"
+                  >
+                    <option value="">Select Leave Type</option>
+                    <option value="Sick Leave">Sick Leave</option>
+                    <option value="Vacation Leave">Vacation Leave</option>
+                    <option value="Emergency Leave">Emergency Leave</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    placeholder="Reason"
+                    value={leaveForm.reason}
+                    onChange={(e) =>
+                      setLeaveForm({ ...leaveForm, reason: e.target.value })
+                    }
+                    className="border p-2 rounded"
+                  />
+                  <input
+                    type="date"
+                    value={leaveForm.startDate}
+                    onChange={(e) =>
+                      setLeaveForm({ ...leaveForm, startDate: e.target.value })
+                    }
+                    className="border p-2 rounded"
+                  />
+                  <input
+                    type="date"
+                    value={leaveForm.endDate}
+                    onChange={(e) =>
+                      setLeaveForm({ ...leaveForm, endDate: e.target.value })
+                    }
+                    className="border p-2 rounded"
+                  />
+                </div>
+
+                <button
+                  onClick={handleApplyLeave}
+                  className="bg-blue-500 text-white px-4 py-2 rounded"
                 >
-                  <option value="">Select Leave Type</option>
-                  <option value="Sick Leave">Sick Leave</option>
-                  <option value="Vacation Leave">Vacation Leave</option>
-                  <option value="Emergency Leave">Emergency Leave</option>
-                </select>
-
-                <input
-                  type="text"
-                  placeholder="Reason"
-                  value={leaveForm.reason}
-                  onChange={(e) =>
-                    setLeaveForm({ ...leaveForm, reason: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
-                <input
-                  type="date"
-                  value={leaveForm.startDate}
-                  onChange={(e) =>
-                    setLeaveForm({ ...leaveForm, startDate: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
-                <input
-                  type="date"
-                  value={leaveForm.endDate}
-                  onChange={(e) =>
-                    setLeaveForm({ ...leaveForm, endDate: e.target.value })
-                  }
-                  className="border p-2 rounded"
-                />
-              </div>
+                  Apply Leave
+                </button>
+              </>
             )}
 
-            {selectedEmployee && (
-              <button
-                onClick={handleApplyLeave}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-              >
-                Apply Leave
-              </button>
-            )}
-
-            {/* Leave Table */}
             <table className="w-full mt-4 border text-sm">
               <thead>
                 <tr className="bg-gray-200">
