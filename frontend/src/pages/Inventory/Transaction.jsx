@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { TrendingUp, Plus, X, CheckCircle, AlertCircle, Calendar, Package } from "lucide-react";
+import TransactionModal from "../../components/modals/TransactionModal";
 
 const Transaction = () => {
   const [transactions, setTransactions] = useState([]);
@@ -11,7 +13,8 @@ const Transaction = () => {
     expiryDate: "",
     purchaseOrderId: "",
   });
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState({ text: "", type: "" });
+  const [showModal, setShowModal] = useState(false);
 
   const API_TRANSACTIONS = "http://localhost:8000/api/transactions";
   const API_INVENTORY = "http://localhost:8000/api/inventory";
@@ -21,42 +24,38 @@ const Transaction = () => {
     fetchItems();
   }, []);
 
-  // Fetch all transactions
   const fetchTransactions = async () => {
     try {
       const response = await fetch(`${API_TRANSACTIONS}/getTransactionRecords`);
       const data = await response.json();
       setTransactions(data);
     } catch (error) {
-      setMessage(`Error fetching transactions: ${error.message}`);
+      setMessage({ text: `Error fetching transactions: ${error.message}`, type: "error" });
     }
   };
 
-  // Fetch inventory items for dropdown
   const fetchItems = async () => {
     try {
       const response = await fetch(`${API_INVENTORY}/getItems`);
       const data = await response.json();
       setItems(data);
     } catch (error) {
-      setMessage(`Error fetching items: ${error.message}`);
+      setMessage({ text: `Error fetching items: ${error.message}`, type: "error" });
     }
   };
 
-  // Record new transaction
   const recordTransaction = async () => {
     try {
       const transactionData = {
-        productId: "N/A", // Set as N/A since productId is not allowed
+        productId: "N/A",
         transactionType: currentTransaction.type,
         quantity: currentTransaction.quantity,
         remarks: currentTransaction.remarks,
         purchaseOrderId: currentTransaction.purchaseOrderId || "",
         date: new Date().toISOString(),
-        unitPrice: 0, // or omit if not needed
+        unitPrice: 0,
       };
 
-      // Send to Inventory/Transaction API
       const response = await fetch(`${API_TRANSACTIONS}/addTransactionRecord`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +64,6 @@ const Transaction = () => {
 
       const data = await response.json();
 
-      // Send to Finance API
       await fetch("http://localhost:8000/api/finance/inventory-transaction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -73,18 +71,17 @@ const Transaction = () => {
       });
 
       if (response.ok) {
-        setMessage(data.message);
+        setMessage({ text: data.message || "Transaction recorded successfully", type: "success" });
         resetForm();
         fetchTransactions();
       } else {
-        setMessage(data.error || "Failed to record transaction");
+        setMessage({ text: data.error || "Failed to record transaction", type: "error" });
       }
     } catch (error) {
-      setMessage(`Error recording transaction: ${error.message}`);
+      setMessage({ text: `Error recording transaction: ${error.message}`, type: "error" });
     }
   };
 
-  // Reset form
   const resetForm = () => {
     setCurrentTransaction({
       itemId: "",
@@ -94,199 +91,160 @@ const Transaction = () => {
       expiryDate: "",
       purchaseOrderId: "",
     });
+    setShowModal(false);
+  };
+
+  const openModal = () => {
+    resetForm();
+    setShowModal(true);
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h1>Transactions</h1>
-
-      {/* Message Display */}
-      {message && (
-        <div className="p-2.5 mb-5 bg-[#f0f0f0] border-gray-400 rounded-sm">
-          {message}
-          <button
-            onClick={() => setMessage("")}
-            className="float-right bg-none border-none cursor-pointer"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
-      {/* Add Transaction Form */}
-      <div className="mb-8 mt-4 p-4 bg-[#f0f0f0] border">
-        <h3>Record Transaction</h3>
-
-        <div className="mb-4 mt-4">
-          <label>Item: </label>
-          <select
-            value={currentTransaction.itemId}
-            onChange={(e) =>
-              setCurrentTransaction({
-                ...currentTransaction,
-                itemId: e.target.value,
-              })
-            }
-            className="p-1 w-[300px] border rounded-sm outline-none"
-          >
-            <option value="">Select Item</option>
-            {items.map((item) => (
-              <option key={item._id} value={item._id}>
-                {item.name} ({item.sku})
-              </option>
-            ))}
-          </select>
+      <div className="min-h-screen">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <TrendingUp className="w-10 h-10" />
+                <h1 className="text-4xl font-bold">
+                  Transaction Management
+                </h1>
+              </div>
+            </div>
+            <button
+              onClick={openModal}
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors flex items-center gap-2 text-white"
+            >
+              <Plus className="w-5 h-5" />
+              Record Transaction
+            </button>
+          </div>
         </div>
 
-        <div className="mb-4 mt-4">
-          <label>Type: </label>
-          <select
-            value={currentTransaction.type}
-            onChange={(e) =>
-              setCurrentTransaction({
-                ...currentTransaction,
-                type: e.target.value,
-              })
-            }
-            className="p-1 w-[300px] border rounded-sm outline-none"
-          >
-            <option value="stock-in">Stock In</option>
-            <option value="stock-out">Stock Out</option>
-          </select>
-        </div>
-
-        <div className="mb-4 mt-4">
-          <label>Quantity: </label>
-          <input
-            type="number"
-            min="1"
-            value={currentTransaction.quantity}
-            onChange={(e) =>
-              setCurrentTransaction({
-                ...currentTransaction,
-                quantity: parseInt(e.target.value) || 0,
-              })
-            }
-            required
-            className="p-1 w-[300px] border rounded-sm outline-none"
-          />
-        </div>
-
-        <div className="mb-4 mt-4">
-          <label>Remarks: </label>
-          <input
-            type="text"
-            value={currentTransaction.remarks}
-            onChange={(e) =>
-              setCurrentTransaction({
-                ...currentTransaction,
-                remarks: e.target.value,
-              })
-            }
-            className="p-1 w-[300px] border rounded-sm outline-none"
-          />
-        </div>
-
-        <div className="mb-4 mt-4">
-          <label>Expiry Date: </label>
-          <input
-            type="date"
-            value={currentTransaction.expiryDate}
-            onChange={(e) =>
-              setCurrentTransaction({
-                ...currentTransaction,
-                expiryDate: e.target.value,
-              })
-            }
-            className="p-1 w-[300px] border rounded-sm outline-none"
-          />
-        </div>
-
-        <div className="mb-4 mt-4">
-          <label>Purchase Order (optional): </label>
-          <input
-            type="text"
-            placeholder="Enter Purchase Order ID"
-            value={currentTransaction.purchaseOrderId}
-            onChange={(e) =>
-              setCurrentTransaction({
-                ...currentTransaction,
-                purchaseOrderId: e.target.value,
-              })
-            }
-            className="p-1 w-[300px] border rounded-sm outline-none"
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={recordTransaction}
-          className="p-2 border rounded-2xl cursor-pointer"
-        >
-          Record Transaction
-        </button>
-      </div>
-
-      {/* Transactions List */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">
-          Transactions ({transactions.length})
-        </h3>
-        {transactions.length === 0 ? (
-          <p className="text-gray-600">No transactions recorded.</p>
-        ) : (
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="p-2.5 border border-gray-300 text-left">Item</th>
-                <th className="p-2.5 border border-gray-300 text-left">Type</th>
-                <th className="p-2.5 border border-gray-300 text-left">
-                  Quantity
-                </th>
-                <th className="p-2.5 border border-gray-300 text-left">
-                  Remarks
-                </th>
-                <th className="p-2.5 border border-gray-300 text-left">
-                  Expiry Date
-                </th>
-                <th className="p-2.5 border border-gray-300 text-left">
-                  Purchase Order
-                </th>
-                <th className="p-2.5 border border-gray-300 text-left">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((t) => (
-                <tr key={t._id} className="hover:bg-gray-50">
-                  <td className="p-2.5 border border-gray-300">
-                    {t.itemId?.name} ({t.itemId?.sku})
-                  </td>
-                  <td className="p-2.5 border border-gray-300">{t.type}</td>
-                  <td className="p-2.5 border border-gray-300">{t.quantity}</td>
-                  <td className="p-2.5 border border-gray-300">
-                    {t.remarks || "N/A"}
-                  </td>
-                  <td className="p-2.5 border border-gray-300">
-                    {t.expiryDate
-                      ? new Date(t.expiryDate).toLocaleDateString()
-                      : "N/A"}
-                  </td>
-                  <td className="p-2.5 border border-gray-300">
-                    {t.purchaseOrderId
-                      ? `${t.purchaseOrderId.status} (${new Date(
-                          t.purchaseOrderId.orderDate
-                        ).toLocaleDateString()})`
-                      : "N/A"}
-                  </td>
-                  <td className="p-2.5 border border-gray-300">
-                    {new Date(t.transactionDate).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Message Display */}
+        {message.text && (
+          <div className={`mb-6 p-4 rounded-lg flex items-center justify-between ${
+            message.type === "success" 
+              ? "bg-green-500/10 border border-green-500/30 text-green-400" 
+              : "bg-red-500/10 border border-red-500/30 text-red-400"
+          }`}>
+            <div className="flex items-center gap-2">
+              {message.type === "success" ? (
+                <CheckCircle className="w-5 h-5" />
+              ) : (
+                <AlertCircle className="w-5 h-5" />
+              )}
+              <span>{message.text}</span>
+            </div>
+            <button
+              onClick={() => setMessage({ text: "", type: "" })}
+              className="hover:opacity-70 transition-opacity"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         )}
-      </div>
+
+        {/* Transactions List */}
+        <div className="border-slate-700 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold">
+              Transaction History ({transactions.length})
+            </h3>
+          </div>
+
+          {transactions.length === 0 ? (
+            <div className="text-center py-12">
+              <TrendingUp className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <p className="text-slate-400 text-lg">No transactions recorded</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className="text-left py-4 px-4 font-medium">Item</th>
+                    <th className="text-left py-4 px-4 font-medium">Type</th>
+                    <th className="text-left py-4 px-4 font-medium">Quantity</th>
+                    <th className="text-left py-4 px-4 font-medium">Remarks</th>
+                    <th className="text-left py-4 px-4 font-medium">Expiry Date</th>
+                    <th className="text-left py-4 px-4 font-medium">Purchase Order</th>
+                    <th className="text-left py-4 px-4 font-medium">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map((t) => (
+                    <tr
+                      key={t._id}
+                      className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors"
+                    >
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4" />
+                          <div>
+                            <div className="font-medium">{t.itemId?.name}</div>
+                            <div className="text-sm">{t.itemId?.sku}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          t.type === "stock-in" 
+                            ? "bg-green-500/20 text-green-400" 
+                            : "bg-red-500/20 text-red-400"
+                        }`}>
+                          {t.type === "stock-in" ? "Stock In" : "Stock Out"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="font-semibold text-blue-400">{t.quantity}</span>
+                      </td>
+                      <td className="py-4 px-4 ">
+                        {t.remarks || "N/A"}
+                      </td>
+                      <td className="py-4 px-4 ">
+                        <div className="flex items-center gap-2">
+                          {t.expiryDate ? (
+                            <>
+                              <Calendar className="w-4 h-4" />
+                              {new Date(t.expiryDate).toLocaleDateString()}
+                            </>
+                          ) : (
+                            "N/A"
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        {t.purchaseOrderId
+                          ? `${t.purchaseOrderId.status} (${new Date(
+                              t.purchaseOrderId.orderDate
+                            ).toLocaleDateString()})`
+                          : "N/A"}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(t.transactionDate).toLocaleDateString()}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+      {/* Modal Component */}
+      <TransactionModal
+        isOpen={showModal}
+        onClose={resetForm}
+        currentTransaction={currentTransaction}
+        setCurrentTransaction={setCurrentTransaction}
+        onSubmit={recordTransaction}
+        items={items}
+      />
     </div>
   );
 };

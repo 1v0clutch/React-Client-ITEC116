@@ -1,4 +1,17 @@
 import React, { useState, useEffect } from "react";
+import {
+  Package,
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  TrendingUp,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Filter,
+} from "lucide-react";
+import InventoryModal from "../../components/modals/InventoryModal";
 
 const Inventory = () => {
   const [items, setItems] = useState([]);
@@ -12,8 +25,11 @@ const Inventory = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [searchId, setSearchId] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState({ text: "", type: "" });
   const [allItems, setAllItems] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
 
   const API_INVENTORY = "http://localhost:8000/api/inventory";
 
@@ -21,7 +37,6 @@ const Inventory = () => {
     fetchAllItems();
   }, []);
 
-  // Fetch all items
   const fetchAllItems = async () => {
     try {
       const response = await fetch(`${API_INVENTORY}/getItems`);
@@ -30,14 +45,19 @@ const Inventory = () => {
         setItems(data);
         setAllItems(data);
       } else {
-        setMessage(data.error || "Failed to fetch items");
+        setMessage({
+          text: data.error || "Failed to fetch items",
+          type: "error",
+        });
       }
     } catch (error) {
-      setMessage(`Error fetching items: ${error.message}`);
+      setMessage({
+        text: `Error fetching items: ${error.message}`,
+        type: "error",
+      });
     }
   };
 
-  // Add new item
   const addItem = async () => {
     try {
       const response = await fetch(`${API_INVENTORY}/addItem`, {
@@ -48,18 +68,23 @@ const Inventory = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage(data.message || "Item added successfully");
+        setMessage({
+          text: data.message || "Item added successfully",
+          type: "success",
+        });
         resetForm();
         fetchAllItems();
       } else {
-        setMessage(data.error || "Failed to add item");
+        setMessage({ text: data.error || "Failed to add item", type: "error" });
       }
     } catch (error) {
-      setMessage(`Error adding item: ${error.message}`);
+      setMessage({
+        text: `Error adding item: ${error.message}`,
+        type: "error",
+      });
     }
   };
 
-  // Update item
   const updateItem = async () => {
     try {
       const response = await fetch(`${API_INVENTORY}/updateItem/${editingId}`, {
@@ -70,18 +95,26 @@ const Inventory = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage(data.message || "Item updated successfully");
+        setMessage({
+          text: data.message || "Item updated successfully",
+          type: "success",
+        });
         resetForm();
         fetchAllItems();
       } else {
-        setMessage(data.error || "Failed to update item");
+        setMessage({
+          text: data.error || "Failed to update item",
+          type: "error",
+        });
       }
     } catch (error) {
-      setMessage(`Error updating item: ${error.message}`);
+      setMessage({
+        text: `Error updating item: ${error.message}`,
+        type: "error",
+      });
     }
   };
 
-  // Delete item
   const deleteItem = async (id) => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
 
@@ -92,17 +125,25 @@ const Inventory = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage(data.message || "Item deleted successfully");
+        setMessage({
+          text: data.message || "Item deleted successfully",
+          type: "success",
+        });
         fetchAllItems();
       } else {
-        setMessage(data.error || "Failed to delete item");
+        setMessage({
+          text: data.error || "Failed to delete item",
+          type: "error",
+        });
       }
     } catch (error) {
-      setMessage(`Error deleting item: ${error.message}`);
+      setMessage({
+        text: `Error deleting item: ${error.message}`,
+        type: "error",
+      });
     }
   };
 
-  // Search item by name
   const searchItemById = async () => {
     if (!searchId.trim()) {
       fetchAllItems();
@@ -114,7 +155,10 @@ const Inventory = () => {
     );
 
     if (!foundItem) {
-      setMessage(`No item found with name "${searchId}"`);
+      setMessage({
+        text: `No item found with name "${searchId}"`,
+        type: "error",
+      });
       setItems([]);
       return;
     }
@@ -125,30 +169,22 @@ const Inventory = () => {
 
       if (response.ok) {
         setItems([data]);
-        setMessage("Search successful");
+        setMessage({ text: "Search successful", type: "success" });
       } else {
-        setMessage(data.error || "Failed to search item");
+        setMessage({
+          text: data.error || "Failed to search item",
+          type: "error",
+        });
         setItems([]);
       }
     } catch (error) {
-      setMessage(`Error searching item: ${error.message}`);
+      setMessage({
+        text: `Error searching item: ${error.message}`,
+        type: "error",
+      });
     }
   };
 
-  // Edit item
-  const editItem = (item) => {
-    setCurrentItem({
-      name: item.name,
-      sku: item.sku,
-      description: item.description || "",
-      category: item.category,
-      quantity: item.quantity,
-    });
-    setIsEditing(true);
-    setEditingId(item._id);
-  };
-
-  // Reset form
   const resetForm = () => {
     setCurrentItem({
       name: "",
@@ -159,201 +195,292 @@ const Inventory = () => {
     });
     setIsEditing(false);
     setEditingId(null);
+    setShowModal(false);
   };
 
+  const openAddModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const openEditModal = (item) => {
+    setCurrentItem({
+      name: item.name,
+      sku: item.sku,
+      description: item.description || "",
+      category: item.category,
+      quantity: item.quantity,
+    });
+    setIsEditing(true);
+    setEditingId(item._id);
+    setShowModal(true);
+  };
+
+  const handleModalSubmit = () => {
+    if (isEditing) {
+      updateItem();
+    } else {
+      addItem();
+    }
+  };
+
+  // Get unique categories
+  const categories = ["all", ...new Set(allItems.map(item => item.category))];
+
+  // Filter items based on search, category, and stock level
+  const getFilteredItems = () => {
+    let filtered = searchId.trim() ? items : allItems;
+
+    // Filter by category
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(item => item.category === categoryFilter);
+    }
+
+    // Filter by stock level
+    if (stockFilter === "low") {
+      filtered = filtered.filter(item => item.quantity < 10);
+    } else if (stockFilter === "out") {
+      filtered = filtered.filter(item => item.quantity === 0);
+    } else if (stockFilter === "in-stock") {
+      filtered = filtered.filter(item => item.quantity >= 10);
+    }
+
+    return filtered;
+  };
+
+  const filteredItems = getFilteredItems();
+
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h1>Inventory Management System</h1>
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Package className="w-10 h-10" />
+            <h1 className="text-4xl font-bold">Inventory Management</h1>
+          </div>
+          <button
+            onClick={openAddModal}
+            className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors flex items-center gap-2 text-white"
+          >
+            <Plus className="w-5 h-5" />
+            Add Item
+          </button>
+        </div>
+      </div>
 
       {/* Message Display */}
-      {message && (
-        <div className="p-2.5 mb-5 bg-[#f0f0f0] border-gray-400 rounded-sm">
-          {message}
+      {message.text && (
+        <div
+          className={`mb-6 p-4 rounded-lg flex items-center justify-between ${
+            message.type === "success"
+              ? "bg-green-500/10 border border-green-500/30 text-green-400"
+              : "bg-red-500/10 border border-red-500/30 text-red-400"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {message.type === "success" ? (
+              <CheckCircle className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5" />
+            )}
+            <span>{message.text}</span>
+          </div>
           <button
-            onClick={() => setMessage("")}
-            className="float-right bg-none border-none cursor-pointer"
+            onClick={() => setMessage({ text: "", type: "" })}
+            className="hover:opacity-70 transition-opacity"
           >
-            ×
+            <X className="w-5 h-5" />
           </button>
         </div>
       )}
 
-      {/* Search Section */}
-      <div className="mb-8 mt-4 p-4 bg-[#f0f0f0] border">
-        <h3>Search Item</h3>
-        <input
-          type="text"
-          placeholder="Enter item name"
-          value={searchId}
-          onChange={(e) => setSearchId(e.target.value)}
-          className="p-2 mr-3 w-[300px] border rounded-2xl outline-none"
-        />
-        <button
-          onClick={searchItemById}
-          className="p-2 border rounded-2xl cursor-pointer"
-        >
-          Search
-        </button>
-        <button
-          onClick={fetchAllItems}
-          className="p-2 ml-3 border rounded-2xl cursor-pointer"
-        >
-          Show All
-        </button>
-      </div>
-
-      {/* Add/Edit Form */}
-      <div className="mb-8 mt-4 p-4 bg-[#f0f0f0] border">
-        <h3>{isEditing ? "Edit Item" : "Add New Item"}</h3>
-        <div>
-          <div className="mb-4 mt-4">
-            <label>Name: </label>
+      {/* Search and Filter Section */}
+      <div className="mb-6 rounded-xl p-6">
+        {/* Search Bar */}
+        <div className="flex gap-3 mb-4">
+          <div className="flex-1 relative">
             <input
               type="text"
-              value={currentItem.name}
-              onChange={(e) =>
-                setCurrentItem({ ...currentItem, name: e.target.value })
-              }
-              required
-              className="p-1 w-[300px] border rounded-sm outline-none"
+              placeholder="Search by item name..."
+              value={searchId}
+              onChange={(e) => setSearchId(e.target.value)}
+              className="w-full border border-slate-600 rounded-lg px-4 py-3 placeholder-slate-500 focus:outline-none"
             />
           </div>
-
-          <div className="mb-4 mt-4">
-            <label>SKU: </label>
-            <input
-              type="text"
-              value={currentItem.sku}
-              onChange={(e) =>
-                setCurrentItem({ ...currentItem, sku: e.target.value })
-              }
-              required
-              className="p-1 w-[300px] border rounded-sm outline-none"
-            />
-          </div>
-
-          <div className="mb-4 mt-4">
-            <label>Description: </label>
-            <textarea
-              value={currentItem.description}
-              onChange={(e) =>
-                setCurrentItem({ ...currentItem, description: e.target.value })
-              }
-              className="p-1 w-[300px] border rounded-sm outline-none"
-            />
-          </div>
-
-          <div className="mb-4 mt-4">
-            <label>Category: </label>
-            <input
-              type="text"
-              value={currentItem.category}
-              onChange={(e) =>
-                setCurrentItem({ ...currentItem, category: e.target.value })
-              }
-              required
-              className="p-1 w-[300px] border rounded-sm outline-none"
-            />
-          </div>
-
-          <div className="mb-4 mt-4">
-            <label>Quantity: </label>
-            <input
-              type="number"
-              min="0"
-              value={currentItem.quantity}
-              onChange={(e) =>
-                setCurrentItem({
-                  ...currentItem,
-                  quantity: parseInt(e.target.value) || 0,
-                })
-              }
-              required
-              className="p-1 w-[300px] border rounded-sm outline-none"
-            />
-          </div>
-
           <button
-            type="button"
-            onClick={isEditing ? updateItem : addItem}
-            className="p-2 border rounded-2xl cursor-pointer"
+            onClick={searchItemById}
+            className="px-6 py-3 font-medium transition-colors flex items-center gap-2"
           >
-            {isEditing ? "Update Item" : "Add Item"}
+            <Search className="w-4 h-4" />
+            Search
           </button>
+          <button
+            onClick={() => {
+              setSearchId("");
+              fetchAllItems();
+            }}
+            className="px-6 py-3 font-medium transition-colors"
+          >
+            Show All
+          </button>
+        </div>
 
-          {isEditing && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="p-2 ml-3 border rounded-2xl cursor-pointer"
+        {/* Filters */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            <span className="text-sm font-medium">Filters:</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <label className="text-sm ">Category:</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className=" border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none"
             >
-              Cancel Edit
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat === "all" ? "All Categories" : cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm ">Stock Level:</label>
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value)}
+              className=" border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none"
+            >
+              <option value="all">All Items</option>
+              <option value="in-stock">In Stock</option>
+              <option value="low">Low Stock</option>
+              <option value="out">Out of Stock</option>
+            </select>
+          </div>
+
+          {(categoryFilter !== "all" || stockFilter !== "all") && (
+            <button
+              onClick={() => {
+                setCategoryFilter("all");
+                setStockFilter("all");
+              }}
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Clear Filters
             </button>
           )}
         </div>
       </div>
 
       {/* Items List */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">
-          Items List ({items.length} items)
-        </h3>
-        {items.length === 0 ? (
-          <p className="text-gray-600">No items found.</p>
+      <div className="border border-slate-700 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold">
+            Stock Items ({filteredItems.length})
+          </h3>
+        </div>
+
+        {filteredItems.length === 0 ? (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-400 text-lg">No items found</p>
+          </div>
         ) : (
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="p-2.5 border border-gray-300 text-left">Name</th>
-                <th className="p-2.5 border border-gray-300 text-left">SKU</th>
-                <th className="p-2.5 border border-gray-300 text-left">
-                  Category
-                </th>
-                <th className="p-2.5 border border-gray-300 text-left">
-                  Quantity
-                </th>
-                <th className="p-2.5 border border-gray-300 text-left">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item._id} className="hover:bg-gray-50">
-                  <td className="p-2.5 border border-gray-300">{item.name}</td>
-                  <td className="p-2.5 border border-gray-300">{item.sku}</td>
-                  <td className="p-2.5 border border-gray-300">
-                    {item.category}
-                  </td>
-                  <td className="p-2.5 border border-gray-300">
-                    {item.quantity}
-                  </td>
-                  <td className="p-2.5 border border-gray-300">
-                    <button
-                      onClick={() => editItem(item)}
-                      className="px-2.5 py-1.5 mr-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteItem(item._id)}
-                      className="px-2.5 py-1.5 mr-1.5 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                    >
-                      Delete
-                    </button>
-                    <button
-                      onClick={() => (window.location.href = `/inventory/transactions`)}
-                      className="px-2.5 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                    >
-                      View Transactions
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-700">
+                  <th className="text-left py-4 px-4  font-medium">
+                    Name
+                  </th>
+                  <th className="text-left py-4 px-4 font-medium">
+                    SKU
+                  </th>
+                  <th className="text-left py-4 px-4 font-medium">
+                    Category
+                  </th>
+                  <th className="text-left py-4 px-4 font-medium">
+                    Quantity
+                  </th>
+                  <th className="text-right py-4 px-4 font-medium">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredItems.map((item) => (
+                  <tr
+                    key={item._id}
+                    className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors"
+                  >
+                    <td className="py-4 px-4 font-medium">{item.name}</td>
+                    <td className="py-4 px-4 ">{item.sku}</td>
+                    <td className="py-4 px-4">
+                      <span className="px-3 py-1 bg-blue-500/20 rounded-full text-sm">
+                        {item.category}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span
+                        className={`font-semibold ${
+                          item.quantity === 0
+                            ? "text-red-600"
+                            : item.quantity < 10
+                            ? "text-red-400"
+                            : "text-green-400"
+                        }`}
+                      >
+                        {item.quantity}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteItem(item._id)}
+                          className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-white"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            (window.location.href = `/inventory/transactions`)
+                          }
+                          className="p-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors text-white"
+                          title="View Transactions"
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
+
+      {/* Modal Component */}
+      <InventoryModal
+        isOpen={showModal}
+        onClose={resetForm}
+        isEditing={isEditing}
+        currentItem={currentItem}
+        setCurrentItem={setCurrentItem}
+        onSubmit={handleModalSubmit}
+      />
     </div>
   );
 };
