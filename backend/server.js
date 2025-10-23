@@ -11,20 +11,20 @@ const supplierRoutes = require("./routes/supplier.routes");
 const requisitionRoutes = require("./routes/requisition.routes");
 const purchaseOrderRoutes = require("./routes/purchaseOrder.routes");
 const invoiceRoutes = require("./routes/invoice.routes");
-const financeRoutes = require('./routes/finance.routes');
+const financeRoutes = require("./routes/finance.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
+const projectRoutes = require("./routes/project.routes");
 const app = express();
-
 
 //Middleware
 app.use(
-    cors({
-        origin: process.env.CLIENT_URL || "*",
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-    })
+  cors({
+    origin: process.env.CLIENT_URL || "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
 );
 
 app.use(express.json());
@@ -47,6 +47,7 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
+app.use("/api/project", projectRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

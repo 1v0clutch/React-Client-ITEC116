@@ -12,6 +12,8 @@ exports.create = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  const updated = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const updated = await Attendance.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
   res.json(updated);
 };
