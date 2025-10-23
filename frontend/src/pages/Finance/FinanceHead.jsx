@@ -297,22 +297,6 @@ export default function FinanceHead() {
     downloadFile(csv, "text/csv", "csv");
   };
 
-  const exportExcel = () => {
-    const headers = ["Date", "Category", "Primary", "Secondary", "Value"];
-    const rows = sortedEntries
-      .map((entry) => [
-        sanitize(formatDate(entry.date)),
-        sanitize(entry.category),
-        sanitize(entry.primary),
-        sanitize(entry.secondary),
-        sanitize(entry.value),
-      ])
-      .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`)
-      .join("");
-    const table = `<table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`;
-    downloadFile(table, "application/vnd.ms-excel", "xls");
-  };
-
   return (
     <FinanceLayout title="General Finance Statements">
       <div className="flex flex-wrap justify-end gap-3 mb-4">
@@ -323,14 +307,6 @@ export default function FinanceHead() {
           disabled={isFetching || !sortedEntries.length}
         >
           Download CSV
-        </button>
-        <button
-          type="button"
-          onClick={exportExcel}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-          disabled={isFetching || !sortedEntries.length}
-        >
-          Download Excel
         </button>
       </div>
 

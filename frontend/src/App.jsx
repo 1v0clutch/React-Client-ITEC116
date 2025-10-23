@@ -46,6 +46,8 @@ import ProjectForm from "./pages/ProjectManagement/ProjectForm";
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
 
 
+const API_BASE = import.meta.env.VITE_HR_API_BASE || "http://localhost:5000/api";
+
 function App() {
   const [data, setData] = useState({
     employees: [],

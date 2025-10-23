@@ -1,8 +1,22 @@
+const mongoose = require("mongoose");
 const axios = require("axios");
-const FinanceInvoice = require("../models/FinanceInvoice"); // Create this model
+const FinanceInvoice = require("../models/FinanceInvoice");
 const FinanceInventoryTransaction = require("../models/FinanceInventoryTransaction");
 const Inventory = require("../models/Inventory");
 const Transaction = require("../models/Transaction");
+const Supplier = require("../models/Supplier");
+const PurchaseOrder = require("../models/PurchaseOrder");
+
+const toNumber = (value) => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : NaN;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+  return NaN;
+};
 
 exports.recordInvoice = async (req, res) => {
   try {
@@ -30,6 +44,101 @@ exports.getInvoices = async (req, res) => {
     res.json(invoices);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getCustomerReport = async (req, res) => {
+  try {
+    const invoices = await FinanceInvoice.find().lean();
+    if (!invoices.length) {
+      return res.json([]);
+    }
+
+    const supplierIdStrings = [];
+    const purchaseOrderIdStrings = [];
+
+    for (const invoice of invoices) {
+      if (invoice.supplierId) {
+        supplierIdStrings.push(invoice.supplierId.toString());
+      }
+      if (invoice.purchaseOrderId) {
+        purchaseOrderIdStrings.push(invoice.purchaseOrderId.toString());
+      }
+    }
+
+    const uniqueSupplierIds = [...new Set(supplierIdStrings.filter((id) => mongoose.Types.ObjectId.isValid(id)))];
+    const uniquePurchaseOrderIds = [...new Set(purchaseOrderIdStrings.filter((id) => mongoose.Types.ObjectId.isValid(id)))];
+
+    const [suppliers, purchaseOrders] = await Promise.all([
+      uniqueSupplierIds.length
+        ? Supplier.find({ _id: { $in: uniqueSupplierIds } }).select("name contactPerson").lean()
+        : [],
+      uniquePurchaseOrderIds.length
+        ? PurchaseOrder.find({ _id: { $in: uniquePurchaseOrderIds } }).select("poNumber totalAmount status createdAt").lean()
+        : [],
+    ]);
+
+    const supplierMap = suppliers.reduce((acc, supplier) => {
+      acc[supplier._id.toString()] = supplier;
+      return acc;
+    }, {});
+
+    const purchaseOrderMap = purchaseOrders.reduce((acc, po) => {
+      acc[po._id.toString()] = po;
+      return acc;
+    }, {});
+
+    const report = invoices.map((invoice) => {
+      const supplierKey = invoice.supplierId ? invoice.supplierId.toString() : null;
+      const purchaseOrderKey = invoice.purchaseOrderId ? invoice.purchaseOrderId.toString() : null;
+      const supplier = supplierKey ? supplierMap[supplierKey] : undefined;
+      const purchaseOrder = purchaseOrderKey ? purchaseOrderMap[purchaseOrderKey] : undefined;
+
+      const totalFromInvoice = toNumber(invoice.totalAmount);
+      const totalFromPurchaseOrder = toNumber(purchaseOrder?.totalAmount);
+      const totalAmount = Number.isFinite(totalFromInvoice) ? totalFromInvoice : Number.isFinite(totalFromPurchaseOrder) ? totalFromPurchaseOrder : 0;
+
+      const balanceCandidates = [invoice.balance, invoice.amountDue, invoice.remainingBalance, invoice.totalAmount, purchaseOrder?.totalAmount];
+      let balance = 0;
+      for (const candidate of balanceCandidates) {
+        const numeric = toNumber(candidate);
+        if (Number.isFinite(numeric)) {
+          balance = numeric;
+          break;
+        }
+      }
+      if (!Number.isFinite(balance) || balance <= 0) {
+        balance = totalAmount;
+      }
+
+      const dateCandidates = [invoice.dateIssued, purchaseOrder?.createdAt, invoice.createdAt, invoice.updatedAt];
+      let resolvedDate = null;
+      for (const candidate of dateCandidates) {
+        if (candidate) {
+          resolvedDate = candidate;
+          break;
+        }
+      }
+
+      return {
+        id: invoice._id.toString(),
+        customerName: invoice.customerName || invoice.customer || supplier?.name || supplierKey || "—",
+        customerId: supplier ? { name: supplier.name } : undefined,
+        invoiceNumber: invoice.invoiceNumber || purchaseOrder?.poNumber || "—",
+        status: invoice.status || purchaseOrder?.status || "Pending",
+        totalAmount,
+        total: totalAmount,
+        grandTotal: totalAmount,
+        balance,
+        amountDue: balance,
+        remainingBalance: balance,
+        date: resolvedDate,
+      };
+    });
+
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch customer report" });
   }
 };
 
@@ -96,35 +205,10 @@ exports.handleInventoryTransaction = async (req, res) => {
 
 exports.getInventoryTransactions = async (req, res) => {
   try {
-    const financeTransactions = await FinanceInventoryTransaction.find().lean();
-    const transactionIds = financeTransactions
-      .map((entry) => entry.transactionId)
-      .filter((value) => Boolean(value));
-
-    const missingItemIds = Array.from(
-      new Set(
-        financeTransactions
-          .filter((entry) => !entry.transactionId && entry.itemId)
-          .map((entry) => entry.itemId.toString())
-      )
-    );
-
-    const [inventoryItems, sourceTransactions, fallbackTransactions] = await Promise.all([
+    const [transactions, inventoryItems, sourceTransactions] = await Promise.all([
+      FinanceInventoryTransaction.find().lean(),
       Inventory.find().select("name sku").lean().catch(() => []),
-      transactionIds.length
-        ? Transaction.find({ _id: { $in: transactionIds } })
-            .populate("itemId", "name sku")
-            .populate("purchaseOrderId", "poNumber status orderDate referenceNumber")
-            .lean()
-            .catch(() => [])
-        : Promise.resolve([]),
-      missingItemIds.length
-        ? Transaction.find({ itemId: { $in: missingItemIds } })
-            .populate("itemId", "name sku")
-            .populate("purchaseOrderId", "poNumber status orderDate referenceNumber")
-            .lean()
-            .catch(() => [])
-        : Promise.resolve([]),
+      Transaction.find().select("itemId type quantity remarks transactionDate purchaseOrderId").lean().catch(() => []),
     ]);
 
     const itemMap = Array.isArray(inventoryItems)
@@ -134,93 +218,77 @@ exports.getInventoryTransactions = async (req, res) => {
         }, {})
       : {};
 
-    const transactionMap = Array.isArray(sourceTransactions)
+    const transactionLookup = Array.isArray(sourceTransactions)
       ? sourceTransactions.reduce((acc, entry) => {
           acc[entry._id.toString()] = entry;
-          return acc;
-        }, {})
-      : {};
-
-    const fallbackTransactionMap = Array.isArray(fallbackTransactions)
-      ? fallbackTransactions.reduce((acc, entry) => {
-          const key = entry.itemId?._id ? entry.itemId._id.toString() : entry.itemId?.toString();
-          if (!key) return acc;
-          const existing = acc[key];
-          if (!existing || new Date(entry.transactionDate || 0) > new Date(existing.transactionDate || 0)) {
-            acc[key] = entry;
+          if (entry.itemId) {
+            const key = entry.itemId.toString();
+            if (!acc[key]) acc[key] = entry;
           }
           return acc;
         }, {})
       : {};
 
-    const normalized = financeTransactions.map((tx) => {
+    const normalized = transactions.map((tx) => {
       const itemIdKey = tx.itemId ? tx.itemId.toString() : "";
       const itemSource = itemMap[itemIdKey] || {};
-      const linkedTransaction = tx.transactionId ? transactionMap[tx.transactionId] : undefined;
-      const fallbackTransaction = linkedTransaction ? undefined : fallbackTransactionMap[itemIdKey];
-      const transactionItem = linkedTransaction?.itemId || fallbackTransaction?.itemId;
-      const transactionPurchaseOrder = linkedTransaction?.purchaseOrderId || fallbackTransaction?.purchaseOrderId;
+      const linked = tx.transactionId ? transactionLookup[tx.transactionId] : undefined;
+      const fallback = !linked && itemIdKey ? transactionLookup[itemIdKey] : undefined;
+
+      const transactionItemId = linked?.itemId || fallback?.itemId;
+      const transactionItem = transactionItemId ? itemMap[transactionItemId.toString()] : undefined;
 
       const baseItem =
         (tx.item && tx.item !== "—" && tx.item) ||
-        tx.itemName ||
-        tx.name ||
         transactionItem?.name ||
         itemSource.name ||
         "—";
       const skuValue = transactionItem?.sku || itemSource.sku;
-      const itemWithSku = baseItem !== "—" && skuValue ? `${baseItem} (${skuValue})` : baseItem;
+      const itemValue = baseItem !== "—" && skuValue ? `${baseItem} (${skuValue})` : baseItem;
+
       const typeValue =
         tx.type ||
         tx.transactionType ||
         tx.category ||
-        tx.movementType ||
-        tx.eventType ||
-        tx.operation ||
-        linkedTransaction?.type ||
-        fallbackTransaction?.type ||
-        fallbackTransaction?.transactionType ||
+        linked?.type ||
+        fallback?.type ||
         "—";
-      const quantityRaw =
+
+      const quantityValue =
         typeof tx.quantity === "number"
           ? tx.quantity
           : Number(
               tx.quantity ??
                 tx.qty ??
                 tx.count ??
-                linkedTransaction?.quantity ??
-                fallbackTransaction?.quantity
-            );
-      const remarksValue =
-        tx.remarks ||
-        tx.notes ||
-        linkedTransaction?.remarks ||
-        fallbackTransaction?.remarks ||
-        "";
-      const fallbackPurchaseOrder = fallbackTransaction?.purchaseOrderId;
+                linked?.quantity ??
+                fallback?.quantity
+            ) || 0;
+
+      const remarksValue = tx.remarks || tx.notes || linked?.remarks || fallback?.remarks || "";
+
       const purchaseOrderValue =
         tx.purchaseOrderId ||
         tx.purchaseOrder ||
         tx.reference ||
-        (transactionPurchaseOrder?.poNumber || transactionPurchaseOrder?._id) ||
-        (typeof fallbackPurchaseOrder === "object"
-          ? fallbackPurchaseOrder?.poNumber || fallbackPurchaseOrder?._id
-          : fallbackPurchaseOrder) ||
+        (linked?.purchaseOrderId ? linked.purchaseOrderId.toString() : undefined) ||
+        (fallback?.purchaseOrderId ? fallback.purchaseOrderId.toString() : undefined) ||
         "";
+
       const dateValue =
         tx.date ||
         tx.transactionDate ||
         tx.createdAt ||
         tx.updatedAt ||
-        linkedTransaction?.transactionDate ||
-        fallbackTransaction?.transactionDate ||
+        linked?.transactionDate ||
+        fallback?.transactionDate ||
         null;
 
       return {
         ...tx,
-        item: itemWithSku,
+        item: itemValue,
         type: typeValue,
-        quantity: Number.isFinite(quantityRaw) ? quantityRaw : 0,
+        quantity: Number.isFinite(quantityValue) ? quantityValue : 0,
         remarks: remarksValue,
         purchaseOrderId: purchaseOrderValue,
         date: dateValue,
