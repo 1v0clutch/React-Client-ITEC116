@@ -7,13 +7,28 @@ const TransactionModal = ({
   currentTransaction, 
   setCurrentTransaction, 
   onSubmit,
-  items 
+  items,
+  purchaseOrders
 }) => {
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit();
+  };
+
+  // Handle purchase order selection with auto-fill remarks
+  const handlePurchaseOrderChange = (e) => {
+    const selectedPOId = e.target.value;
+    const selectedPO = purchaseOrders.find(po => po._id === selectedPOId);
+
+    setCurrentTransaction({
+      ...currentTransaction,
+      purchaseOrderId: selectedPOId,
+      remarks: selectedPO 
+        ? `From Purchase Order ${selectedPO.poNumber}` 
+        : currentTransaction.remarks,
+    });
   };
 
   return (
@@ -118,22 +133,22 @@ const TransactionModal = ({
               />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-400 mb-2">
-                Purchase Order ID
+                Purchase Order (Optional)
               </label>
-              <input
-                type="text"
-                placeholder="Enter Purchase Order ID"
+              <select
                 value={currentTransaction.purchaseOrderId}
-                onChange={(e) =>
-                  setCurrentTransaction({
-                    ...currentTransaction,
-                    purchaseOrderId: e.target.value,
-                  })
-                }
-                className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
+                onChange={handlePurchaseOrderChange}
+                className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              >
+                <option value="">Select Purchase Order (Optional)</option>
+                {purchaseOrders && purchaseOrders.map((po) => (
+                  <option key={po._id} value={po._id}>
+                    {po.poNumber} - {po.status}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="md:col-span-2">
@@ -150,6 +165,7 @@ const TransactionModal = ({
                 }
                 rows="3"
                 className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                placeholder="Optional remarks or notes"
               />
             </div>
           </div>
