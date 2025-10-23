@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function Employees({ data = {}, setData }) {
   const employees = data.employees || [];
+  const departments = data.departments || [];
 
   const [emp, setEmp] = useState({
+    id: "",
+    empId: "",
     name: "",
     designation: "",
     department: "",
@@ -12,14 +15,65 @@ export default function Employees({ data = {}, setData }) {
     status: "Active",
   });
 
+  // 🧮 Generate Employee ID (EMP-001, EMP-002, etc.) with gap detection
+  const generateEmployeeID = () => {
+    if (employees.length === 0) return "EMP-001";
+
+    const existingNums = employees
+      .map((e) => parseInt(e.empId?.split("-")[1]))
+      .filter((num) => !isNaN(num))
+      .sort((a, b) => a - b);
+
+    let nextNum = 1;
+    for (let num of existingNums) {
+      if (num !== nextNum) break;
+      nextNum++;
+    }
+
+    return `EMP-${nextNum.toString().padStart(3, "0")}`;
+  };
+
+  // Generate a new ID only for new employees
+  useEffect(() => {
+    if (!emp.id) {
+      setEmp((prev) => ({
+        ...prev,
+        empId: generateEmployeeID(),
+      }));
+    }
+  }, [employees]);
+
   const addEmployee = () => {
-    if (!emp.name || !emp.designation || !emp.department || !emp.employmentType || !emp.hireDate) {
+    if (
+      !emp.name ||
+      !emp.designation ||
+      !emp.department ||
+      !emp.employmentType ||
+      !emp.hireDate
+    ) {
       alert("Please fill in all fields.");
       return;
     }
-    const newEmp = { id: Date.now(), ...emp };
-    setData({ ...data, employees: [...data.employees, newEmp] });
+
+    let updatedEmployees;
+
+    if (emp.id) {
+      // 🛠 Update existing employee
+      updatedEmployees = employees.map((e) =>
+        e.id === emp.id ? emp : e
+      );
+    } else {
+      // ➕ Add new employee
+      const newEmp = { id: Date.now(), ...emp };
+      updatedEmployees = [...employees, newEmp];
+    }
+
+    setData({ ...data, employees: updatedEmployees });
+
+    // Reset form after add/update
     setEmp({
+      id: "",
+      empId: generateEmployeeID(),
       name: "",
       designation: "",
       department: "",
@@ -30,20 +84,20 @@ export default function Employees({ data = {}, setData }) {
   };
 
   const deleteEmployee = (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this employee?");
+    if (!confirmDelete) return;
+
     setData({
       ...data,
-      employees: data.employees.filter((e) => e.id !== id),
+      employees: employees.filter((e) => e.id !== id),
     });
   };
 
   const editEmployee = (id) => {
-    const toEdit = data.employees.find((e) => e.id === id);
+    const toEdit = employees.find((e) => e.id === id);
     if (toEdit) {
+      // Load employee data into form WITHOUT deleting from the list
       setEmp(toEdit);
-      setData({
-        ...data,
-        employees: data.employees.filter((e) => e.id !== id),
-      });
     }
   };
 
@@ -53,6 +107,12 @@ export default function Employees({ data = {}, setData }) {
 
       {/* Add / Edit Employee Form */}
       <div className="grid grid-cols-2 gap-3 mb-4">
+        <input
+          className="border p-2 rounded"
+          value={emp.empId}
+          readOnly
+          placeholder="Employee ID (auto)"
+        />
         <input
           className="border p-2 rounded"
           value={emp.name}
@@ -65,28 +125,48 @@ export default function Employees({ data = {}, setData }) {
           onChange={(e) => setEmp({ ...emp, designation: e.target.value })}
           placeholder="Designation"
         />
-        <input
+
+        {/* Department Dropdown */}
+        <select
           className="border p-2 rounded"
           value={emp.department}
           onChange={(e) => setEmp({ ...emp, department: e.target.value })}
-          placeholder="Department"
-        />
+        >
+          <option value="">Select Department</option>
+          {departments.length > 0 ? (
+            departments.map((dept) => (
+              <option key={dept.id} value={dept.name}>
+                {dept.name}
+              </option>
+            ))
+          ) : (
+            <option disabled>No departments available</option>
+          )}
+        </select>
+
+        {/* Employment Type */}
         <select
           className="border p-2 rounded"
           value={emp.employmentType}
-          onChange={(e) => setEmp({ ...emp, employmentType: e.target.value })}
+          onChange={(e) =>
+            setEmp({ ...emp, employmentType: e.target.value })
+          }
         >
           <option value="">Select Employment Type</option>
           <option value="Full Time">Full Time</option>
           <option value="Part Time">Part Time</option>
           <option value="Contract">On Contract</option>
         </select>
+
+        {/* Hire Date */}
         <input
           type="date"
           className="border p-2 rounded"
           value={emp.hireDate}
           onChange={(e) => setEmp({ ...emp, hireDate: e.target.value })}
         />
+
+        {/* Status */}
         <select
           className="border p-2 rounded"
           value={emp.status}
@@ -111,6 +191,7 @@ export default function Employees({ data = {}, setData }) {
         <table className="w-full border border-gray-200">
           <thead className="bg-gray-100">
             <tr>
+              <th className="border px-3 py-2 text-left">Employee ID</th>
               <th className="border px-3 py-2 text-left">Employee Name</th>
               <th className="border px-3 py-2 text-left">Designation</th>
               <th className="border px-3 py-2 text-left">Department</th>
@@ -124,6 +205,7 @@ export default function Employees({ data = {}, setData }) {
             {employees.length > 0 ? (
               employees.map((e) => (
                 <tr key={e.id} className="hover:bg-gray-50">
+                  <td className="border px-3 py-2 font-mono">{e.empId}</td>
                   <td className="border px-3 py-2">{e.name}</td>
                   <td className="border px-3 py-2">{e.designation}</td>
                   <td className="border px-3 py-2">{e.department}</td>
@@ -163,7 +245,7 @@ export default function Employees({ data = {}, setData }) {
             ) : (
               <tr>
                 <td
-                  colSpan="7"
+                  colSpan="8"
                   className="text-center py-4 text-gray-500 italic"
                 >
                   No employees found.

@@ -5,9 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 const categories = [
   {
     label: "Customer Service",
-    links: [
-      { path: "/customer-service", label: "Helpdesk" }
-    ]
+    links: [{ path: "/customer-service", label: "Helpdesk" }],
   },
   {
     label: "Sales",
@@ -16,7 +14,7 @@ const categories = [
       { path: "/sales/after-sales", label: "After Sales" },
       { path: "/sales/sales-order", label: "Orders" },
       { path: "/sales/sales-report", label: "Reports" },
-    ]
+    ],
   },
   {
     label: "Procurement",
@@ -54,10 +52,13 @@ const categories = [
       { path: "/hr/dashboard", label: "Dashboard" },
       { path: "/hr/departments", label: "Departments" },
       { path: "/hr/employees", label: "Employees" },
-      { path: "/hr/leaves", label: "Leaves" },
       { path: "/hr/payroll-employee", label: "Payroll" },
       { path: "/hr/salary", label: "Salary" },
     ],
+  },
+  {
+    label: "Project Management",
+    links: [{ path: "/project-management/project", label: "Project" }],
   },
 ];
 

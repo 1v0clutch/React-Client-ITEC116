@@ -13,8 +13,8 @@ export default function FinanceReport() {
               <a href='/finance/inventory-report'><p className="cursor-pointer hover:underline">Inventory Report</p></a>
             </nav>
             <table className="table-auto w-full border border-gray-400 border-collapse [&_*]:border [&_*]:border-gray-400 [&_*]:px-4 [&_*]:py-2">
-               <thead className="bg-gray-100"> {/*Ilalagay Sa for loop based on how many iterations  ang napupurchase through procurement*/}
-                <tr> 
+              <thead className="bg-gray-100">
+                <tr>
                   <th>Test</th>
                   <th>Test</th>
                   <th>Test</th>
@@ -22,13 +22,15 @@ export default function FinanceReport() {
                   <th>Test</th>
                 </tr>
               </thead>
-              <tr>
-                <td>Test</td>
-                <td>Test</td>
-                <td>Test</td>
-                <td>Test</td>
-                <td>Test</td>
-              </tr>
+              <tbody>
+                <tr>
+                  <td>Test</td>
+                  <td>Test</td>
+                  <td>Test</td>
+                  <td>Test</td>
+                  <td>Test</td>
+                </tr>
+              </tbody>
             </table>
     </div>
   )

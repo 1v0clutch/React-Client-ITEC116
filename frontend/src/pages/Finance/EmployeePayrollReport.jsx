@@ -91,32 +91,6 @@ export default function EmployeePayrollReport() {
     downloadFile(csv, "text/csv", "csv");
   };
 
-  const exportExcel = () => {
-    const headers = [
-      "Employee ID",
-      "Name",
-      "Pay Period",
-      "Gross Pay",
-      "Deductions",
-      "Net Pay",
-      "Date Processed",
-    ];
-    const rows = sortedData
-      .map((row) => [
-        sanitize(row.employeeId || "—"),
-        sanitize(row.name || "—"),
-        sanitize(row.payPeriod || "—"),
-        formatCurrency(row.grossPay),
-        formatCurrency(row.deductions),
-        formatCurrency(row.netPay),
-        sanitize(formatDate(row.dateProcessed || row.createdAt)),
-      ])
-      .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`)
-      .join("");
-    const table = `<table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`;
-    downloadFile(table, "application/vnd.ms-excel", "xls");
-  };
-
   return (
     <FinanceLayout title="Employee Payroll Report">
       <div className="flex flex-wrap justify-end gap-3 mb-4">
@@ -127,14 +101,6 @@ export default function EmployeePayrollReport() {
           disabled={isFetching || !sortedData.length}
         >
           Download CSV
-        </button>
-        <button
-          type="button"
-          onClick={exportExcel}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-          disabled={isFetching || !sortedData.length}
-        >
-          Download Excel
         </button>
       </div>
 
