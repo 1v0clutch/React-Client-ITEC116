@@ -11,8 +11,13 @@ router.get("/projects", projectController.findAll);
 // Get project by ID
 router.get("/projects/:id", projectController.findOne);
 
-// Update project
-//router.put("/projects/:id", projectController.update);
+router.get("/gantt/:id", projectController.getGanttById);
+
+router.put("/projects/:id/tasks", projectController.updateTasks);
+
+router.put("/projects/:id", projectController.updateProject);
+
+router.put("/projects/assign-employee", projectController.assignEmployee);
 
 // Delete project
 //router.delete("/projects/:id", projectController.delete);
@@ -22,11 +27,5 @@ router.get("/projects/:id", projectController.findOne);
 
 // Add task to project phase
 //router.post("/projects/:id/phases/:phaseId/tasks", projectController.addTask);
-
-// Update task in project
-//router.patch(
-//  "/projects/:id/phases/:phaseId/tasks/:taskId",
-//  projectController.updateTask
-//);
 
 module.exports = router;

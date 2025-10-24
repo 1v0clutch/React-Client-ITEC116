@@ -40,8 +40,15 @@ import CMmanagement from "./pages/SalesCustomer/CMmanagement";
 import SalesOrder from "./pages/SalesCustomer/Salesorder";
 import SalesReport from "./pages/SalesCustomer/salerep";
 
+// Project Management
 import Project from "./pages/ProjectManagement/Project";
 import ProjectForm from "./pages/ProjectManagement/ProjectForm";
+import ProjectGantt from "./pages/ProjectManagement/ProjectGantt";
+import DependencySetup from "./pages/ProjectManagement/DependencySetup";
+import Employee from "./pages/ProjectManagement/Employee";
+{
+  /* This is a temporary form */
+}
 
 function App() {
   const [data, setData] = useState({
@@ -167,6 +174,15 @@ function App() {
             {/* Project Management */}
             <Route path="/project-management/project" element={<Project />} />
             <Route path="/project-management/form" element={<ProjectForm />} />
+            <Route
+              path="/project-management/gantt/:id"
+              element={<ProjectGantt />}
+            />
+            <Route
+              path="/project-management/dependencies-setup"
+              element={<DependencySetup />}
+            />
+            <Route path="/project-management/employee" element={<Employee />} />
           </Routes>
         </div>
       </div>

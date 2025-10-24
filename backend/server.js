@@ -16,6 +16,7 @@ const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
 const projectRoutes = require("./routes/project.routes");
+const employeeRoutes = require("./routes/employee.routes");
 const app = express();
 
 //Middleware
@@ -48,6 +49,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
 app.use("/api/project", projectRoutes);
+app.use("/api/employee", employeeRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
