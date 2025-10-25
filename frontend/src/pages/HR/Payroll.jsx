@@ -4,13 +4,21 @@ export default function Payroll({ data }) {
   const [records, setRecords] = useState([]);
   const [period, setPeriod] = useState({ from: "", to: "" });
   const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({ base: 0, ot: 0, adj: 0, deductions: {} });
+  const [editForm, setEditForm] = useState({
+    base: 0,
+    ot: 0,
+    adj: 0,
+    deductions: {},
+  });
 
   // 🧮 Compute Net Pay
   const computeNetPay = (r) => {
     const totalDed = Object.values(r.deductions).reduce((a, b) => a + b, 0);
     return r.base + r.ot + r.adj - totalDed;
   };
+
+  // 🧮 Compute Gross Pay
+  const computeGrossPay = (r) => r.base + r.ot + r.adj;
 
   // 🧾 Generate Payroll
   const generatePayroll = () => {
@@ -34,15 +42,14 @@ export default function Payroll({ data }) {
       }));
 
     setRecords(newRecords);
-
-    // Automatically save after generation (optional)
     savePayrollToBackend(newRecords);
   };
 
   // 💾 Save Payroll to Backend
   const savePayrollToBackend = async (recordsToSave = records) => {
     try {
-      if (recordsToSave.length === 0) return alert("No payroll records to save.");
+      if (recordsToSave.length === 0)
+        return alert("No payroll records to save.");
 
       await Promise.all(
         recordsToSave.map((r) =>
@@ -54,7 +61,7 @@ export default function Payroll({ data }) {
               name: r.name,
               department: r.dept,
               payPeriod: `${period.from} - ${period.to}`,
-              grossPay: r.base + r.ot + r.adj,
+              grossPay: computeGrossPay(r),
               deductions: Object.values(r.deductions).reduce((a, b) => a + b, 0),
               netPay: computeNetPay(r),
             }),
@@ -69,45 +76,117 @@ export default function Payroll({ data }) {
     }
   };
 
-  // 🧾 Open Payslip
+  // 🧾 Open EMS Payslip
   const openPayslip = (rec) => {
     const netPay = computeNetPay(rec);
-    const newWin = window.open("", "_blank", "width=600,height=700");
+    const grossPay = computeGrossPay(rec);
+    const generatedAt = new Date().toLocaleString();
+
+    const newWin = window.open("", "_blank", "width=700,height=800");
     newWin.document.write(`
       <html>
       <head>
-        <title>Payslip - ${rec.name}</title>
+        <title>EMS Payslip - ${rec.name}</title>
         <style>
-          body { font-family: Arial, sans-serif; padding:20px; background:#f9f9f9; }
-          .card { border:1px solid #ddd; padding:20px; border-radius:10px; width:100%; max-width:500px; margin:auto; background:#fff; }
-          h2, h3 { text-align:center; margin:5px 0; }
-          .row { display:flex; justify-content:space-between; margin:5px 0; }
-          .label { font-weight:bold; }
-          .btn { display:block; margin:20px auto 0 auto; padding:8px 16px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer; }
-          .btn:hover { background:#1d4ed8; }
-          hr { margin:10px 0; }
+          body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 40px;
+          }
+          .payslip {
+            background: white;
+            max-width: 600px;
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          }
+          h2 {
+            text-align: center;
+            margin-bottom: 4px;
+            font-size: 22px;
+          }
+          h3 {
+            text-align: center;
+            margin-top: 0;
+            color: #444;
+            font-weight: normal;
+          }
+          hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 15px 0;
+          }
+          .row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+          }
+          .label {
+            font-weight: bold;
+          }
+          .section-title {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #333;
+          }
+          .netpay {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0d6efd;
+            text-align: right;
+            margin-top: 15px;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777;
+          }
+          .print-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+          }
+          .print-btn:hover {
+            background: #0b5ed7;
+          }
         </style>
       </head>
       <body>
-        <div class="card">
-          <h2>Company Name</h2>
-          <h3>Payslip</h3>
-          <p style="text-align:center;">Period: ${period.from} to ${period.to}</p>
+        <div class="payslip">
+          <h2>EMS</h2>
+          <h3>Employee Payslip</h3>
           <hr/>
-          <div class="row"><span class="label">Name:</span><span>${rec.name}</span></div>
+          <div class="row"><span class="label">Employee Name:</span><span>${rec.name}</span></div>
           <div class="row"><span class="label">Department:</span><span>${rec.dept}</span></div>
+          <div class="row"><span class="label">Period Covered:</span><span>${period.from} to ${period.to}</span></div>
           <hr/>
-          <div class="row"><span class="label">Base Salary:</span><span>₱${rec.base}</span></div>
-          <div class="row"><span class="label">Overtime:</span><span>₱${rec.ot}</span></div>
-          <div class="row"><span class="label">Adjustment:</span><span>₱${rec.adj}</span></div>
+          <div class="section-title">Earnings</div>
+          <div class="row"><span>Base Pay:</span><span>₱${rec.base.toLocaleString()}</span></div>
+          <div class="row"><span>Overtime:</span><span>₱${rec.ot.toLocaleString()}</span></div>
+          <div class="row"><span>Adjustment:</span><span>₱${rec.adj.toLocaleString()}</span></div>
+          <div class="row"><span class="label">Gross Pay:</span><span>₱${grossPay.toLocaleString()}</span></div>
           <hr/>
-          <div class="row"><span class="label">SSS:</span><span>₱${rec.deductions.sss}</span></div>
-          <div class="row"><span class="label">PhilHealth:</span><span>₱${rec.deductions.philhealth}</span></div>
-          <div class="row"><span class="label">Pag-IBIG:</span><span>₱${rec.deductions.pagibig}</span></div>
-          <div class="row"><span class="label">Tax:</span><span>₱${rec.deductions.tax}</span></div>
+          <div class="section-title">Deductions</div>
+          <div class="row"><span>SSS:</span><span>₱${rec.deductions.sss}</span></div>
+          <div class="row"><span>PhilHealth:</span><span>₱${rec.deductions.philhealth}</span></div>
+          <div class="row"><span>Pag-IBIG:</span><span>₱${rec.deductions.pagibig}</span></div>
+          <div class="row"><span>Tax:</span><span>₱${rec.deductions.tax}</span></div>
           <hr/>
-          <div class="row"><span class="label">Net Pay:</span><span>₱${netPay}</span></div>
-          <button class="btn" onclick="window.print()">Print Payslip</button>
+          <div class="netpay">Net Pay: ₱${netPay.toLocaleString()}</div>
+          <hr/>
+          <div class="footer">
+            Generated by EMS on ${generatedAt}
+          </div>
+          <button class="print-btn" onclick="window.print()">Print Payslip</button>
         </div>
       </body>
       </html>
@@ -115,20 +194,54 @@ export default function Payroll({ data }) {
     newWin.document.close();
   };
 
-  // 🧩 Edit Payroll
+  // ✏️ Edit Payroll
   const startEdit = (rec) => {
     setEditing(rec.id);
-    setEditForm({ base: rec.base, ot: rec.ot, adj: rec.adj, deductions: { ...rec.deductions } });
+    setEditForm({
+      base: rec.base,
+      ot: rec.ot,
+      adj: rec.adj,
+      deductions: { ...rec.deductions },
+    });
   };
 
-  const saveEdit = () => {
-    setRecords(
-      records.map((r) => (r.id === editing ? { ...r, ...editForm } : r))
-    );
-    setEditing(null);
-  };
+  const saveEdit = async () => {
+    try {
+      const updatedRecords = records.map((r) =>
+        String(r.id) === String(editing) ? { ...r, ...editForm } : r
+      );
 
-  // ✅ Removed generatePayroll() and savePayrollToBackend() from render here
+      setRecords(updatedRecords);
+      const updatedRecord = updatedRecords.find(
+        (r) => String(r.id) === String(editing)
+      );
+
+      setEditing(null);
+      setEditForm({ base: 0, ot: 0, adj: 0, deductions: {} });
+
+      if (updatedRecord) {
+        await fetch("http://localhost:8000/api/hr/payroll/update", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            employeeId: updatedRecord.id,
+            name: updatedRecord.name,
+            department: updatedRecord.dept,
+            payPeriod: `${period.from} - ${period.to}`,
+            base: updatedRecord.base,
+            ot: updatedRecord.ot,
+            adj: updatedRecord.adj,
+            deductions: updatedRecord.deductions,
+            netPay: computeNetPay(updatedRecord),
+          }),
+        });
+        alert("Payroll record updated successfully!");
+      }
+    } catch (err) {
+      console.error("Error updating payroll:", err);
+      alert("Failed to update payroll record.");
+    }
+  };
 
   return (
     <div className="p-6">
@@ -207,7 +320,7 @@ export default function Payroll({ data }) {
         </table>
 
         {/* Edit Form */}
-        {editing && (
+        {editing !== null && (
           <div className="mt-4 p-4 border rounded bg-gray-50">
             <h3 className="font-semibold mb-2">Edit Payroll</h3>
             <div className="grid grid-cols-3 gap-3 mb-2">
@@ -246,7 +359,6 @@ export default function Payroll({ data }) {
               </div>
             </div>
 
-            {/* Editable deductions */}
             <div className="grid grid-cols-4 gap-3 mb-2">
               {Object.keys(editForm.deductions).map((key) => (
                 <div key={key}>

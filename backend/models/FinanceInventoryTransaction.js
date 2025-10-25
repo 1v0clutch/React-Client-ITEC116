@@ -1,13 +1,42 @@
 const mongoose = require('mongoose');
-const axios = require("axios");
 
 const FinanceInventoryTransactionSchema = new mongoose.Schema({
-  item: String,
-  type: String,
-  quantity: Number,
-  remarks: String,
-  purchaseOrderId: String,
-  date: Date
+  transactionId: {
+    type: String,
+    default: null,
+  },
+  itemId: {
+    type: String,
+    default: null,
+  },
+  itemSku: {
+    type: String,
+    default: "",
+  },
+  item: {
+    type: String,
+    default: "—",
+  },
+  type: {
+    type: String,
+    default: "—",
+  },
+  quantity: {
+    type: Number,
+    default: 0,
+  },
+  remarks: {
+    type: String,
+    default: "",
+  },
+  purchaseOrderId: {
+    type: String,
+    default: "",
+  },
+  date: {
+    type: Date,
+    default: null,
+  },
 });
 
 const FinanceInventoryTransaction = mongoose.model('FinanceInventoryTransaction', FinanceInventoryTransactionSchema);

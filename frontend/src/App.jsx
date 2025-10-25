@@ -3,16 +3,15 @@ import Sidebar from "./components/layouts/Sidebar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Procurement
-import Procurement from "./pages/Dashboard/Procurement";
 import Suppliers from "./pages/Procurement/Suppliers";
 import Requisition from "./pages/Procurement/Requisition";
 import PurchaseOrders from "./pages/Procurement/PurchaseOrders";
 import Invoices from "./pages/Procurement/Invoices";
 
 // Inventory
-import Inventory from "./pages/Dashboard/Inventory";
-import Transaction from "./pages/Dashboard/Transaction";
-import Warehouse from "./pages/Dashboard/Warehouse";
+import Inventory from "./pages/Inventory/Inventory";
+import Transaction from "./pages/Inventory/Transaction";
+import Warehouse from "./pages/Inventory/Warehouse";
 
 // Finance
 import Finance from "./pages/Finance/FinanceHead";
@@ -23,8 +22,8 @@ import Report from "./pages/Finance/FinanceReport";
 import InventoryReport from "./pages/Finance/InventoryReport";
 import EmployeePayrollReport from "./pages/Finance/EmployeePayrollReport";
 
-// HR
-import LeaveAttendance from "./pages/HR/Attendance";
+// HR //
+import Attendance from "./pages/HR/Attendance";
 import Dashboard from "./pages/HR/Dashboard";
 import Departments from "./pages/HR/Departments";
 import Employees from "./pages/HR/Employees";
@@ -101,7 +100,6 @@ function App() {
         <div className="ml-56 p-5 w-full bg-gray-50 min-h-screen">
           <Routes>
             {/* Procurement */}
-            <Route path="/procurement" element={<Procurement />} />
             <Route path="/procurement/suppliers" element={<Suppliers />} />
             <Route path="/procurement/requisition" element={<Requisition />} />
             <Route
@@ -111,9 +109,12 @@ function App() {
             <Route path="/procurement/invoices" element={<Invoices />} />
 
             {/* Inventory */}
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/transactions" element={<Transaction />} />
-            <Route path="/warehouse" element={<Warehouse />} />
+            <Route
+              path="/inventory/inventory-management"
+              element={<Inventory />}
+            />
+            <Route path="/inventory/transactions" element={<Transaction />} />
+            <Route path="/inventory/warehouse" element={<Warehouse />} />
 
             {/* Finance */}
             <Route path="/finance/general-finance" element={<Finance />} />
@@ -136,7 +137,7 @@ function App() {
             {/* HR */}
             <Route
               path="/hr/attendance"
-              element={<LeaveAttendance data={data} setData={setData} />} // ✅ Correct props
+              element={<Attendance data={data} setData={setData} />}
             />
             <Route
               path="/hr/dashboard"
