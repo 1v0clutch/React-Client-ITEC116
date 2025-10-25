@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const DemandForecast = require("../models/demandForecast.model");
+const DemandForecast = require("../models/DemandForecast");
 
 // CREATE / POST forecast
 router.post("/", async (req, res) => {
