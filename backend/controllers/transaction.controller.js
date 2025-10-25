@@ -37,6 +37,25 @@ exports.recordTransaction = async (req, res) => {
     });
     await transaction.save();
 
+    const financePayload = {
+      transactionId: transaction._id.toString(),
+      itemId: itemId.toString(),
+      itemSku: item.sku || "",
+      item: item.name || "—",
+      type,
+      transactionType: type,
+      quantity,
+      remarks: remarks || "",
+      purchaseOrderId: purchaseOrderId ? purchaseOrderId.toString() : "",
+      date: transaction.transactionDate,
+    };
+
+    try {
+      await axios.post("http://localhost:8000/api/finance/inventory-transaction", financePayload);
+    } catch (financeError) {
+      console.error("Failed to sync inventory transaction to finance:", financeError.message);
+    }
+
     res
       .status(201)
       .json({

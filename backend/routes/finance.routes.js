@@ -3,6 +3,7 @@ const router = express.Router();
 const FinanceController = require('../controllers/finance.controller');
 
 router.get('/supplier-report', FinanceController.getSupplierReport);
+router.get('/customer-report', FinanceController.getCustomerReport);
 router.get('/inventory-transactions', FinanceController.getInventoryTransactions);
 router.get('/payroll-report', FinanceController.getPayrollReport);
 router.post('/inventory-transaction', FinanceController.handleInventoryTransaction);

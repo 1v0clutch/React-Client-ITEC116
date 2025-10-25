@@ -5,9 +5,7 @@ import { Link, useLocation } from "react-router-dom";
 const categories = [
   {
     label: "Customer Service",
-    links: [
-      { path: "/customer-service", label: "Helpdesk" }
-    ]
+    links: [{ path: "/customer-service", label: "Helpdesk" }],
   },
   {
     label: "Sales",
@@ -16,12 +14,11 @@ const categories = [
       { path: "/sales/after-sales", label: "After Sales" },
       { path: "/sales/sales-order", label: "Orders" },
       { path: "/sales/sales-report", label: "Reports" },
-    ]
+    ],
   },
   {
     label: "Procurement",
     links: [
-      { path: "/procurement", label: "Procurement Home" },
       { path: "/procurement/suppliers", label: "Suppliers" },
       { path: "/procurement/requisition", label: "Requisition" },
       { path: "/procurement/purchase-orders", label: "Purchase Orders" },
@@ -31,9 +28,9 @@ const categories = [
   {
     label: "Inventory",
     links: [
-      { path: "/inventory", label: "Inventory" },
-      { path: "/transactions", label: "Transactions" },
-      { path: "/warehouse", label: "Warehouse" },
+      { path: "/inventory/inventory-management", label: "Inventory" },
+      { path: "/inventory/transactions", label: "Transactions" },
+      { path: "/inventory/warehouse", label: "Warehouse" },
     ],
   },
   {
@@ -66,6 +63,10 @@ const categories = [
       { path: "/supply-chain/logistics-supply-chain", label: "Logisctics Supply Chain" },
       { path: "/supply-chain/procurement-supply-chain", label: "Procurement Supply Chain" },
     ],
+  },
+  {
+    label: "Project Management",
+    links: [{ path: "/project-management/project", label: "Project" }],
   },
 ];
 
