@@ -149,13 +149,15 @@ export default function PurchaseOrders() {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Purchase Order Management</h2>
+    <div className="p-8 min-h-screen bg-gray-50 text-gray-800">
+      <h2 className="text-3xl font-bold mb-8 border-b-2 pb-2">
+        Purchase Order Management
+      </h2>
 
       {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-6 rounded-lg shadow mb-6"
+        className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-8 rounded-2xl shadow-lg mb-8 border border-gray-200"
       >
         {/* Approved Requisition Dropdown */}
         <select
@@ -248,9 +250,9 @@ export default function PurchaseOrders() {
       </form>
 
       {/* TABLE */}
-      <div className="overflow-x-auto">
-        <table className="w-full border border-gray-300 text-sm">
-          <thead className="bg-gray-100">
+      <div className="overflow-x-auto bg-white rounded-2xl shadow-lg border border-gray-200">
+        <table className="w-full text-sm text-gray-700">
+          <thead className="bg-blue-50 text-blue-800">
             <tr>
               <th className="p-2 border">PO #</th>
               <th className="p-2 border">Requisition</th>
@@ -272,7 +274,7 @@ export default function PurchaseOrders() {
                 <td className="border p-2 text-center">
                   {po.items[0]?.quantity}
                 </td>
-                <td className="border p-2 text-right">
+                <td className="border p-2 text-center">
                   ₱{po.totalAmount?.toLocaleString()}
                 </td>
                 <td className="border p-2 text-center">{po.status}</td>

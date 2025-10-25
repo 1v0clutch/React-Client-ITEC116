@@ -1,93 +1,216 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ProjectForm from "./ProjectForm";
-import ProjectGantt from "./ProjectGantt";
+import Overview from "./Overview";
 import WorkBreakdown from "./WorkBreakdowns";
 import TaskSchedule from "./TaskSchedule";
-import { MdOutlineEditCalendar } from "react-icons/md";
-import { FiPlus } from "react-icons/fi";
+import Resource from "./Resource";
+import Budget from "./Budget";
+import { FiPlus, FiBell } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+
+const API_PROJECT = "http://localhost:8000/api/project";
 
 function Project() {
   const [showAdd, setShowAdd] = useState(false);
   const [activeTab, setActiveTab] = useState("gantt"); // Track active tab
+  const [projects, setProjects] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const navigate = useNavigate();
 
-  // Render content based on active tab
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    if (projects.length > 0) {
+      const id = selectedId || projects[0]._id || projects[0].id;
+      setSelectedId(id);
+      const found = projects.find((p) => p._id === id || p.id === id);
+      setSelectedProject(found || null);
+    } else {
+      setSelectedProject(null);
+      setSelectedId(null);
+    }
+  }, [projects, selectedId]);
+
+  const fetchProjects = async () => {
+    setLoadingProjects(true);
+    try {
+      const res = await fetch(`${API_PROJECT}/projects`);
+      const data = await res.json();
+      setProjects(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch projects:", err);
+      setProjects([]);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const computeProgress = (project) => {
+    if (!project) return 0;
+    if (Array.isArray(project.phases) && project.phases.length > 0) {
+      const vals = project.phases.map((p) => Number(p.progress || 0));
+      const avg = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+      return avg;
+    }
+    return Math.round(project.progress || 0);
+  };
+
+  // Render content based on active tab and pass selected project
   const renderContent = () => {
     switch (activeTab) {
-      case "gantt":
-        return <ProjectGantt />;
+      case "overview":
+        return <Overview project={selectedProject} />;
       case "wbs":
-        return <WorkBreakdown />;
-      case "schedule":
-        return <TaskSchedule />;
+        return <WorkBreakdown project={selectedProject} />;
+      case "dependencies":
+        return <TaskSchedule project={selectedProject} />;
+      case "resources":
+        return <Resource project={selectedProject} />;
+      case "budget":
+        return <Budget project={selectedProject} />;
       default:
-        return <ProjectGantt />;
+        return <Overview project={selectedProject} />;
     }
   };
 
   return (
-    <div className="bg-[#222e3c] w-full p-8 h-full overlay-hidden rounded-sm">
-      <div className="flex justify-between items-center bg-[#2c3a4b] text-white rounded-xl p-6 shadow-md">
-        {/* Left section */}
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <MdOutlineEditCalendar className="text-blue-400 text-2xl" />
-            <h1 className="text-xl font-semibold">
-              Project Planning & Scheduling
-            </h1>
+    <div className="w-full p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Project Management
+          </h1>
+          <div className="flex items-center gap-3 mt-3">
+            {/* Project selector */}
+            <div>
+              <select
+                value={selectedId || ""}
+                onChange={(e) => setSelectedId(e.target.value)}
+                className="border rounded-md px-3 py-2 bg-white text-sm"
+                disabled={loadingProjects}
+              >
+                {projects.length === 0 && <option value="">No projects</option>}
+                {projects.map((p) => (
+                  <option key={p._id ?? p.id} value={p._id ?? p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* status badge */}
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs px-3 py-1 rounded-full ${
+                  selectedProject && selectedProject.status === "In Progress"
+                    ? "bg-blue-100 text-blue-700"
+                    : selectedProject && selectedProject.status === "Completed"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {selectedProject?.status ?? "—"}
+              </span>
+
+              <div className="text-sm text-gray-600">
+                Progress:{" "}
+                <span className="font-medium">
+                  {computeProgress(selectedProject)}%
+                </span>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-400 text-sm">
-            Define timelines, create WBS, and manage dependencies
-          </p>
         </div>
 
-        {/* Right button - navigate to project form page */}
-        <button
-          onClick={() => navigate("/project-management/form")}
-          className="flex items-center gap-1 text-white text-sm px-4 py-2 rounded-md transition-all"
-          type="button"
-        >
-          <FiPlus className="text-md" />
-          New Project
-        </button>
+        {/* Right controls */}
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            className="relative p-2 rounded-md hover:bg-gray-100"
+          >
+            <FiBell className="text-gray-700" />
+            {/* small red dot */}
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
+          </button>
+
+          <button
+            onClick={() => navigate("/project-management/form")}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            type="button"
+          >
+            <FiPlus />
+            New Project
+          </button>
+        </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex gap-4 mt-6 border-b border-gray-700">
+      {/* Tabs - updated: removed Planning, added WBS and Task Dependencies */}
+      <div className="flex gap-6 mt-4 border-b pb-3">
         <button
-          className={`px-4 py-2 text-sm font-medium ${
+          className={`pb-2 text-sm ${
             activeTab === "gantt"
-              ? "text-blue-400 border-b-2 border-blue-400"
-              : "text-gray-400 hover:text-gray-200"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab("gantt")}
+          onClick={() => setActiveTab("overview")}
         >
-          Gantt Chart View
+          Overview
         </button>
+
         <button
-          className={`px-4 py-2 text-sm font-medium ${
+          className={`pb-2 text-sm ${
             activeTab === "wbs"
-              ? "text-blue-400 border-b-2 border-blue-400"
-              : "text-gray-400 hover:text-gray-200"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
           }`}
           onClick={() => setActiveTab("wbs")}
         >
           Work Breakdown Structure
         </button>
+
         <button
-          className={`px-4 py-2 text-sm font-medium ${
-            activeTab === "schedule"
-              ? "text-blue-400 border-b-2 border-blue-400"
-              : "text-gray-400 hover:text-gray-200"
+          className={`pb-2 text-sm ${
+            activeTab === "dependencies"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab("schedule")}
+          onClick={() => setActiveTab("dependencies")}
         >
-          Task Schedule
+          Task Dependencies
+        </button>
+
+        <button
+          className={`pb-2 text-sm ${
+            activeTab === "resources"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("resources")}
+        >
+          Resources
+        </button>
+
+        <button
+          className={`pb-2 text-sm ${
+            activeTab === "budget"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("budget")}
+        >
+          Budget
+        </button>
+        <button className="pb-2 text-sm text-gray-500 hover:text-gray-700">
+          Reports
         </button>
       </div>
 
-      {/* Content Area */}
+      {/* Content */}
       <div className="mt-6">{renderContent()}</div>
 
       {/* Inline form (not modal) */}
@@ -97,6 +220,7 @@ function Project() {
             onSave={(payload) => {
               console.log("Saved project:", payload);
               setShowAdd(false);
+              fetchProjects();
             }}
           />
         </div>

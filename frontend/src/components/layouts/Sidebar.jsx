@@ -28,9 +28,9 @@ const categories = [
   {
     label: "Inventory",
     links: [
-      { path: "/inventory", label: "Inventory" },
-      { path: "/transactions", label: "Transactions" },
-      { path: "/warehouse", label: "Warehouse" },
+      { path: "/inventory/inventory-management", label: "Inventory" },
+      { path: "/inventory/transactions", label: "Transactions" },
+      { path: "/inventory/warehouse", label: "Warehouse" },
     ],
   },
   {
@@ -61,6 +61,15 @@ const categories = [
       { path: "/hr/employees", label: "Employees" },
       { path: "/hr/payroll-employee", label: "Payroll" },
       { path: "/hr/salary", label: "Salary" },
+    ],
+  },
+  {
+    label: "SupplyChain",
+    links: [
+      { path: "/supply-chain/demand-forecast", label: "Demand Forecast" },
+      { path: "/supply-chain/inventory-supply-chain", label: "Inventory Supply Chain" },
+      { path: "/supply-chain/logistics-supply-chain", label: "Logisctics Supply Chain" },
+      { path: "/supply-chain/procurement-supply-chain", label: "Procurement Supply Chain" },
     ],
   },
   {

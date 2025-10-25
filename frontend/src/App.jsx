@@ -3,16 +3,15 @@ import Sidebar from "./components/layouts/Sidebar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Procurement
-import Procurement from "./pages/Dashboard/Procurement";
 import Suppliers from "./pages/Procurement/Suppliers";
 import Requisition from "./pages/Procurement/Requisition";
 import PurchaseOrders from "./pages/Procurement/PurchaseOrders";
 import Invoices from "./pages/Procurement/Invoices";
 
 // Inventory
-import Inventory from "./pages/Dashboard/Inventory";
-import Transaction from "./pages/Dashboard/Transaction";
-import Warehouse from "./pages/Dashboard/Warehouse";
+import Inventory from "./pages/Inventory/Inventory";
+import Transaction from "./pages/Inventory/Transaction";
+import Warehouse from "./pages/Inventory/Warehouse";
 
 // Finance
 import Finance from "./pages/Finance/FinanceHead";
@@ -26,8 +25,8 @@ import FinanceApprovalsOverview from "./pages/Finance/FinanceApprovalsOverview";
 import FinancePendingApprovals from "./pages/Finance/FinancePendingApprovals";
 import FinanceApprovalHistory from "./pages/Finance/FinanceApprovalHistory";
 
-// HR
-import LeaveAttendance from "./pages/HR/Attendance";
+// HR //
+import Attendance from "./pages/HR/Attendance";
 import Dashboard from "./pages/HR/Dashboard";
 import Departments from "./pages/HR/Departments";
 import Employees from "./pages/HR/Employees";
@@ -43,11 +42,23 @@ import CMmanagement from "./pages/SalesCustomer/CMmanagement";
 import SalesOrder from "./pages/SalesCustomer/Salesorder";
 import SalesReport from "./pages/SalesCustomer/salerep";
 
+// SupplyChain
+import DemandForecast from "./pages/SupplyChain/DemandForecast";
+import InventorySupplyChain from "./pages/SupplyChain/InventorySupplyChain";
+import LogisticsSupplyChain from "./pages/SupplyChain/LogisticsSupplyChain";
+import ProcurementSupplyChain from "./pages/SupplyChain/ProcurementSupplyChain";
+
+// Project Management
 import Project from "./pages/ProjectManagement/Project";
 import ProjectForm from "./pages/ProjectManagement/ProjectForm";
+import ProjectGantt from "./pages/ProjectManagement/ProjectGantt";
+import DependencySetup from "./pages/ProjectManagement/DependencySetup";
+import Employee from "./pages/ProjectManagement/Employee";
+{
+  /* This is a temporary form */
+}
+const API_BASE = "http://localhost:5000/api";
 
-const API_BASE = import.meta.env.VITE_HR_API_BASE || "http://localhost:5000/api";
-//Working na yehey
 function App() {
   const [data, setData] = useState({
     employees: [],
@@ -99,7 +110,6 @@ function App() {
         <div className="ml-56 p-5 w-full bg-gray-50 min-h-screen">
           <Routes>
             {/* Procurement */}
-
             <Route path="/procurement/suppliers" element={<Suppliers />} />
             <Route path="/procurement/requisition" element={<Requisition />} />
             <Route
@@ -109,9 +119,12 @@ function App() {
             <Route path="/procurement/invoices" element={<Invoices />} />
 
             {/* Inventory */}
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/transactions" element={<Transaction />} />
-            <Route path="/warehouse" element={<Warehouse />} />
+            <Route
+              path="/inventory/inventory-management"
+              element={<Inventory />}
+            />
+            <Route path="/inventory/transactions" element={<Transaction />} />
+            <Route path="/inventory/warehouse" element={<Warehouse />} />
 
             {/* Finance */}
             <Route path="/finance/general-finance" element={<Finance />} />
@@ -146,7 +159,7 @@ function App() {
             {/* HR */}
             <Route
               path="/hr/attendance"
-              element={<LeaveAttendance data={data} setData={setData} />} // ✅ Correct props
+              element={<Attendance data={data} setData={setData} />}
             />
             <Route
               path="/hr/dashboard"
@@ -181,9 +194,24 @@ function App() {
             <Route path="/sales/sales-order" element={<SalesOrder />} />
             <Route path="/sales/sales-report" element={<SalesReport />} />
 
+            {/* SupplyChain */}
+            <Route path="/supply-chain/demand-forecast" element={<DemandForecast />} />
+            <Route path="/supply-chain/procurement-supply-chain" element={<ProcurementSupplyChain />} />
+            <Route path="/supply-chain/logistics-supply-chain" element={<LogisticsSupplyChain />} />
+            <Route path="/supply-chain/inventory-supply-chain" element={<InventorySupplyChain />} />
+
             {/* Project Management */}
             <Route path="/project-management/project" element={<Project />} />
             <Route path="/project-management/form" element={<ProjectForm />} />
+            <Route
+              path="/project-management/gantt/:id"
+              element={<ProjectGantt />}
+            />
+            <Route
+              path="/project-management/dependencies-setup"
+              element={<DependencySetup />}
+            />
+            <Route path="/project-management/employee" element={<Employee />} />
           </Routes>
         </div>
       </div>
