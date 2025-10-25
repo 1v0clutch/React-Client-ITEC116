@@ -3,16 +3,15 @@ import Sidebar from "./components/layouts/Sidebar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Procurement
-import Procurement from "./pages/Dashboard/Procurement";
 import Suppliers from "./pages/Procurement/Suppliers";
 import Requisition from "./pages/Procurement/Requisition";
 import PurchaseOrders from "./pages/Procurement/PurchaseOrders";
 import Invoices from "./pages/Procurement/Invoices";
 
 // Inventory
-import Inventory from "./pages/Dashboard/Inventory";
-import Transaction from "./pages/Dashboard/Transaction";
-import Warehouse from "./pages/Dashboard/Warehouse";
+import Inventory from "./pages/Inventory/Inventory";
+import Transaction from "./pages/Inventory/Transaction";
+import Warehouse from "./pages/Inventory/Warehouse";
 
 // Finance
 import Finance from "./pages/Finance/FinanceHead";
