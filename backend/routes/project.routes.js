@@ -19,13 +19,25 @@ router.put("/projects/:id", projectController.updateProject);
 
 router.put("/projects/assign-employee", projectController.assignEmployee);
 
-// Delete project
-//router.delete("/projects/:id", projectController.delete);
+// Get all tasks (grouped by phase) for a specific project
+router.get("/projects/:id/tasks", projectController.getProjectTasks);
 
-// Update project status
-//router.patch("/projects/:id/status", projectController.updateStatus);
-
-// Add task to project phase
-//router.post("/projects/:id/phases/:phaseId/tasks", projectController.addTask);
+// ✅ CORRECTED ROUTES FOR RESOURCE ALLOCATIONS
+router.get(
+  "/projects/:id/allocations",
+  projectController.getResourceAllocations
+);
+router.post(
+  "/projects/:projectId/allocations",
+  projectController.addResourceAllocation
+);
+router.put(
+  "/projects/:projectId/allocations",
+  projectController.updateResourceAllocations
+);
+router.delete(
+  "/projects/:projectId/allocations/:allocationId",
+  projectController.deleteResourceAllocation
+);
 
 module.exports = router;

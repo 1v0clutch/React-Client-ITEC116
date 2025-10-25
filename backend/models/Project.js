@@ -14,7 +14,6 @@ const TaskSchema = new Schema(
     _id: { type: Schema.Types.ObjectId, auto: true },
     name: { type: String, required: true },
     description: { type: String, default: "" },
-    // removed `code` field — use the task _id when you need a code/identifier
     startDate: { type: Date },
     endDate: { type: Date },
     durationDays: { type: Number, default: 0 },
@@ -120,6 +119,20 @@ ProjectSchema.pre("save", function (next) {
   } catch (err) {
     next(err);
   }
+});
+
+ProjectSchema.add({
+  resourceAllocations: [
+    {
+      employee: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
+      task: { type: mongoose.Schema.Types.ObjectId },
+      equipment: String,
+      budget: Number,
+      startDate: Date,
+      endDate: Date,
+    },
+  ],
+  totalBudget: { type: Number, default: 0 },
 });
 
 module.exports = mongoose.model("Project", ProjectSchema);

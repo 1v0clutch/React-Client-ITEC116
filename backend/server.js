@@ -17,6 +17,7 @@ const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
 const projectRoutes = require("./routes/project.routes");
 const employeeRoutes = require("./routes/employee.routes");
+const projectBudgetRoutes = require("./routes/projectBudget.routes");
 const app = express();
 
 //Middleware
@@ -50,6 +51,7 @@ app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
 app.use("/api/project", projectRoutes);
 app.use("/api/employee", employeeRoutes);
+app.use("/api/projectBudget", projectBudgetRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
