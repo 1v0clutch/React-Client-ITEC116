@@ -3,7 +3,12 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 
+const app = express();
+
 //Import Routes
+// =============================
+// ROUTE IMPORTS
+// =============================
 const inventoryRoutes = require("./routes/inventory.routes");
 const transactionRoutes = require("./routes/transaction.routes");
 const warehouseRoutes = require("./routes/warehouse.routes");
@@ -11,31 +16,49 @@ const supplierRoutes = require("./routes/supplier.routes");
 const requisitionRoutes = require("./routes/requisition.routes");
 const purchaseOrderRoutes = require("./routes/purchaseOrder.routes");
 const invoiceRoutes = require("./routes/invoice.routes");
-const financeRoutes = require('./routes/finance.routes');
+const financeRoutes = require("./routes/finance.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
-const app = express();
-
+const demandForecastRoutes = require("./routes/demandForecast.routes");
+const projectRoutes = require("./routes/project.routes");
+const employeeRoutes = require("./routes/employee.routes"); //
+const projectBudgetRoutes = require("./routes/projectBudget.routes");
 
 //Middleware
 app.use(
-    cors({
-        origin: process.env.CLIENT_URL || "*",
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-    })
+  cors({
+    origin: process.env.CLIENT_URL || "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
 );
 
 app.use(express.json());
 
-//Connect to Database
+// =============================
+// CONNECT TO DATABASE
+// =============================
 connectDB();
 
-//Routes
+// =============================
+// ROUTES
+// =============================
 
-app.use("/api/hr", hrRoutes);
+// ✅ HR Core Routes
+//app.use("/api/hr", hrRoutes);
+//app.use("/api/employees", employeesRoutes);
+//app.use("/api/departments", departmentsRoutes);
+//app.use("/api/salary", salaryRoutes);
+//app.use("/api/payroll", payrollRoutes);
 
+// ✅ HR Submodules
+//app.use("/api/attendance", attendanceRoutes);
+//app.use("/api/leaves", leaveRoutes);
+//app.use("/api/payroll", payrollRoutes);
+//app.use("/api/salary", salaryRoutes);
+
+// ✅ Procurement & Inventory
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/warehouses", warehouseRoutes);
@@ -47,6 +70,23 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
+app.use("/api/demand-forecast", demandForecastRoutes);
+app.use("/api/project", projectRoutes);
+app.use("/api/employee", employeeRoutes);
+app.use("/api/projectBudget", projectBudgetRoutes);
 
+// ✅ Finance
+app.use("/api/finance", financeRoutes);
+
+// =============================
+// DEFAULT ROUTE
+// =============================
+app.get("/", (req, res) => {
+  res.send("✅ API is running successfully...");
+});
+
+// =============================
+// START SERVER
+// =============================
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

@@ -15,31 +15,64 @@ export default function Employees({ data = {}, setData }) {
     status: "Active",
   });
 
-  // 🧮 Generate Employee ID (EMP-001, EMP-002, etc.)
+  // 🧮 Generate next Employee ID — fills deleted gaps
   const generateEmployeeID = () => {
-    const nextNum = employees.length + 1;
+    const existingNums = employees
+      .map((e) => parseInt(e.empId?.split("-")[1]))
+      .filter((num) => !isNaN(num))
+      .sort((a, b) => a - b);
+
+    let nextNum = 1;
+    for (let num of existingNums) {
+      if (num !== nextNum) break; // find missing number
+      nextNum++;
+    }
+
     return `EMP-${nextNum.toString().padStart(3, "0")}`;
   };
 
+  // Generate only when adding a new employee
   useEffect(() => {
-    if (!emp.empId) {
-      setEmp((prev) => ({ ...prev, empId: generateEmployeeID() }));
+    if (!emp.id && !emp.empId) {
+      setEmp((prev) => ({
+        ...prev,
+        empId: generateEmployeeID(),
+      }));
     }
   }, [employees]);
 
+  // ➕ Add or 🛠 Update Employee
   const addEmployee = () => {
-    if (!emp.name || !emp.designation || !emp.department || !emp.employmentType || !emp.hireDate) {
+    if (
+      !emp.name ||
+      !emp.designation ||
+      !emp.department ||
+      !emp.employmentType ||
+      !emp.hireDate
+    ) {
       alert("Please fill in all fields.");
       return;
     }
 
-    const newEmp = { id: Date.now(), ...emp };
+    let updatedEmployees;
 
-    setData({ ...data, employees: [...employees, newEmp] });
+    if (emp.id) {
+      // Update existing employee (keep empId)
+      updatedEmployees = employees.map((e) =>
+        e.id === emp.id ? { ...emp, empId: e.empId } : e
+      );
+    } else {
+      // Add new employee (unique ID, fills gap)
+      const newEmp = { ...emp, id: Date.now(), empId: generateEmployeeID() };
+      updatedEmployees = [...employees, newEmp];
+    }
 
+    setData({ ...data, employees: updatedEmployees });
+
+    // Reset form
     setEmp({
       id: "",
-      empId: generateEmployeeID(),
+      empId: "",
       name: "",
       designation: "",
       department: "",
@@ -49,35 +82,47 @@ export default function Employees({ data = {}, setData }) {
     });
   };
 
+  // 🗑 Delete specific employee
   const deleteEmployee = (id) => {
-    setData({
-      ...data,
-      employees: employees.filter((e) => e.id !== id),
-    });
+    const confirmDelete = window.confirm("Are you sure you want to delete this employee?");
+    if (!confirmDelete) return;
+
+    const updatedEmployees = employees.filter((e) => e.id !== id);
+    setData({ ...data, employees: updatedEmployees });
   };
 
+  // ✏️ Load data to edit
   const editEmployee = (id) => {
     const toEdit = employees.find((e) => e.id === id);
     if (toEdit) {
-      setEmp(toEdit);
-      setData({
-        ...data,
-        employees: employees.filter((e) => e.id !== id),
-      });
+      setEmp({ ...toEdit });
     }
+  };
+
+  // ❌ Cancel editing
+  const cancelEdit = () => {
+    setEmp({
+      id: "",
+      empId: "",
+      name: "",
+      designation: "",
+      department: "",
+      employmentType: "",
+      hireDate: "",
+      status: "Active",
+    });
   };
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">Employees</h2>
 
-      {/* Add / Edit Employee Form */}
+      {/* Add / Edit Form */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <input
-          className="border p-2 rounded"
-          value={emp.empId}
+          className="border p-2 rounded bg-gray-100"
+          value={emp.empId || generateEmployeeID()}
           readOnly
-          placeholder="Employee ID (auto)"
         />
         <input
           className="border p-2 rounded"
@@ -92,7 +137,7 @@ export default function Employees({ data = {}, setData }) {
           placeholder="Designation"
         />
 
-        {/* Department Dropdown */}
+        {/* Department */}
         <select
           className="border p-2 rounded"
           value={emp.department}
@@ -143,12 +188,25 @@ export default function Employees({ data = {}, setData }) {
         </select>
       </div>
 
-      <button
-        onClick={addEmployee}
-        className="mb-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        {emp.id ? "Update Employee" : "Add Employee"}
-      </button>
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={addEmployee}
+          className={`${
+            emp.id ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
+          } text-white px-4 py-2 rounded`}
+        >
+          {emp.id ? "Save Update" : "Add Employee"}
+        </button>
+
+        {emp.id && (
+          <button
+            onClick={cancelEdit}
+            className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
 
       {/* Employee Table */}
       <div className="overflow-x-auto">
@@ -156,7 +214,7 @@ export default function Employees({ data = {}, setData }) {
           <thead className="bg-gray-100">
             <tr>
               <th className="border px-3 py-2 text-left">Employee ID</th>
-              <th className="border px-3 py-2 text-left">Employee Name</th>
+              <th className="border px-3 py-2 text-left">Name</th>
               <th className="border px-3 py-2 text-left">Designation</th>
               <th className="border px-3 py-2 text-left">Department</th>
               <th className="border px-3 py-2 text-left">Employment Type</th>
@@ -208,10 +266,7 @@ export default function Employees({ data = {}, setData }) {
               ))
             ) : (
               <tr>
-                <td
-                  colSpan="8"
-                  className="text-center py-4 text-gray-500 italic"
-                >
+                <td colSpan="8" className="text-center py-4 text-gray-500 italic">
                   No employees found.
                 </td>
               </tr>
