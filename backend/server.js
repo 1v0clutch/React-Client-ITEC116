@@ -3,6 +3,8 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 
+const app = express();
+
 //Import Routes
 const inventoryRoutes = require("./routes/inventory.routes");
 const transactionRoutes = require("./routes/transaction.routes");
@@ -15,7 +17,7 @@ const financeRoutes = require('./routes/finance.routes');
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
-const app = express();
+const demandForecastRoutes = require("./routes/demandForecast.routes");
 
 
 //Middleware
@@ -47,6 +49,7 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
+app.use("/api/demand-forecast", demandForecastRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

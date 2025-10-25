@@ -58,6 +58,15 @@ const categories = [
       { path: "/hr/salary", label: "Salary" },
     ],
   },
+  {
+    label: "SupplyChain",
+    links: [
+      { path: "/supply-chain/demand-forecast", label: "Demand Forecast" },
+      { path: "/supply-chain/inventory-supply-chain", label: "Inventory Supply Chain" },
+      { path: "/supply-chain/logistics-supply-chain", label: "Logisctics Supply Chain" },
+      { path: "/supply-chain/procurement-supply-chain", label: "Procurement Supply Chain" },
+    ],
+  },
 ];
 
 function Sidebar() {
