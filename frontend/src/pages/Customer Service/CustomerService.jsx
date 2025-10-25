@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef } from "react";
   - Keeps tickets & articles in localStorage
   - SLA countdown updated every 30s; auto-escalates overdue tickets
   - Ticket detail supports internal notes, messages, status changes, reassign, SLA update
-  - Simple styling (clean white + blue)
+  - Simple styling (clean white + blue),,,
 */
 
 const SAMPLE_ARTICLES = [
@@ -113,7 +113,7 @@ export default function HelpdeskSystem() {
       });
 
       if (changed) {
-        // replace tickets but keep created/order
+       
         setTickets((prev) => {
           // merge updates to persist statuses
           return updated.map(u => {
