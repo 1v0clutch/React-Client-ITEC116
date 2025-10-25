@@ -3,16 +3,15 @@ import Sidebar from "./components/layouts/Sidebar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 // Procurement
-import Procurement from "./pages/Dashboard/Procurement";
 import Suppliers from "./pages/Procurement/Suppliers";
 import Requisition from "./pages/Procurement/Requisition";
 import PurchaseOrders from "./pages/Procurement/PurchaseOrders";
 import Invoices from "./pages/Procurement/Invoices";
 
 // Inventory
-import Inventory from "./pages/Dashboard/Inventory";
-import Transaction from "./pages/Dashboard/Transaction";
-import Warehouse from "./pages/Dashboard/Warehouse";
+import Inventory from "./pages/Inventory/Inventory";
+import Transaction from "./pages/Inventory/Transaction";
+import Warehouse from "./pages/Inventory/Warehouse";
 
 // Finance
 import Finance from "./pages/Finance/FinanceHead";
@@ -41,13 +40,17 @@ import CMmanagement from "./pages/SalesCustomer/CMmanagement";
 import SalesOrder from "./pages/SalesCustomer/Salesorder";
 import SalesReport from "./pages/SalesCustomer/salerep";
 
-const API_BASE = "http://localhost:5000/api";
+import Project from "./pages/ProjectManagement/Project";
+import ProjectForm from "./pages/ProjectManagement/ProjectForm";
+// 👇 ADD THIS RIGHT AFTER YOUR IMPORTS
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
+
 
 function App() {
   const [data, setData] = useState({
     employees: [],
     departments: [],
-    attendance: [], 
+    attendance: [],
     payroll: [],
     salary: [],
   });
@@ -55,14 +58,19 @@ function App() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [employeesRes, departmentsRes, attendanceRes, payrollRes, salaryRes] =
-          await Promise.all([
-            fetch(`${API_BASE}/employees`),
-            fetch(`${API_BASE}/departments`),
-            fetch(`${API_BASE}/attendance`),
-            fetch(`${API_BASE}/payroll`),
-            fetch(`${API_BASE}/salary`),
-          ]);
+        const [
+          employeesRes,
+          departmentsRes,
+          attendanceRes,
+          payrollRes,
+          salaryRes,
+        ] = await Promise.all([
+          fetch(`${API_BASE}/employees`),
+          fetch(`${API_BASE}/departments`),
+          fetch(`${API_BASE}/attendance`),
+          fetch(`${API_BASE}/payroll`),
+          fetch(`${API_BASE}/salary`),
+        ]);
 
         const [employees, departments, attendance, payroll, salary] =
           await Promise.all([
@@ -89,25 +97,36 @@ function App() {
         <div className="ml-56 p-5 w-full bg-gray-50 min-h-screen">
           <Routes>
             {/* Procurement */}
-            <Route path="/procurement" element={<Procurement />} />
             <Route path="/procurement/suppliers" element={<Suppliers />} />
             <Route path="/procurement/requisition" element={<Requisition />} />
-            <Route path="/procurement/purchase-orders" element={<PurchaseOrders />} />
+            <Route
+              path="/procurement/purchase-orders"
+              element={<PurchaseOrders />}
+            />
             <Route path="/procurement/invoices" element={<Invoices />} />
 
             {/* Inventory */}
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/transactions" element={<Transaction />} />
-            <Route path="/warehouse" element={<Warehouse />} />
+            <Route path="/inventory/inventory-management" element={<Inventory />} />
+            <Route path="/inventory/transactions" element={<Transaction />} />
+            <Route path="/inventory/warehouse" element={<Warehouse />} />
 
             {/* Finance */}
             <Route path="/finance/general-finance" element={<Finance />} />
             <Route path="/finance/employee-payroll" element={<Payroll />} />
-            <Route path="/finance/supplier-report" element={<SupplierReport />} />
+            <Route
+              path="/finance/supplier-report"
+              element={<SupplierReport />}
+            />
             <Route path="/finance/customer-report" element={<Customer />} />
             <Route path="/finance/finance-report" element={<Report />} />
-            <Route path="/finance/inventory-report" element={<InventoryReport />} />
-            <Route path="/finance/payroll-report" element={<EmployeePayrollReport />} />
+            <Route
+              path="/finance/inventory-report"
+              element={<InventoryReport />}
+            />
+            <Route
+              path="/finance/payroll-report"
+              element={<EmployeePayrollReport />}
+            />
 
             {/* HR */}
             <Route
@@ -139,10 +158,17 @@ function App() {
             <Route path="/customer-service" element={<CustomerService />} />
 
             {/* Sales */}
-            <Route path="/sales/customer-management" element={<CMmanagement />} />
+            <Route
+              path="/sales/customer-management"
+              element={<CMmanagement />}
+            />
             <Route path="/sales/after-sales" element={<AfterSales />} />
             <Route path="/sales/sales-order" element={<SalesOrder />} />
             <Route path="/sales/sales-report" element={<SalesReport />} />
+
+            {/* Project Management */}
+            <Route path="/project-management/project" element={<Project />} />
+            <Route path="/project-management/form" element={<ProjectForm />} />
           </Routes>
         </div>
       </div>
