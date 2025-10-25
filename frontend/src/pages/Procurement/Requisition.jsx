@@ -106,10 +106,7 @@ export default function Requisition() {
   // Delete requisition
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this requisition?")) return;
-    await fetch(
-      `http://localhost:8000/api/requisitions/deleteRequisition/${id}`,
-      { method: "DELETE" }
-    );
+    await fetch(`http://localhost:8000/api/requisitions/${id}`, { method: "DELETE" });
     setRequisitions(requisitions.filter((r) => r._id !== id));
   };
 
