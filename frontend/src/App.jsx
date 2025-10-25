@@ -22,6 +22,9 @@ import Customer from "./pages/Finance/CustomerReport";
 import Report from "./pages/Finance/FinanceReport";
 import InventoryReport from "./pages/Finance/InventoryReport";
 import EmployeePayrollReport from "./pages/Finance/EmployeePayrollReport";
+import FinanceApprovalsOverview from "./pages/Finance/FinanceApprovalsOverview";
+import FinancePendingApprovals from "./pages/Finance/FinancePendingApprovals";
+import FinanceApprovalHistory from "./pages/Finance/FinanceApprovalHistory";
 
 // HR
 import LeaveAttendance from "./pages/HR/Attendance";
@@ -96,7 +99,7 @@ function App() {
         <div className="ml-56 p-5 w-full bg-gray-50 min-h-screen">
           <Routes>
             {/* Procurement */}
-            <Route path="/procurement" element={<Procurement />} />
+
             <Route path="/procurement/suppliers" element={<Suppliers />} />
             <Route path="/procurement/requisition" element={<Requisition />} />
             <Route
@@ -126,6 +129,18 @@ function App() {
             <Route
               path="/finance/payroll-report"
               element={<EmployeePayrollReport />}
+            />
+            <Route
+              path="/finance/approvals/overview"
+              element={<FinanceApprovalsOverview />}
+            />
+            <Route
+              path="/finance/approvals/pending"
+              element={<FinancePendingApprovals />}
+            />
+            <Route
+              path="/finance/approvals/history"
+              element={<FinanceApprovalHistory />}
             />
 
             {/* HR */}
