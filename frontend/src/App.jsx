@@ -23,13 +23,14 @@ import Report from "./pages/Finance/FinanceReport";
 import InventoryReport from "./pages/Finance/InventoryReport";
 import EmployeePayrollReport from "./pages/Finance/EmployeePayrollReport";
 
-// HR
-import LeaveAttendance from "./pages/HR/Attendance"; 
+// HR //
+import Attendance from "./pages/HR/Attendance";
 import Dashboard from "./pages/HR/Dashboard";
 import Departments from "./pages/HR/Departments";
 import Employees from "./pages/HR/Employees";
 import PayrollEmployee from "./pages/HR/Payroll";
-import Salary from "./pages/HR/Salary";
+import Salary from "./pages/HR/Salary"; 
+  
 
 // Customer Service
 import CustomerService from "./pages/Customer Service/CustomerService";
@@ -111,7 +112,7 @@ function App() {
             {/* HR */}
             <Route
               path="/hr/attendance"
-              element={<LeaveAttendance data={data} setData={setData} />} // ✅ Correct props
+              element={<Attendance data={data} setData={setData} />} 
             />
             <Route
               path="/hr/dashboard"
