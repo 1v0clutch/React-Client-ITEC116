@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { Warehouse, Plus, Trash2, Package, MapPin, X, CheckCircle, AlertCircle, ArrowRightLeft } from "lucide-react";
+import { AddWarehouseModal, AssignItemModal, TransferItemModal } from "../../components/modals/WarehouseModal";
 
-const Warehouse = () => {
+const WarehouseManagement = () => {
   const [warehouses, setWarehouses] = useState([]);
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
@@ -11,6 +13,11 @@ const Warehouse = () => {
   const [transferItemId, setTransferItemId] = useState("");
   const [transferQuantity, setTransferQuantity] = useState("");
   const [inventoryItems, setInventoryItems] = useState([]);
+  const [message, setMessage] = useState({ text: "", type: "" });
+  
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const API_INVENTORY = "http://localhost:8000/api/inventory";
   const API_WAREHOUSE = "http://localhost:8000/api/warehouses";
@@ -22,11 +29,10 @@ const Warehouse = () => {
       const data = await res.json();
       setInventoryItems(data);
     } catch (err) {
-      console.error(err.message);
+      setMessage({ text: err.message, type: "error" });
     }
   };
 
-  // Fetch warehouses
   const fetchWarehouses = async () => {
     try {
       const res = await fetch(`${API_WAREHOUSE}/getAllWarehouse`);
@@ -34,7 +40,7 @@ const Warehouse = () => {
       const data = await res.json();
       setWarehouses(data);
     } catch (err) {
-      console.error(err.message);
+      setMessage({ text: err.message, type: "error" });
     }
   };
 
@@ -43,7 +49,6 @@ const Warehouse = () => {
     fetchInventoryItems();
   }, []);
 
-  // Add warehouse
   const handleAddWarehouse = async (e) => {
     e.preventDefault();
     try {
@@ -58,15 +63,16 @@ const Warehouse = () => {
         throw new Error(error.error || "Error adding warehouse");
       }
 
+      setMessage({ text: "Warehouse added successfully", type: "success" });
       setName("");
       setLocation("");
+      setShowAddModal(false);
       fetchWarehouses();
     } catch (err) {
-      alert(err.message);
+      setMessage({ text: err.message, type: "error" });
     }
   };
 
-  // Delete warehouse
   const handleDeleteWarehouse = async (id) => {
     if (!window.confirm("Are you sure you want to delete this warehouse?"))
       return;
@@ -80,20 +86,19 @@ const Warehouse = () => {
         throw new Error(error.error || "Error deleting warehouse");
       }
 
+      setMessage({ text: "Warehouse deleted successfully", type: "success" });
       fetchWarehouses();
     } catch (err) {
-      alert(err.message);
+      setMessage({ text: err.message, type: "error" });
     }
   };
 
-  // Assign item
   const handleAssignItem = async (e) => {
     e.preventDefault();
 
-    // Find the selected item in inventory
     const selectedItem = inventoryItems.find((i) => i._id === itemId);
     if (!selectedItem) {
-      alert("Item not found in inventory");
+      setMessage({ text: "Item not found in inventory", type: "error" });
       return;
     }
 
@@ -104,7 +109,7 @@ const Warehouse = () => {
         body: JSON.stringify({
           warehouseId: fromWarehouse,
           itemId,
-          quantity: selectedItem.quantity, //
+          quantity: selectedItem.quantity,
           zone,
         }),
       });
@@ -114,16 +119,17 @@ const Warehouse = () => {
         throw new Error(error.error || "Error assigning item");
       }
 
+      setMessage({ text: "Item assigned successfully", type: "success" });
       setItemId("");
       setZone("");
       setFromWarehouse("");
+      setShowAssignModal(false);
       fetchWarehouses();
     } catch (err) {
-      alert(err.message);
+      setMessage({ text: err.message, type: "error" });
     }
   };
 
-  // Transfer item
   const handleTransferItem = async (e) => {
     e.preventDefault();
     try {
@@ -143,191 +149,220 @@ const Warehouse = () => {
         throw new Error(error.error || "Error transferring item");
       }
 
+      setMessage({ text: "Item transferred successfully", type: "success" });
       setFromWarehouse("");
       setToWarehouse("");
       setTransferItemId("");
       setTransferQuantity("");
+      setShowTransferModal(false);
       fetchWarehouses();
     } catch (err) {
-      alert(err.message);
+      setMessage({ text: err.message, type: "error" });
     }
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Warehouse Management</h1>
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Warehouse className="w-10 h-10" />
+            <h1 className="text-4xl font-bold">Warehouse Management</h1>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Add Warehouse
+            </button>
+            <button
+              onClick={() => setShowAssignModal(true)}
+              className="px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Package className="w-5 h-5" />
+              Assign Item
+            </button>
+            <button
+              onClick={() => setShowTransferModal(true)}
+              className="px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <ArrowRightLeft className="w-5 h-5" />
+              Transfer Item
+            </button>
+          </div>
+        </div>
+      </div>
 
-      {/* Add Warehouse */}
-      <form onSubmit={handleAddWarehouse} className="mb-6">
-        <h2 className="font-semibold mb-2">Add Warehouse</h2>
-        <input
-          type="text"
-          placeholder="Warehouse Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="border p-2 mr-2"
-          required
-        />
-        <input
-          type="text"
-          placeholder="Location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          className="border p-2 mr-2"
-          required
-        />
-        <button type="submit" className="bg-green-600 text-white px-4 py-2">
-          Add
-        </button>
-      </form>
-
-      {/* Assign Item */}
-      <form onSubmit={handleAssignItem} className="mb-6">
-        <h2 className="font-semibold mb-2">Assign Item to Warehouse</h2>
-        <select
-          value={fromWarehouse}
-          onChange={(e) => setFromWarehouse(e.target.value)}
-          className="border p-2 mr-2"
-          required
+      {/* Message Display */}
+      {message.text && (
+        <div
+          className={`mb-6 p-4 rounded-lg flex items-center justify-between ${
+            message.type === "success"
+              ? "bg-green-500/10 border border-green-500/30 text-green-400"
+              : "bg-red-500/10 border border-red-500/30 text-red-400"
+          }`}
         >
-          <option value="">Select Warehouse</option>
-          {warehouses.map((w) => (
-            <option key={w._id} value={w._id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Only show inventory items that are NOT already assigned */}
-        <select
-          value={itemId}
-          onChange={(e) => setItemId(e.target.value)}
-          className="border p-2 mr-2"
-          required
-        >
-          <option value="">Select Item</option>
-          {inventoryItems
-            .filter(
-              (item) =>
-                !warehouses.some((w) =>
-                  w.items.some((wi) => wi.itemId._id === item._id)
-                )
-            )
-            .map((item) => (
-              <option key={item._id} value={item._id}>
-                {item.name} ({item.sku} - Stock: {item.quantity})
-              </option>
-            ))}
-        </select>
-
-        <input
-          type="text"
-          placeholder="Zone"
-          value={zone}
-          onChange={(e) => setZone(e.target.value)}
-          className="border p-2 mr-2"
-        />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2">
-          Assign
-        </button>
-      </form>
-
-      {/* Transfer Item */}
-      <form onSubmit={handleTransferItem} className="mb-6">
-        <h2 className="font-semibold mb-2">Transfer Item Between Warehouses</h2>
-
-        {/* From warehouse */}
-        <select
-          value={fromWarehouse}
-          onChange={(e) => setFromWarehouse(e.target.value)}
-          className="border p-2 mr-2"
-          required
-        >
-          <option value="">From Warehouse</option>
-          {warehouses.map((w) => (
-            <option key={w._id} value={w._id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
-
-        {/* To warehouse */}
-        <select
-          value={toWarehouse}
-          onChange={(e) => setToWarehouse(e.target.value)}
-          className="border p-2 mr-2"
-          required
-        >
-          <option value="">To Warehouse</option>
-          {warehouses.map((w) => (
-            <option key={w._id} value={w._id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Item dropdown based on selected fromWarehouse */}
-        <select
-          value={transferItemId}
-          onChange={(e) => setTransferItemId(e.target.value)}
-          className="border p-2 mr-2"
-          required
-        >
-          <option value="">Select Item</option>
-          {warehouses
-            .find((w) => w._id === fromWarehouse)
-            ?.items.map((i) => (
-              <option key={i.itemId._id} value={i.itemId._id}>
-                {i.itemId.name} ({i.itemId.sku}) - Qty: {i.quantity}
-              </option>
-            ))}
-        </select>
-
-        <input
-          type="number"
-          placeholder="Quantity"
-          value={transferQuantity}
-          onChange={(e) => setTransferQuantity(e.target.value)}
-          className="border p-2 mr-2"
-          required
-        />
-
-        <button type="submit" className="bg-purple-600 text-white px-4 py-2">
-          Transfer
-        </button>
-      </form>
-
-      {/* List Warehouses */}
-      <h2 className="font-semibold mb-2">Warehouse List</h2>
-      <ul>
-        {warehouses.map((w) => (
-          <li key={w._id} className="border p-3 mb-2">
-            <div className="flex justify-between items-center">
-              <span>
-                <strong>{w.name}</strong> - {w.location}
-              </span>
-              <button
-                onClick={() => handleDeleteWarehouse(w._id)}
-                className="bg-red-600 text-white px-3 py-1"
-              >
-                Delete
-              </button>
-            </div>
-            {w.items.length > 0 && (
-              <ul className="ml-4 mt-2 text-sm">
-                {w.items.map((i, idx) => (
-                  <li key={idx}>
-                    {i.itemId?.name || i.itemId} - Qty: {i.quantity} (Zone:{" "}
-                    {i.zone || "N/A"})
-                  </li>
-                ))}
-              </ul>
+          <div className="flex items-center gap-2">
+            {message.type === "success" ? (
+              <CheckCircle className="w-5 h-5" />
+            ) : (
+              <AlertCircle className="w-5 h-5" />
             )}
-          </li>
-        ))}
-      </ul>
+            <span>{message.text}</span>
+          </div>
+          <button
+            onClick={() => setMessage({ text: "", type: "" })}
+            className="hover:opacity-70 transition-opacity"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Warehouse List */}
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-semibold">
+            Warehouses ({warehouses.length})
+          </h3>
+        </div>
+
+        {warehouses.length === 0 ? (
+          <div className="text-center py-12">
+            <Warehouse className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-400 text-lg">No warehouses found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {warehouses.map((w) => (
+              <div
+                key={w._id}
+                className="bg-slate-900/50 border border-slate-700 rounded-lg p-5 hover:border-slate-600 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Warehouse className="w-5 h-5 text-blue-400" />
+                      <h4 className="font-semibold text-lg">{w.name}</h4>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400 text-sm">
+                      <MapPin className="w-4 h-4" />
+                      <span>{w.location}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteWarehouse(w._id)}
+                    className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {w.items.length > 0 ? (
+                  <div className="mt-4 pt-4 border-t border-slate-700">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Package className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm font-medium text-slate-400">
+                        Items ({w.items.length})
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {w.items.map((i, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-slate-800/50 rounded-lg p-3 text-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">
+                              {i.itemId?.name || "Unknown Item"}
+                            </span>
+                            <span className="text-blue-400 font-semibold">
+                              Qty: {i.quantity}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-slate-400 text-xs">
+                            <span>SKU: {i.itemId?.sku || "N/A"}</span>
+                            {i.zone && (
+                              <span className="px-2 py-0.5 bg-slate-700 rounded">
+                                Zone: {i.zone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 pt-4 border-t border-slate-700 text-center text-slate-500 text-sm">
+                    No items assigned
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      <AddWarehouseModal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setName("");
+          setLocation("");
+        }}
+        name={name}
+        setName={setName}
+        location={location}
+        setLocation={setLocation}
+        onSubmit={handleAddWarehouse}
+      />
+
+      <AssignItemModal
+        isOpen={showAssignModal}
+        onClose={() => {
+          setShowAssignModal(false);
+          setFromWarehouse("");
+          setItemId("");
+          setZone("");
+        }}
+        warehouses={warehouses}
+        inventoryItems={inventoryItems}
+        fromWarehouse={fromWarehouse}
+        setFromWarehouse={setFromWarehouse}
+        itemId={itemId}
+        setItemId={setItemId}
+        zone={zone}
+        setZone={setZone}
+        onSubmit={handleAssignItem}
+      />
+
+      <TransferItemModal
+        isOpen={showTransferModal}
+        onClose={() => {
+          setShowTransferModal(false);
+          setFromWarehouse("");
+          setToWarehouse("");
+          setTransferItemId("");
+          setTransferQuantity("");
+        }}
+        warehouses={warehouses}
+        fromWarehouse={fromWarehouse}
+        setFromWarehouse={setFromWarehouse}
+        toWarehouse={toWarehouse}
+        setToWarehouse={setToWarehouse}
+        transferItemId={transferItemId}
+        setTransferItemId={setTransferItemId}
+        transferQuantity={transferQuantity}
+        setTransferQuantity={setTransferQuantity}
+        onSubmit={handleTransferItem}
+      />
     </div>
   );
 };
 
-export default Warehouse;
+export default WarehouseManagement;
