@@ -14,32 +14,15 @@ const requisitionRoutes = require("./routes/requisition.routes");
 const purchaseOrderRoutes = require("./routes/purchaseOrder.routes");
 const invoiceRoutes = require("./routes/invoice.routes");
 const financeRoutes = require("./routes/finance.routes");
-<<<<<<< HEAD
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
 const projectRoutes = require("./routes/project.routes");
-const employeeRoutes = require("./routes/employee.routes");
+const employeeRoutes = require("./routes/employee.routes"); //
 const projectBudgetRoutes = require("./routes/projectBudget.routes");
 const app = express();
 
 //Middleware
-=======
-
-const attendanceRoutes = require("./routes/attendance.routes");
-const leaveRoutes = require("./routes/leave.routes");
-const hrRoutes = require("./routes/hr.routes");
-const employeesRoutes = require("./routes/employees.routes");
-const departmentsRoutes = require("./routes/departments.routes");
-const salaryRoutes = require("./routes/salary.routes");
-const payrollRoutes = require("./routes/payroll.routes");
-
-const app = express();
-
-// =============================
-// MIDDLEWARE
-// =============================
->>>>>>> main
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "*",
@@ -60,17 +43,17 @@ connectDB();
 // =============================
 
 // ✅ HR Core Routes
-app.use("/api/hr", hrRoutes);
-app.use("/api/employees", employeesRoutes);
-app.use("/api/departments", departmentsRoutes);
-app.use("/api/salary", salaryRoutes);
-app.use("/api/payroll", payrollRoutes)
+//app.use("/api/hr", hrRoutes);
+//app.use("/api/employees", employeesRoutes);
+//app.use("/api/departments", departmentsRoutes);
+//app.use("/api/salary", salaryRoutes);
+//app.use("/api/payroll", payrollRoutes);
 
 // ✅ HR Submodules
-app.use("/api/attendance", attendanceRoutes);
-app.use("/api/leaves", leaveRoutes);
-app.use("/api/payroll", payrollRoutes);
-app.use("/api/salary", salaryRoutes);
+//app.use("/api/attendance", attendanceRoutes);
+//app.use("/api/leaves", leaveRoutes);
+//app.use("/api/payroll", payrollRoutes);
+//app.use("/api/salary", salaryRoutes);
 
 // ✅ Procurement & Inventory
 app.use("/api/inventory", inventoryRoutes);
@@ -80,7 +63,6 @@ app.use("/api/suppliers", supplierRoutes);
 app.use("/api/requisitions", requisitionRoutes);
 app.use("/api/purchase-orders", purchaseOrderRoutes);
 app.use("/api/invoices", invoiceRoutes);
-<<<<<<< HEAD
 app.use("/api/finance", financeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
@@ -88,8 +70,6 @@ app.use("/api/hr", hrRoutes);
 app.use("/api/project", projectRoutes);
 app.use("/api/employee", employeeRoutes);
 app.use("/api/projectBudget", projectBudgetRoutes);
-=======
->>>>>>> main
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);
@@ -105,8 +85,4 @@ app.get("/", (req, res) => {
 // START SERVER
 // =============================
 const PORT = process.env.PORT || 5000;
-<<<<<<< HEAD
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-=======
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
->>>>>>> main
