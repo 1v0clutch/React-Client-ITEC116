@@ -45,9 +45,7 @@ import ProjectForm from "./pages/ProjectManagement/ProjectForm";
 import ProjectGantt from "./pages/ProjectManagement/ProjectGantt";
 import DependencySetup from "./pages/ProjectManagement/DependencySetup";
 import Employee from "./pages/ProjectManagement/Employee";
-{
-  /* This is a temporary form */
-}
+import ProjectList from "./pages/ProjectManagement/ProjectList";
 
 function App() {
   const [data, setData] = useState({
@@ -184,6 +182,7 @@ function App() {
               element={<DependencySetup />}
             />
             <Route path="/project-management/employee" element={<Employee />} />
+            <Route path="/project-management/list" element={<ProjectList />} />
           </Routes>
         </div>
       </div>

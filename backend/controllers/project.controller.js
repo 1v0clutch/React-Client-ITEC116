@@ -1,5 +1,6 @@
 const Project = require("../models/Project");
 const Employee = require("../models/Employee");
+const ProjectBudget = require("../models/ProjectBudget");
 
 exports.create = async (req, res) => {
   try {
@@ -577,5 +578,48 @@ exports.deleteResourceAllocation = async (req, res) => {
   } catch (err) {
     console.error("Error deleting resource allocation:", err);
     res.status(500).json({ message: "Error deleting resource allocation" });
+  }
+};
+
+// ✅ Delete a project and clean up related allocations + project budget
+exports.deleteProject = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // 1️⃣ Remove project allocations from employees
+    if (project.resourceAllocations && project.resourceAllocations.length > 0) {
+      for (const alloc of project.resourceAllocations) {
+        const employee = await Employee.findById(alloc.employee);
+        if (employee) {
+          employee.allocations = employee.allocations.filter(
+            (a) => String(a.project) !== String(projectId)
+          );
+          await employee.save();
+        }
+      }
+    }
+
+    // 2️⃣ Delete related project budget (if exists)
+    const deletedBudget = await ProjectBudget.findOneAndDelete({
+      project: projectId,
+    });
+    if (deletedBudget) {
+      console.log(`Deleted budget for project ${projectId}`);
+    }
+
+    // 3️⃣ Finally delete the project
+    await Project.findByIdAndDelete(projectId);
+
+    res.json({ message: "✅ Project and related data deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting project:", err);
+    res.status(500).json({
+      message: err.message || "Error deleting project",
+    });
   }
 };

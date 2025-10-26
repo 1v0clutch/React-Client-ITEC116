@@ -6,18 +6,19 @@ import {
   FaTrash,
   FaTimes,
   FaExclamationTriangle,
+  FaEdit,
+  FaSave,
 } from "react-icons/fa";
 
 const API_PROJECT = "http://localhost:8000/api/project";
 const API_EMPLOYEE = "http://localhost:8000/api/employee";
 
-export default function ResourceAllocationUI() {
+export default function ResourceAllocationUI({ project }) {
   const [showForm, setShowForm] = useState(false);
-  const [projects, setProjects] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [selectedProject, setSelectedProject] = useState("");
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editResource, setEditResource] = useState(null);
 
   const [formData, setFormData] = useState({
     taskId: "",
@@ -27,146 +28,121 @@ export default function ResourceAllocationUI() {
   });
 
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedProject) {
-      fetchProjectResources(selectedProject);
+    if (project?._id) {
+      fetchEmployees();
     }
-  }, [selectedProject]);
+  }, [project]);
 
-  const fetchData = async () => {
+  const fetchEmployees = async () => {
     try {
-      setLoading(true);
+      const res = await fetch(API_EMPLOYEE);
+      if (!res.ok) throw new Error("Failed to fetch employees");
+      const data = await res.json();
+      setEmployees(data);
 
-      const [projectsRes, employeesRes] = await Promise.all([
-        fetch(`${API_PROJECT}/projects`), // Fixed: added /projects
-        fetch(API_EMPLOYEE),
-      ]);
-
-      if (!projectsRes.ok) throw new Error("Failed to fetch projects");
-      if (!employeesRes.ok) throw new Error("Failed to fetch employees");
-
-      const projectsData = await projectsRes.json();
-      const employeesData = await employeesRes.json();
-
-      setProjects(projectsData);
-      setEmployees(employeesData);
-
-      if (projectsData.length > 0) {
-        setSelectedProject(projectsData[0]._id);
+      // Now that we have employees, fetch project resources
+      if (project?._id) {
+        await fetchProjectResources(project._id, data);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
-      alert("Error loading data: " + error.message);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching employees:", error);
+      alert("Error loading employees: " + error.message);
     }
   };
 
-  const fetchProjectResources = async (projectId) => {
+  const fetchProjectResources = async (
+    projectId,
+    employeesList = employees
+  ) => {
     try {
-      console.log("Fetching project data for:", projectId);
+      setLoading(true);
+      console.log("Fetching allocations for project:", projectId);
 
-      // Get the full project data with phases and tasks
-      const projectRes = await fetch(`${API_PROJECT}/projects/${projectId}`);
-
-      if (!projectRes.ok) {
-        throw new Error("Failed to fetch project details");
-      }
-
-      const projectData = await projectRes.json();
-      console.log("Project data:", projectData);
-      console.log("Project phases:", projectData.phases);
-
-      // Now get the allocations
       const allocationsRes = await fetch(
         `${API_PROJECT}/projects/${projectId}/allocations`
       );
-
-      if (!allocationsRes.ok) {
-        throw new Error("Failed to fetch allocations");
-      }
+      if (!allocationsRes.ok) throw new Error("Failed to fetch allocations");
 
       const allocationsData = await allocationsRes.json();
       console.log("Allocations data:", allocationsData);
 
-      // Process the resources
-      if (allocationsData.resourceAllocations) {
+      const projectDataRes = await fetch(
+        `${API_PROJECT}/projects/${projectId}`
+      );
+      if (!projectDataRes.ok) throw new Error("Failed to fetch project data");
+
+      const projectData = await projectDataRes.json();
+      console.log("Project data:", projectData);
+
+      if (
+        allocationsData.resourceAllocations &&
+        Array.isArray(allocationsData.resourceAllocations)
+      ) {
         const resourcesWithDetails = allocationsData.resourceAllocations.map(
           (alloc) => {
             console.log("Processing allocation:", alloc);
-            console.log("Looking for task ID:", alloc.task);
 
-            const employee = employees.find(
-              (emp) => emp._id === alloc.employee?._id || alloc.employee
+            // Find employee - handle both object and ID formats
+            const employee = employeesList.find(
+              (emp) =>
+                emp._id === alloc.employee?._id || emp._id === alloc.employee
             );
 
-            // Find task in project data
+            console.log("Found employee:", employee);
+
             let taskName = "Unknown Task";
             let phaseName = "Unknown Phase";
-            let taskFound = false;
 
             if (projectData.phases && Array.isArray(projectData.phases)) {
               for (const phase of projectData.phases) {
                 if (phase.tasks && Array.isArray(phase.tasks)) {
-                  const task = phase.tasks.find((t) => {
-                    const match = String(t._id) === String(alloc.task);
-                    if (match) {
-                      console.log(
-                        "Found task:",
-                        t.name,
-                        "in phase:",
-                        phase.name
-                      );
-                    }
-                    return match;
-                  });
+                  const task = phase.tasks.find(
+                    (t) => String(t._id) === String(alloc.task)
+                  );
                   if (task) {
                     taskName = task.name;
                     phaseName = phase.name;
-                    taskFound = true;
                     break;
                   }
                 }
               }
             }
 
-            if (!taskFound) {
-              console.log("Task not found for allocation:", alloc);
-            }
-
-            return {
+            const resource = {
               id: alloc._id || `${alloc.employee}-${alloc.task}`,
-              taskName: taskName,
-              phaseName: phaseName,
+              taskName,
+              phaseName,
               employee: employee ? employee.name : "Unknown Employee",
               employeeId: alloc.employee?._id || alloc.employee,
               taskId: alloc.task,
-              equipment: alloc.equipment || "",
+              equipment: alloc.equipment || "No equipment",
               budget: alloc.budget || 0,
               workload: calculateWorkload(
-                alloc.employee?._id || alloc.employee
+                alloc.employee?._id || alloc.employee,
+                employeesList
               ),
             };
+
+            console.log("Created resource:", resource);
+            return resource;
           }
         );
-
-        console.log("Final resources:", resourcesWithDetails);
         setResources(resourcesWithDetails);
+        console.log("Final resources:", resourcesWithDetails);
       } else {
         console.log("No resource allocations found");
         setResources([]);
       }
     } catch (error) {
-      console.error("Error fetching project resources:", error);
+      console.error("Error fetching resources:", error);
       alert("Error loading allocations: " + error.message);
       setResources([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getAllTasks = (project) => {
+  const getAllTasks = () => {
     if (!project || !project.phases) return [];
     return project.phases.flatMap((phase) =>
       phase.tasks.map((task) => ({
@@ -176,17 +152,17 @@ export default function ResourceAllocationUI() {
     );
   };
 
-  const calculateWorkload = (employeeId) => {
-    const employee = employees.find((emp) => emp._id === employeeId);
-    if (!employee || !employee.allocations) return 0;
+  const calculateWorkload = (employeeId, employeesList = employees) => {
+    const employee = employeesList.find((emp) => emp._id === employeeId);
+    if (employee && Array.isArray(employee.allocations)) {
+      const allocationCount = employee.allocations.length;
+      return Math.min(allocationCount * 20, 100);
+    }
 
-    const allocationCount = employee.allocations.length;
-
-    if (allocationCount >= 5) return 100;
-    if (allocationCount >= 4) return 80;
-    if (allocationCount >= 3) return 60;
-    if (allocationCount >= 2) return 40;
-    return 20;
+    const allocationCount = resources.filter(
+      (r) => r.employeeId === employeeId
+    ).length;
+    return Math.min(allocationCount * 20, 100);
   };
 
   const getWorkloadStatus = (workload) => {
@@ -208,13 +184,19 @@ export default function ResourceAllocationUI() {
   };
 
   const handleSubmit = async () => {
-    if (
-      !selectedProject ||
-      !formData.taskId ||
-      !formData.employeeId ||
-      !formData.budget
-    ) {
-      alert("Please fill in all required fields");
+    if (!project?._id) return alert("No project selected");
+    if (!formData.taskId || !formData.employeeId || !formData.budget)
+      return alert("Please fill in all required fields");
+
+    const selectedEmp = employees.find((e) => e._id === formData.employeeId);
+    const isOnLeave =
+      selectedEmp?.onLeave === true ||
+      (selectedEmp?.status && selectedEmp.status.toLowerCase() === "on leave");
+
+    if (isOnLeave) {
+      alert(
+        "You cannot assign a task to an employee who is currently on leave."
+      );
       return;
     }
 
@@ -222,139 +204,160 @@ export default function ResourceAllocationUI() {
       const payload = {
         employeeId: formData.employeeId,
         taskId: formData.taskId,
-        equipment: formData.equipment,
+        equipment: formData.equipment || "No equipment specified",
         budget: parseFloat(formData.budget),
       };
 
-      console.log(
-        "Sending allocation to:",
-        `${API_PROJECT}/projects/${selectedProject}/allocations`
-      );
+      console.log("Submitting payload:", payload);
 
-      // FIXED: Added /projects/ in the URL
-      const res = await fetch(
-        `${API_PROJECT}/projects/${selectedProject}/allocations`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      let url = `${API_PROJECT}/projects/${project._id}/allocations`;
+      let method = "POST";
 
-      const result = await res.json();
+      if (editResource) {
+        url = `${API_PROJECT}/projects/${project._id}/allocations/${editResource.id}`;
+        method = "PUT";
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       if (res.ok) {
-        // Refresh the resources list
-        fetchProjectResources(selectedProject);
+        const result = await res.json();
+        console.log("Server response:", result);
+
+        // Refresh the data
+        await fetchEmployees();
         resetForm();
         setShowForm(false);
-        alert("Resource allocated successfully!");
+        setEditResource(null);
+        alert(
+          editResource
+            ? "Resource updated successfully!"
+            : "Resource allocated successfully!"
+        );
       } else {
-        alert(`Failed to save allocation: ${result.message}`);
+        const errorText = await res.text();
+        console.error("Server error response:", errorText);
+        let errorMessage = "Failed to save allocation";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        alert(`Failed: ${errorMessage}`);
       }
     } catch (error) {
-      console.error("Error saving allocation:", error);
-      alert("Error saving allocation: " + error.message);
+      console.error("Error saving resource:", error);
+      alert("Error: " + error.message);
     }
   };
 
-  const handleDelete = async (resourceId, employeeId, taskId) => {
-    if (!window.confirm("Are you sure you want to delete this allocation?"))
+  const handleDelete = async (resourceId) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this resource allocation?"
+      )
+    )
       return;
 
     try {
-      // FIXED: Added /projects/ in the URL
       const res = await fetch(
-        `${API_PROJECT}/projects/${selectedProject}/allocations/${resourceId}`,
-        {
-          method: "DELETE",
-        }
+        `${API_PROJECT}/projects/${project._id}/allocations/${resourceId}`,
+        { method: "DELETE" }
       );
-
       if (res.ok) {
-        // Refresh the list
-        fetchProjectResources(selectedProject);
-        alert("Allocation deleted successfully!");
+        // Refresh both employees and resources
+        await fetchEmployees();
+        alert("Resource allocation deleted successfully!");
       } else {
         const result = await res.json();
-        alert(`Failed to delete allocation: ${result.message}`);
+        alert(`Failed to delete: ${result.message}`);
       }
     } catch (error) {
-      console.error("Error deleting allocation:", error);
+      console.error("Delete error:", error);
       alert("Error deleting allocation: " + error.message);
     }
   };
 
-  const resetForm = () => {
+  const resetForm = () =>
     setFormData({
       taskId: "",
       employeeId: "",
       equipment: "",
       budget: "",
     });
+
+  const startEdit = (resource) => {
+    console.log("Editing resource:", resource);
+    setFormData({
+      taskId: resource.taskId,
+      employeeId: resource.employeeId,
+      equipment: resource.equipment,
+      budget: resource.budget.toString(),
+    });
+    setEditResource(resource);
+    setShowForm(true);
   };
 
-  const selectedProjectData = projects.find((p) => p._id === selectedProject);
-  const tasks = selectedProjectData ? getAllTasks(selectedProjectData) : [];
-
-  const totalBudget = resources.reduce((sum, r) => sum + r.budget, 0);
+  const tasks = getAllTasks();
+  const totalBudget = resources.reduce((sum, r) => sum + (r.budget || 0), 0);
   const overloadedEmployees = resources.filter((r) => r.workload >= 80).length;
 
-  if (loading) {
+  const selectedEmployeeWorkload = formData.employeeId
+    ? calculateWorkload(formData.employeeId)
+    : null;
+  const selectedEmployeeStatus =
+    selectedEmployeeWorkload !== null
+      ? getWorkloadStatus(selectedEmployeeWorkload)
+      : null;
+
+  const isSelectedEmployeeOnLeave = (() => {
+    if (!formData.employeeId) return false;
+    const emp = employees.find((e) => e._id === formData.employeeId);
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading resources...</p>
-        </div>
+      emp?.onLeave === true ||
+      (emp?.status && emp.status.toLowerCase() === "on leave")
+    );
+  })();
+
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-600">Loading resource allocations...</p>
       </div>
     );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Resource Allocation Management
+            Resource Allocation — {project?.name || "Untitled Project"}
           </h1>
           <p className="text-gray-600">
-            Manage assignments of human, financial, and material resources
+            Manage human, financial, and material resources for this project.
           </p>
         </div>
 
-        {/* Project Selection */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Project
-          </label>
-          <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            className="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {projects.map((project) => (
-              <option key={project._id} value={project._id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">
-                  Total Budget Allocated
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-gray-600">Total Budget</p>
+                <p className="text-2xl font-bold">
                   ₱{totalBudget.toLocaleString()}
                 </p>
               </div>
               <div className="bg-blue-100 p-3 rounded-lg">
-                <FaDollarSign className="w-6 h-6 text-blue-600" />
+                <FaDollarSign className="text-blue-600" />
               </div>
             </div>
           </div>
@@ -362,13 +365,11 @@ export default function ResourceAllocationUI() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Allocations</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {resources.length}
-                </p>
+                <p className="text-sm text-gray-600">Total Allocations</p>
+                <p className="text-2xl font-bold">{resources.length}</p>
               </div>
               <div className="bg-green-100 p-3 rounded-lg">
-                <FaUsers className="w-6 h-6 text-green-600" />
+                <FaUsers className="text-green-600" />
               </div>
             </div>
           </div>
@@ -376,62 +377,57 @@ export default function ResourceAllocationUI() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">
-                  Overloaded Employees
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {overloadedEmployees}
-                </p>
+                <p className="text-sm text-gray-600">Overloaded Employees</p>
+                <p className="text-2xl font-bold">{overloadedEmployees}</p>
               </div>
               <div className="bg-red-100 p-3 rounded-lg">
-                <FaExclamationTriangle className="w-6 h-6 text-red-600" />
+                <FaExclamationTriangle className="text-red-600" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Add Resource Button */}
+        {/* Add / Edit */}
         <div className="mb-6">
           <button
             onClick={() => {
               resetForm();
+              setEditResource(null);
               setShowForm(true);
             }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
           >
-            <FaPlus className="w-4 h-4" />
-            Allocate New Resource
+            <FaPlus /> Add Resource
           </button>
         </div>
 
-        {/* Allocation Form */}
         {showForm && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="bg-white shadow-lg rounded-lg p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
-                New Resource Allocation
+              <h2 className="text-lg font-semibold text-gray-800">
+                {editResource ? "Edit Allocation" : "New Allocation"}
               </h2>
               <button
                 onClick={() => {
                   setShowForm(false);
                   resetForm();
+                  setEditResource(null);
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
               >
-                <FaTimes className="w-6 h-6" />
+                <FaTimes />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Task *
-                </label>
+                <label className="text-sm text-gray-700">Task *</label>
                 <select
                   name="taskId"
                   value={formData.taskId}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border rounded px-3 py-2 mt-1"
+                  required
                 >
                   <option value="">Select Task</option>
                   {tasks.map((task) => (
@@ -440,96 +436,115 @@ export default function ResourceAllocationUI() {
                     </option>
                   ))}
                 </select>
-                <div className="text-xs text-gray-500 mt-1">
-                  {tasks.length} tasks available
-                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Employee *
-                </label>
+                <label className="text-sm text-gray-700">Employee *</label>
                 <select
                   name="employeeId"
                   value={formData.employeeId}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border rounded px-3 py-2 mt-1"
+                  required
                 >
                   <option value="">Select Employee</option>
-                  {employees.map((employee) => {
-                    const workload = calculateWorkload(employee._id);
-                    const workloadStatus = getWorkloadStatus(workload);
+                  {employees.map((emp) => {
+                    const isOnLeave =
+                      emp.onLeave === true ||
+                      (emp.status && emp.status.toLowerCase() === "on leave");
                     return (
-                      <option key={employee._id} value={employee._id}>
-                        {employee.name} ({workloadStatus.text} - {workload}%)
+                      <option
+                        key={emp._id}
+                        value={emp._id}
+                        disabled={isOnLeave}
+                        className={isOnLeave ? "text-gray-400 italic" : ""}
+                      >
+                        {emp.name}
+                        {isOnLeave ? " (On Leave)" : ""}
                       </option>
                     );
                   })}
                 </select>
-                <div className="text-xs text-gray-500 mt-1">
-                  {employees.length} employees available
-                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Equipment/Materials
-                </label>
+                <label className="text-sm text-gray-700">Equipment</label>
                 <input
                   type="text"
                   name="equipment"
                   value={formData.equipment}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter equipment or materials"
+                  placeholder="Enter equipment details"
+                  className="w-full border rounded px-3 py-2 mt-1"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Budget Allocated (₱) *
-                </label>
+                <label className="text-sm text-gray-700">Budget (₱) *</label>
                 <input
                   type="number"
                   name="budget"
                   value={formData.budget}
                   onChange={handleInputChange}
+                  className="w-full border rounded px-3 py-2 mt-1"
                   min="0"
                   step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0.00"
+                  required
                 />
               </div>
             </div>
 
-            {/* Workload Warning */}
+            {/* Workload / On-leave Alert */}
             {formData.employeeId && (
               <div
                 className={`mt-4 p-3 rounded-lg border ${
-                  calculateWorkload(formData.employeeId) >= 80
+                  isSelectedEmployeeOnLeave
                     ? "bg-red-50 border-red-200"
-                    : "bg-yellow-50 border-yellow-200"
+                    : selectedEmployeeWorkload >= 80
+                    ? "bg-red-50 border-red-200"
+                    : selectedEmployeeWorkload >= 60
+                    ? "bg-orange-50 border-orange-200"
+                    : "bg-blue-50 border-blue-200"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <FaExclamationTriangle
                     className={
-                      calculateWorkload(formData.employeeId) >= 80
+                      isSelectedEmployeeOnLeave
                         ? "text-red-600"
-                        : "text-yellow-600"
+                        : selectedEmployeeWorkload >= 80
+                        ? "text-red-600"
+                        : selectedEmployeeWorkload >= 60
+                        ? "text-orange-600"
+                        : "text-blue-600"
                     }
                   />
                   <span
                     className={`text-sm ${
-                      calculateWorkload(formData.employeeId) >= 80
+                      isSelectedEmployeeOnLeave
                         ? "text-red-800"
-                        : "text-yellow-800"
+                        : selectedEmployeeWorkload >= 80
+                        ? "text-red-800"
+                        : selectedEmployeeWorkload >= 60
+                        ? "text-orange-800"
+                        : "text-blue-800"
                     }`}
                   >
-                    Selected employee has{" "}
-                    {calculateWorkload(formData.employeeId)}% workload
-                    {calculateWorkload(formData.employeeId) >= 80 &&
-                      " - OVERLOADED!"}
+                    {isSelectedEmployeeOnLeave ? (
+                      <>
+                        Selected employee is currently <b>On Leave</b>. You
+                        cannot assign them to a task.
+                      </>
+                    ) : (
+                      <>
+                        Selected employee workload:{" "}
+                        <b>
+                          {selectedEmployeeWorkload}% (
+                          {selectedEmployeeStatus?.text})
+                        </b>
+                        {selectedEmployeeWorkload >= 80 && " — OVERLOADED!"}
+                      </>
+                    )}
                   </span>
                 </div>
               </div>
@@ -538,16 +553,30 @@ export default function ResourceAllocationUI() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleSubmit}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                disabled={
+                  isSelectedEmployeeOnLeave ||
+                  !formData.taskId ||
+                  !formData.employeeId ||
+                  !formData.budget
+                }
+                className={`px-6 py-2 rounded-lg flex items-center gap-2 ${
+                  isSelectedEmployeeOnLeave ||
+                  !formData.taskId ||
+                  !formData.employeeId ||
+                  !formData.budget
+                    ? "bg-gray-400 cursor-not-allowed text-white"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
               >
-                Save Allocation
+                <FaSave /> {editResource ? "Save Changes" : "Save Allocation"}
               </button>
               <button
                 onClick={() => {
                   setShowForm(false);
                   resetForm();
+                  setEditResource(null);
                 }}
-                className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
+                className="bg-gray-200 px-6 py-2 rounded-lg hover:bg-gray-300"
               >
                 Cancel
               </button>
@@ -558,11 +587,11 @@ export default function ResourceAllocationUI() {
         {/* Resources Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+            <table className="w-full min-w-full">
+              <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Task Name
+                    Phase → Task
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Employee
@@ -588,17 +617,24 @@ export default function ResourceAllocationUI() {
                       colSpan="6"
                       className="px-6 py-8 text-center text-gray-500"
                     >
-                      No resource allocations found for this project
+                      No resource allocations found. Click "Add Resource" to
+                      create your first allocation.
                     </td>
                   </tr>
                 ) : (
                   resources.map((resource) => {
                     const workloadStatus = getWorkloadStatus(resource.workload);
                     return (
-                      <tr key={resource.id} className="hover:bg-gray-50">
+                      <tr
+                        key={resource.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
                             {resource.taskName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {resource.phaseName}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -607,35 +643,39 @@ export default function ResourceAllocationUI() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-900">
                             {resource.equipment}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
+                          <div className="text-sm font-medium text-gray-900">
                             ₱{resource.budget.toLocaleString()}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 text-xs font-semibold rounded-full ${workloadStatus.color}`}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${workloadStatus.color}`}
                           >
                             {resource.workload}% ({workloadStatus.text})
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={() =>
-                              handleDelete(
-                                resource.id,
-                                resource.employeeId,
-                                resource.taskId
-                              )
-                            }
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <FaTrash className="w-4 h-4" />
-                          </button>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={() => startEdit(resource)}
+                              className="text-blue-600 hover:text-blue-900 transition-colors"
+                              title="Edit allocation"
+                            >
+                              <FaEdit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(resource.id)}
+                              className="text-red-600 hover:text-red-900 transition-colors"
+                              title="Delete allocation"
+                            >
+                              <FaTrash className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

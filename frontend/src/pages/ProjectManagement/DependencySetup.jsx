@@ -92,6 +92,19 @@ export default function DependencySetup() {
       return;
     }
 
+    // 🚫 Prevent assigning employee who is on leave
+    const selectedEmp = employees.find((e) => e._id === selectedEmployee);
+    if (
+      selectedEmp &&
+      (selectedEmp.status?.toLowerCase() === "on leave" ||
+        selectedEmp.onLeave === true)
+    ) {
+      alert(
+        "You cannot assign a task to an employee who is currently on leave."
+      );
+      return;
+    }
+
     const emp = employees.find((e) => e._id === selectedEmployee);
     const task = project?.allTasks.find((t) => t._uid === Number(selectedTask));
 
@@ -133,6 +146,19 @@ export default function DependencySetup() {
   };
 
   const saveEdit = () => {
+    // Prevent saving edit with an employee who’s on leave
+    const selectedEmp = employees.find((e) => e._id === selectedEmployee);
+    if (
+      selectedEmp &&
+      (selectedEmp.status?.toLowerCase() === "on leave" ||
+        selectedEmp.onLeave === true)
+    ) {
+      alert(
+        "You cannot assign a task to an employee who is currently on leave."
+      );
+      return;
+    }
+
     setAssignments((prev) =>
       prev.map((a, i) =>
         i === editingIndex
@@ -161,7 +187,6 @@ export default function DependencySetup() {
           ...task,
           startDate: task.start, // Convert 'start' to 'startDate'
           endDate: task.end, // Convert 'end' to 'endDate'
-          // Remove the temporary fields if needed
           start: undefined,
           end: undefined,
         })),
@@ -174,7 +199,6 @@ export default function DependencySetup() {
         resourceAllocations: assignments,
       };
 
-      // Remove temporary fields from payload
       delete payload.allTasks;
 
       const res = await fetch(`${API_PROJECT}/projects`, {
@@ -187,7 +211,7 @@ export default function DependencySetup() {
       if (res.ok) {
         setMessage("✅ Project and allocations saved!");
         localStorage.removeItem("newProjectDraft");
-        setTimeout(() => navigate("/project-management"), 1200);
+        setTimeout(() => navigate("/project-management/project"), 1200);
       } else {
         setMessage(`❌ Failed: ${data.message || "Unknown error"}`);
       }
@@ -321,12 +345,31 @@ export default function DependencySetup() {
               className="w-full border rounded-md px-2 py-2 text-sm"
             >
               <option value="">Select Employee</option>
-              {employees.map((e) => (
-                <option key={e._id} value={e._id}>
-                  {e.name}
-                </option>
-              ))}
+              {employees.map((e) => {
+                const isOnLeave =
+                  e.status?.toLowerCase() === "on leave" || e.onLeave === true;
+                return (
+                  <option
+                    key={e._id}
+                    value={e._id}
+                    disabled={isOnLeave}
+                    className={isOnLeave ? "text-gray-400 italic" : ""}
+                  >
+                    {e.name}
+                    {isOnLeave ? " (On Leave)" : ""}
+                  </option>
+                );
+              })}
             </select>
+            <div className="text-xs text-gray-500 mt-1">
+              {
+                employees.filter(
+                  (e) =>
+                    e.status?.toLowerCase() === "on leave" || e.onLeave === true
+                ).length
+              }{" "}
+              employees are currently on leave
+            </div>
           </div>
 
           <div>
@@ -434,7 +477,7 @@ export default function DependencySetup() {
       {/* === Save Buttons === */}
       <div className="flex justify-end mt-6 gap-3">
         <button
-          onClick={() => navigate("/project-management")}
+          onClick={() => navigate("/project-management/form")}
           className="border px-4 py-2 rounded text-sm"
         >
           ← Back

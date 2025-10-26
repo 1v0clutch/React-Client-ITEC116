@@ -13,7 +13,6 @@ const TaskSchema = new Schema(
   {
     _id: { type: Schema.Types.ObjectId, auto: true },
     name: { type: String, required: true },
-    description: { type: String, default: "" },
     startDate: { type: Date },
     endDate: { type: Date },
     durationDays: { type: Number, default: 0 },
@@ -33,11 +32,9 @@ const PhaseSchema = new Schema(
   {
     _id: { type: Schema.Types.ObjectId, auto: true },
     name: { type: String, required: true },
-    description: { type: String, default: "" },
     startDate: { type: Date },
     endDate: { type: Date },
     progress: { type: Number, min: 0, max: 100, default: 0 },
-    position: { type: Number, default: 0 },
     tasks: [TaskSchema],
   },
   { _id: true }
@@ -56,7 +53,6 @@ const ProjectSchema = new Schema({
   // removed milestones per request
   phases: [PhaseSchema],
   team: [{ type: Schema.Types.ObjectId, ref: "User" }],
-  budgetId: { type: String, default: null },
   createdBy: { type: Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

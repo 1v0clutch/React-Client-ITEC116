@@ -7,6 +7,8 @@ import {
   FiEdit2,
   FiSave,
   FiX,
+  FiUser,
+  FiClock,
 } from "react-icons/fi";
 
 const API_PROJECT = "http://localhost:8000/api/project";
@@ -28,7 +30,6 @@ function ProgressBar({ value = 0 }) {
 
 function formatDate(raw) {
   if (!raw) return "";
-  // raw may be a Date object or an ISO string; normalize to YYYY-MM-DD
   try {
     const d = raw instanceof Date ? raw : new Date(raw);
     if (isNaN(d)) return "";
@@ -38,7 +39,6 @@ function formatDate(raw) {
   }
 }
 
-// compute phase start/end from tasks (earliest start, latest end), returns { start, end }
 function getPhaseRange(phase) {
   if (!phase || !Array.isArray(phase.tasks) || phase.tasks.length === 0)
     return { start: null, end: null };
@@ -61,9 +61,8 @@ export default function WBS({ project, projectId }) {
   const [phases, setPhases] = useState(project?.phases || []);
   const [openPhase, setOpenPhase] = useState(phases[0]?._id || null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(null); // "phase" | "task"
+  const [modalType, setModalType] = useState(null);
   const [modalPhaseId, setModalPhaseId] = useState(null);
   const [form, setForm] = useState({ name: "", startDate: "", endDate: "" });
   const [editMode, setEditMode] = useState(false);
@@ -84,8 +83,6 @@ export default function WBS({ project, projectId }) {
       const res = await fetch(`${API_PROJECT}/projects/${id}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to fetch project");
-      setProjectData(data);
-      // normalize tasks' date strings to YYYY-MM-DD in local state
       const normalizedPhases = (data.phases || []).map((ph) => ({
         ...ph,
         tasks: (ph.tasks || []).map((t) => ({
@@ -94,11 +91,11 @@ export default function WBS({ project, projectId }) {
           endDate: formatDate(t.endDate),
         })),
       }));
+      setProjectData(data);
       setPhases(normalizedPhases);
       setOpenPhase(normalizedPhases?.[0]?._id || null);
     } catch (err) {
       console.error("Fetch error:", err);
-      setMessage(`Error: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -107,7 +104,6 @@ export default function WBS({ project, projectId }) {
   const openAddModal = (type, phaseId = null) => {
     setModalType(type);
     setModalPhaseId(phaseId || null);
-    // default task dates: today and +3
     const today = new Date();
     const plus3 = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
     setForm({
@@ -119,10 +115,7 @@ export default function WBS({ project, projectId }) {
   };
 
   const saveModal = () => {
-    if (!form.name.trim()) {
-      alert("Please enter a name.");
-      return;
-    }
+    if (!form.name.trim()) return alert("Please enter a name.");
 
     if (modalType === "phase") {
       const newPhase = {
@@ -139,8 +132,8 @@ export default function WBS({ project, projectId }) {
       const newTask = {
         _id: `task-${Date.now()}`,
         name: form.name.trim(),
-        startDate: form.startDate ? formatDate(form.startDate) : "",
-        endDate: form.endDate ? formatDate(form.endDate) : "",
+        startDate: formatDate(form.startDate),
+        endDate: formatDate(form.endDate),
         durationDays:
           form.startDate && form.endDate
             ? Math.max(
@@ -167,6 +160,12 @@ export default function WBS({ project, projectId }) {
   };
 
   const toggleEditMode = () => setEditMode((v) => !v);
+
+  const editPhaseField = (phaseId, value) => {
+    setPhases((prev) =>
+      prev.map((p) => (p._id === phaseId ? { ...p, name: value } : p))
+    );
+  };
 
   const removePhase = (id) => {
     setPhases((prev) => prev.filter((ph) => ph._id !== id));
@@ -198,7 +197,6 @@ export default function WBS({ project, projectId }) {
     );
   };
 
-  // update existing project (PUT)
   const saveToDatabase = async () => {
     if (!projectData?._id) {
       alert("No project selected to update.");
@@ -206,7 +204,6 @@ export default function WBS({ project, projectId }) {
     }
 
     try {
-      // build payload; phase start/end intentionally omitted (backend pre-save will compute from tasks)
       const payload = {
         name: projectData.name,
         description: projectData.description,
@@ -217,7 +214,7 @@ export default function WBS({ project, projectId }) {
           name: ph.name,
           progress: ph.progress || 0,
           tasks: (ph.tasks || []).map((t) => ({
-            _id: t._id && String(t._id).startsWith("task-") ? undefined : t._id, // allow backend to keep/generate _id
+            _id: t._id && String(t._id).startsWith("task-") ? undefined : t._id,
             name: t.name,
             startDate: t.startDate || null,
             endDate: t.endDate || null,
@@ -238,7 +235,6 @@ export default function WBS({ project, projectId }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to update project");
 
-      // normalize returned dates for UI
       const normalizedPhases = (data.phases || []).map((ph) => ({
         ...ph,
         tasks: (ph.tasks || []).map((t) => ({
@@ -272,7 +268,6 @@ export default function WBS({ project, projectId }) {
           <button
             onClick={() => openAddModal("phase")}
             className="flex items-center gap-2 bg-white border border-gray-200 text-sm px-3 py-1 rounded-md hover:bg-gray-50"
-            title="Add Phase"
           >
             <FiPlus /> Add Phase
           </button>
@@ -284,7 +279,6 @@ export default function WBS({ project, projectId }) {
                 ? "bg-yellow-50 border-yellow-400 text-yellow-700"
                 : "bg-white border-gray-200 hover:bg-gray-50"
             }`}
-            title="Toggle edit mode"
           >
             <FiEdit2 /> {editMode ? "Editing" : "Edit"}
           </button>
@@ -292,7 +286,6 @@ export default function WBS({ project, projectId }) {
           <button
             onClick={saveToDatabase}
             className="flex items-center gap-2 bg-green-600 text-white text-sm px-3 py-1 rounded-md hover:bg-green-700"
-            title="Update project"
           >
             <FiSave /> Update Project
           </button>
@@ -309,12 +302,12 @@ export default function WBS({ project, projectId }) {
             return (
               <div
                 key={phase._id}
-                className="border rounded-md overflow-hidden"
+                className={`bg-white rounded-xl shadow-[0_4px_8px_rgba(0,0,0,0.06)] overflow-hidden transition-all ${
+                  openPhase === phase._id ? "ring-1 ring-black/5" : ""
+                }`}
               >
-                <div
-                  className="flex justify-between items-center bg-gray-50 p-4"
-                  // header click toggles open
-                >
+                {/* Phase Header */}
+                <div className="flex justify-between items-center p-4 bg-white">
                   <div
                     className="flex items-center gap-3 cursor-pointer"
                     onClick={() =>
@@ -330,7 +323,19 @@ export default function WBS({ project, projectId }) {
                     )}
 
                     <div>
-                      <div className="font-semibold">{phase.name}</div>
+                      {editMode ? (
+                        <input
+                          value={phase.name}
+                          onChange={(e) =>
+                            editPhaseField(phase._id, e.target.value)
+                          }
+                          className="font-semibold text-gray-800 bg-transparent border-b border-dashed focus:outline-none"
+                        />
+                      ) : (
+                        <div className="font-semibold text-gray-800">
+                          {phase.name}
+                        </div>
+                      )}
                       <div className="text-sm text-gray-500">
                         {range.start
                           ? `${range.start} → ${range.end || "—"}`
@@ -344,11 +349,9 @@ export default function WBS({ project, projectId }) {
                       <ProgressBar value={phase.progress || 0} />
                     </div>
 
-                    {/* Add Task visible on the header (always) */}
                     <button
                       onClick={() => openAddModal("task", phase._id)}
                       className="flex items-center gap-1 bg-white border border-gray-200 px-2 py-1 rounded-md text-sm hover:bg-gray-50"
-                      title={`Add task to ${phase.name}`}
                     >
                       <FiPlus />
                     </button>
@@ -357,7 +360,6 @@ export default function WBS({ project, projectId }) {
                       <button
                         onClick={() => removePhase(phase._id)}
                         className="text-red-500 hover:text-red-700"
-                        title="Remove phase"
                       >
                         <FiTrash2 />
                       </button>
@@ -373,7 +375,7 @@ export default function WBS({ project, projectId }) {
                       (phase.tasks || []).map((task) => (
                         <div
                           key={task._id}
-                          className="border rounded-md p-3 bg-gray-50 flex justify-between items-center"
+                          className="rounded-lg bg-gray-50 shadow-[0_2px_6px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)] p-3 flex justify-between items-center transition-all duration-200 ease-in-out"
                         >
                           <div className="flex-1">
                             {editMode ? (
@@ -390,11 +392,22 @@ export default function WBS({ project, projectId }) {
                                 className="font-medium bg-transparent border-b border-dashed w-full"
                               />
                             ) : (
-                              <div className="font-medium">{task.name}</div>
+                              <div className="font-medium text-gray-800">
+                                {task.name}
+                              </div>
                             )}
-                            <div className="text-sm text-gray-500">
-                              {formatDate(task.startDate)} →{" "}
-                              {formatDate(task.endDate)}
+
+                            <div className="flex flex-wrap gap-4 text-sm text-gray-600 mt-1">
+                              <span className="flex items-center gap-1">
+                                <FiClock /> {formatDate(task.startDate)} →{" "}
+                                {formatDate(task.endDate)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <FiUser /> {task.assignee}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <FiEdit2 /> {task.durationDays || 0} days
+                              </span>
                             </div>
                           </div>
 
@@ -404,7 +417,6 @@ export default function WBS({ project, projectId }) {
                               <button
                                 onClick={() => removeTask(phase._id, task._id)}
                                 className="text-red-500 hover:text-red-700"
-                                title="Remove task"
                               >
                                 <FiTrash2 />
                               </button>
@@ -412,17 +424,6 @@ export default function WBS({ project, projectId }) {
                           </div>
                         </div>
                       ))
-                    )}
-
-                    {editMode && (
-                      <div
-                        onClick={() => openAddModal("task", phase._id)}
-                        className="mt-2 border-2 border-dashed border-gray-200 rounded-md py-3 text-center text-sm text-gray-500 hover:bg-gray-50 cursor-pointer"
-                      >
-                        <div className="inline-flex items-center gap-2 justify-center">
-                          <FiPlus /> Add Task to {phase.name}
-                        </div>
-                      </div>
                     )}
                   </div>
                 )}
@@ -435,7 +436,7 @@ export default function WBS({ project, projectId }) {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg border">
+          <div className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-6 w-96">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               {modalType === "phase" ? "Add New Phase" : "Add New Task"}
             </h3>
