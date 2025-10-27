@@ -59,3 +59,254 @@ select, input {
 input:focus, select:focus {
   border-color: #ee7829;
 }
+
+.crm-table {
+  width: 100%;
+  max-width: 1200px;
+  border-collapse: collapse;
+  background: #fff;
+  color: #232526;
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 25px;
+}
+
+.crm-table thead {
+  background: #ee7829;
+  color: #fff;
+}
+
+.crm-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.crm-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.crm-table tbody tr:hover {
+  background-color: #f7f7f7;
+}
+
+.crm-table td {
+  padding: 14px 16px;
+  font-size: 0.95rem;
+}
+
+.segment-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.segment-badge.vip {
+  background: #fbbf24;
+  color: #78350f;
+}
+
+.segment-badge.regular {
+  background: #d1d5db;
+  color: #374151;
+}
+
+.logs-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.logs-list li {
+  padding: 4px 0;
+  color: #232526;
+}
+
+.logs-list .no-logs {
+  color: #999;
+  font-style: italic;
+}
+
+.crm-table-container {
+  width: 100%;
+  max-width: 1200px;
+}
+
+.btn-manage {
+  background: #ee7829;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.3s;
+}
+
+.btn-manage:hover {
+  background: #d66d21;
+}
+
+.expanded-row {
+  background: #f5f5f5 !important;
+}
+
+.expanded-row td {
+  padding: 20px !important;
+  border-top: 2px solid #ddd;
+}
+
+.log-management h4 {
+  margin: 0 0 15px 0;
+  color: #232526;
+  font-size: 1rem;
+}
+
+.logs-section {
+  margin-bottom: 20px;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.logs-list-edit {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.log-item:hover {
+  background: #f0f0f0;
+}
+
+.log-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  width: 100%;
+}
+
+.log-display span {
+  flex: 1;
+  color: #232526;
+  font-size: 0.95rem;
+}
+
+.log-edit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.log-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #232526;
+  background: #fff;
+}
+
+.log-input:focus {
+  border-color: #ee7829;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(238, 120, 41, 0.1);
+}
+
+.btn-edit, .btn-save, .btn-cancel, .btn-delete-log, .btn-add-log {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-edit {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.btn-edit:hover {
+  background: #2563eb;
+}
+
+.btn-save {
+  background: #10b981;
+  color: #fff;
+}
+
+.btn-save:hover {
+  background: #059669;
+}
+
+.btn-cancel {
+  background: #6b7280;
+  color: #fff;
+}
+
+.btn-cancel:hover {
+  background: #4b5563;
+}
+
+.btn-delete-log {
+  background: #ef4444;
+  color: #fff;
+}
+
+.btn-delete-log:hover {
+  background: #dc2626;
+}
+
+.add-log-section {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.add-log-section .log-input {
+  flex: 1;
+}
+
+.btn-add-log {
+  background: #ee7829;
+  color: #fff;
+  padding: 8px 16px;
+}
+
+.btn-add-log:hover {
+  background: #d66d21;
+}
+
+.no-logs {
+  color: #999;
+  font-style: italic;
+  padding: 10px;
+}

@@ -133,3 +133,95 @@ select {
   color: #ccc;
   font-style: italic;
 }
+
+.table-wrapper {
+  width: 100%;
+  max-width: 1000px;
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
+  margin-bottom: 25px;
+}
+
+.cases-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  color: #232526;
+}
+
+.cases-table thead {
+  background: #ee7829;
+  color: #fff;
+}
+
+.cases-table th {
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.cases-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.cases-table tbody tr:hover {
+  background-color: #f7f7f7;
+}
+
+.cases-table td {
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+.table-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f7f7f7;
+  color: #232526;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.table-select:focus {
+  border-color: #ee7829;
+  outline: none;
+}
+
+.satisfaction-input {
+  width: 50px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f7f7f7;
+  color: #232526;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.satisfaction-input:focus {
+  border-color: #ee7829;
+  outline: none;
+}
+
+.btn-delete-case {
+  padding: 6px 12px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.3s;
+}
+
+.btn-delete-case:hover {
+  background: #dc2626;
+}
