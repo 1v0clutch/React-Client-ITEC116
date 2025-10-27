@@ -12,33 +12,39 @@ function LogisticsSupplyChain() {
     date: "",
   });
 
-  // ⚙️ Backend API URLs
   const API_URL = "http://localhost:8000/api/logistics";
-  const SUPPLIER_API = "http://localhost:8000/api/suppliers"; // Module 3 endpoint
 
-  // ✅ Fetch routes
+  // ✅ Fetch Routes
   const fetchRoutes = async () => {
     try {
       const res = await axios.get(API_URL);
       setRoutes(res.data);
     } catch (err) {
-      console.error("❌ Error fetching routes:", err);
+      console.error("Fetch routes error:", err);
     }
   };
 
-  // ✅ Fetch suppliers (from Module 3)
+  // ✅ FIXED: Fetch Suppliers (Now connected properly)
   const fetchSuppliers = async () => {
     try {
-      const res = await axios.get(SUPPLIER_API);
-      console.log("✅ Suppliers fetched:", res.data);
-      setSuppliers(res.data);
+      const res = await axios.get("http://localhost:8000/procurement/suppliers");
+      if (Array.isArray(res.data)) {
+        setSuppliers(res.data);
+        console.log("✅ Suppliers fetched:", res.data);
+      } else if (res.data && res.data.suppliers) {
+        setSuppliers(res.data.suppliers);
+        console.log("✅ Suppliers fetched (nested):", res.data.suppliers);
+      } else {
+        console.warn("⚠️ Unexpected supplier response:", res.data);
+        setSuppliers([]);
+      }
     } catch (err) {
-      console.error("❌ Error fetching suppliers:", err);
-      alert("Cannot fetch suppliers from Module 3. Please check backend URL or port.");
+      console.error("❌ Fetch suppliers error:", err);
+      setSuppliers([]);
     }
   };
 
-  // ✅ On Mount
+  // ✅ Fetch both routes and suppliers on mount
   useEffect(() => {
     fetchRoutes();
     fetchSuppliers();
@@ -47,24 +53,18 @@ function LogisticsSupplyChain() {
   // ✅ Add Route
   const addRoute = async () => {
     if (!newRoute.supplier || !newRoute.warehouse || !newRoute.customer || !newRoute.date) {
-      alert("⚠️ Please complete all route details.");
+      alert("Please complete all route details.");
       return;
     }
 
     try {
       await axios.post(API_URL, newRoute);
       alert("✅ Route added successfully!");
-      setNewRoute({
-        supplier: "",
-        warehouse: "",
-        customer: "",
-        type: "Inbound",
-        date: "",
-      });
+      setNewRoute({ supplier: "", warehouse: "", customer: "", type: "Inbound", date: "" });
       fetchRoutes();
     } catch (err) {
-      console.error("❌ Add route error:", err);
-      alert("Failed to add route. Please check your backend.");
+      console.error("Add route error:", err);
+      alert("❌ Failed to add route.");
     }
   };
 
@@ -76,21 +76,21 @@ function LogisticsSupplyChain() {
       alert("🗑️ Route deleted successfully!");
       fetchRoutes();
     } catch (err) {
-      console.error("❌ Delete route error:", err);
-      alert("Failed to delete route.");
+      console.error("Delete error:", err);
+      alert("❌ Failed to delete route.");
     }
   };
 
-  // ✅ Track Shipment
+  // ✅ Track Shipment (Status Update)
   const trackShipment = async (id, currentStatus) => {
     let newStatus, newProgress;
 
     if (currentStatus === "Scheduled") {
       newStatus = "In Transit";
-      newProgress = "🚚 En route...";
+      newProgress = "En route...";
     } else if (currentStatus === "In Transit") {
       newStatus = "Delivered";
-      newProgress = "✅ Delivered";
+      newProgress = "Delivered ✔️";
     } else {
       alert("This shipment is already delivered.");
       return;
@@ -100,16 +100,16 @@ function LogisticsSupplyChain() {
       await axios.put(`${API_URL}/${id}`, { status: newStatus, progress: newProgress });
       fetchRoutes();
     } catch (err) {
-      console.error("❌ Track shipment error:", err);
+      console.error("Track shipment error:", err);
     }
   };
 
   return (
     <div style={{ padding: "20px", fontFamily: "Segoe UI" }}>
       <h2>🚚 Logistics & Transportation Management</h2>
-      <h3>Plan New Route</h3>
+      <h3>Plan Route</h3>
 
-      {/* ✅ Supplier Dropdown (connected to Module 3) */}
+      {/* ✅ Supplier Dropdown (Scrollable + Connected to Module 3) */}
       <div style={{ marginBottom: "10px" }}>
         <label style={{ fontWeight: "bold", display: "block", marginBottom: "4px" }}>
           Supplier:
@@ -136,11 +136,15 @@ function LogisticsSupplyChain() {
             }}
           >
             <option value="">Select Supplier</option>
-            {suppliers.map((s) => (
-              <option key={s._id} value={s.name}>
-                {s.name} — {s.item || "No item"} ({s.status || "N/A"})
-              </option>
-            ))}
+            {suppliers.length > 0 ? (
+              suppliers.map((s, i) => (
+                <option key={s._id || i} value={s.name || s.supplierName}>
+                  {s.name || s.supplierName} — {s.paymentTerms || "No terms"}
+                </option>
+              ))
+            ) : (
+              <option disabled>No suppliers found</option>
+            )}
           </select>
         </div>
       </div>
