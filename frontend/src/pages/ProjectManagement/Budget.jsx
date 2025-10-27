@@ -1,30 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { FaSync, FaSave, FaTrash, FaEdit } from "react-icons/fa";
+import { FaSync, FaSave, FaEdit, FaTrash } from "react-icons/fa";
 
-const API_PROJECT = "http://localhost:8000/api/project/projects";
 const API_BUDGET = "http://localhost:8000/api/projectBudget";
 
-export default function ProjectBudget() {
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState("");
+export default function ProjectBudget({ project }) {
   const [budgetData, setBudgetData] = useState(null);
-  const [editingTask, setEditingTask] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editedTasks, setEditedTasks] = useState({});
 
-  // ✅ Fetch projects
+  // ✅ Fetch budget when project changes
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res = await fetch(API_PROJECT);
-        const data = await res.json();
-        setProjects(data);
-        if (data.length > 0) setSelectedProject(data[0]._id);
-      } catch (err) {
-        console.error("Error fetching projects:", err);
-      }
-    };
-    fetchProjects();
-  }, []);
+    if (project?._id) {
+      fetchBudget(project._id);
+    }
+  }, [project]);
 
   // ✅ Fetch project budget
   const fetchBudget = async (projectId) => {
@@ -44,11 +34,12 @@ export default function ProjectBudget() {
     }
   };
 
-  // ✅ Sync project tasks from Project DB
+  // ✅ Sync from project DB
   const syncBudget = async () => {
+    if (!project?._id) return alert("No project selected.");
     try {
       setLoading(true);
-      const res = await fetch(`${API_BUDGET}/${selectedProject}/sync`, {
+      const res = await fetch(`${API_BUDGET}/${project._id}/sync`, {
         method: "POST",
       });
       const result = await res.json();
@@ -66,7 +57,7 @@ export default function ProjectBudget() {
     }
   };
 
-  // ✅ Handle local edit changes
+  // ✅ Handle edits
   const handleChange = (taskId, field, value) => {
     setBudgetData((prev) => ({
       ...prev,
@@ -78,6 +69,13 @@ export default function ProjectBudget() {
           updated.overhead = (labor + materials) * 0.1;
           updated.actualCost = labor + materials + updated.overhead;
           updated.variance = (updated.budgetEst || 0) - updated.actualCost;
+
+          // mark edited
+          setEditedTasks((prevEdited) => ({
+            ...prevEdited,
+            [taskId]: updated,
+          }));
+
           return updated;
         }
         return t;
@@ -85,48 +83,58 @@ export default function ProjectBudget() {
     }));
   };
 
-  // ✅ Save edited task to backend
-  const saveTask = async (task) => {
-    try {
-      const res = await fetch(
-        `${API_BUDGET}/${selectedProject}/task/${task.taskId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            labor: task.labor,
-            materials: task.materials,
-            status: task.status,
-          }),
-        }
-      );
+  // ✅ Save all edited tasks
+  const saveAllChanges = async () => {
+    if (!project?._id) return alert("No project selected.");
+    if (Object.keys(editedTasks).length === 0) {
+      alert("No changes to save.");
+      return;
+    }
 
-      const result = await res.json();
-      if (res.ok) {
-        alert("Task budget updated successfully!");
-        setEditingTask(null);
-        fetchBudget(selectedProject); // ✅ Refresh DB data
-      } else {
-        alert(result.message || "Failed to update task");
+    try {
+      setLoading(true);
+      const updates = Object.values(editedTasks);
+
+      for (const task of updates) {
+        const res = await fetch(
+          `${API_BUDGET}/${project._id}/task/${task.taskId}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              labor: task.labor,
+              materials: task.materials,
+              status: task.status,
+            }),
+          }
+        );
+        if (!res.ok) {
+          console.error(`Failed to update task ${task.taskName}`);
+        }
       }
+
+      alert("All task budgets updated successfully!");
+      setEditMode(false);
+      setEditedTasks({});
+      fetchBudget(project._id);
     } catch (err) {
-      console.error("Error saving task:", err);
-      alert("Error saving task changes");
+      console.error("Error updating tasks:", err);
+      alert("Error updating project budget");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // ✅ Delete task from backend
+  // ✅ Delete task
   const deleteTask = async (taskId) => {
     if (!window.confirm("Delete this task from project budget?")) return;
     try {
-      const res = await fetch(
-        `${API_BUDGET}/${selectedProject}/task/${taskId}`,
-        { method: "DELETE" }
-      );
-
+      const res = await fetch(`${API_BUDGET}/${project._id}/task/${taskId}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         alert("Task deleted successfully!");
-        fetchBudget(selectedProject); // ✅ Refresh DB data
+        fetchBudget(project._id);
       } else {
         alert("Failed to delete task");
       }
@@ -140,41 +148,31 @@ export default function ProjectBudget() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
-          Project Budget Management
-        </h1>
-
-        {/* Project Selector */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <label className="text-sm font-medium text-gray-700">
-              Select Project:
-            </label>
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              {projects.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => fetchBudget(selectedProject)}
-              className="flex items-center bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition"
-            >
-              View
-            </button>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">
+            Project Budget Management
+          </h1>
+          <div className="flex gap-3">
+            {!editMode ? (
+              <button
+                onClick={() => setEditMode(true)}
+                className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
+              >
+                <FaEdit /> Edit
+              </button>
+            ) : (
+              <button
+                onClick={saveAllChanges}
+                className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition"
+              >
+                <FaSave /> Update Project
+              </button>
+            )}
             <button
               onClick={syncBudget}
-              className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
             >
-              <FaSync className="mr-2" /> Sync Budget
+              <FaSync /> Sync Budget
             </button>
           </div>
         </div>
@@ -207,7 +205,7 @@ export default function ProjectBudget() {
                 </thead>
                 <tbody>
                   {budgetData.tasks.map((task) => (
-                    <tr key={task.taskId} className="border-t">
+                    <tr key={task.taskId} className="border-t hover:bg-gray-50">
                       <td className="px-4 py-3">{task.phaseName}</td>
                       <td className="px-4 py-3">{task.taskName}</td>
                       <td className="px-4 py-3">
@@ -217,14 +215,14 @@ export default function ProjectBudget() {
                       {/* Editable fields */}
                       {["labor", "materials"].map((field) => (
                         <td key={field} className="px-4 py-3">
-                          {editingTask === task.taskId ? (
+                          {editMode ? (
                             <input
                               type="number"
                               value={task[field] || ""}
                               onChange={(e) =>
                                 handleChange(task.taskId, field, e.target.value)
                               }
-                              className="w-24 px-2 py-1 border rounded"
+                              className="w-24 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
                             />
                           ) : (
                             <span>
@@ -245,7 +243,7 @@ export default function ProjectBudget() {
                       </td>
 
                       <td className="px-4 py-3">
-                        {editingTask === task.taskId ? (
+                        {editMode ? (
                           <select
                             value={task.status}
                             onChange={(e) =>
@@ -255,7 +253,7 @@ export default function ProjectBudget() {
                                 e.target.value
                               )
                             }
-                            className="px-2 py-1 border rounded"
+                            className="px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
                           >
                             <option>Planned</option>
                             <option>In Progress</option>
@@ -277,25 +275,10 @@ export default function ProjectBudget() {
                         )}
                       </td>
 
-                      <td className="px-4 py-3 text-center space-x-2">
-                        {editingTask === task.taskId ? (
-                          <button
-                            onClick={() => saveTask(task)}
-                            className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                          >
-                            <FaSave />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setEditingTask(task.taskId)}
-                            className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                          >
-                            <FaEdit />
-                          </button>
-                        )}
+                      <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => deleteTask(task.taskId)}
-                          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                          className="text-red-600 hover:text-red-800 transition"
                         >
                           <FaTrash />
                         </button>

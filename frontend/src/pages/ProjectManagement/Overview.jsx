@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
 import ProjectGantt from "./ProjectGantt";
-import { useNavigate } from "react-router-dom"; // <--- added
+import { useNavigate } from "react-router-dom"; //
 
-const API_PROJECT = "http://localhost:8000/api/project"; // this is the api, dont change it
+const API_PROJECT = "http://localhost:8000/api/project";
 
 function SmallStat({ title, value, icon }) {
   return (
