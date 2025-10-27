@@ -3,27 +3,25 @@ import axios from "axios";
 
 function InventoryDistribution() {
   const [warehouses, setWarehouses] = useState([]);
-  const [transferData, setTransferData] = useState({ from: "", to: "", quantity: "" });
-  const [newWarehouse, setNewWarehouse] = useState({ name: "", stock: 0, demand: 0 });
-  const [editing, setEditing] = useState(null);
-  const [editData, setEditData] = useState({ name: "", stock: 0, demand: 0 });
+  const [transferData, setTransferData] = useState({ from: "", to: "", itemId: "", quantity: 0 });
+  const [newWarehouse, setNewWarehouse] = useState({ name: "", location: "" });
 
-  // Fetch warehouses from backend
+  // Fetch warehouses
   const fetchWarehouses = async () => {
     try {
-      const res = await axios.get("/api/warehouses/getAllWarehouse");
-      // Map data to match frontend structure
+      const res = await axios.get("http://localhost:8000/api/warehouses/getAllWarehouse");
       const mapped = res.data.map((w, index) => ({
         id: index + 1,
         _id: w._id,
         name: w.name,
+        location: w.location,
         stock: w.items.reduce((sum, i) => sum + i.quantity, 0),
-        demand: w.demand || 0, // optional demand field
+        items: w.items
       }));
       setWarehouses(mapped);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to fetch warehouses");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch warehouses. Check backend.");
     }
   };
 
@@ -31,162 +29,92 @@ function InventoryDistribution() {
     fetchWarehouses();
   }, []);
 
-  const formatPeso = (value) =>
-    value.toLocaleString("en-PH", { style: "currency", currency: "PHP" });
+  // Add warehouse
+  const addWarehouse = async () => {
+    if (!newWarehouse.name || !newWarehouse.location) {
+      alert("Fill name and location.");
+      return;
+    }
+    try {
+      await axios.post("http://localhost:8000/api/warehouses/addWarehouse", newWarehouse);
+      setNewWarehouse({ name: "", location: "" });
+      fetchWarehouses();
+      alert("Warehouse added!");
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to add warehouse");
+    }
+  };
 
-  const calculateTotalCost = () => {
+  // Allocate inventory to demand
+  const allocateInventory = () => {
+    const totalStock = warehouses.reduce((sum, w) => sum + w.stock, 0);
+    const totalDemand = warehouses.reduce((sum, w) => sum + (w.demand || 0), 0);
+    if (totalDemand === 0) return alert("Cannot allocate: total demand = 0");
+
+    const updated = warehouses.map((w) => ({
+      ...w,
+      stock: Math.round((w.demand || 0) / totalDemand * totalStock)
+    }));
+    setWarehouses(updated);
+    alert("Inventory allocated to demand areas.");
+  };
+
+  // Transfer stock
+  const transferStock = async () => {
+    const { from, to, itemId, quantity } = transferData;
+    if (!from || !to || !itemId || !quantity || from === to)
+      return alert("Select valid warehouses, item, and quantity");
+
+    try {
+      await axios.post("http://localhost:8000/api/warehouses/transferItem", {
+        fromWarehouseId: from,
+        toWarehouseId: to,
+        itemId,
+        quantity: Number(quantity)
+      });
+      setTransferData({ from: "", to: "", itemId: "", quantity: 0 });
+      fetchWarehouses();
+      alert("Stock transferred!");
+    } catch (err) {
+      alert(err.response?.data?.error || "Transfer failed");
+    }
+  };
+
+  // Cost calculation
+  const totalCost = () => {
     const transportCost = warehouses.length * 150;
     const holdingCost = warehouses.reduce((sum, w) => sum + w.stock * 0.5, 0);
     return transportCost + holdingCost;
-  };
-
-  // Add warehouse via API
-  const addWarehouse = async () => {
-    const { name, stock, demand } = newWarehouse;
-    if (!name || !stock || !demand) {
-      alert("⚠️ Please fill out all fields before adding a warehouse.");
-      return;
-    }
-
-    try {
-      const res = await axios.post("/api/warehouses/addWarehouse", {
-        name,
-        stock: Number(stock),
-        demand: Number(demand),
-      });
-      alert(res.data.message);
-      setNewWarehouse({ name: "", stock: 0, demand: 0 });
-      fetchWarehouses();
-    } catch (error) {
-      alert(error.response?.data?.error || "Failed to add warehouse");
-    }
-  };
-
-  // Start editing
-  const startEdit = (w) => {
-    setEditing(w._id);
-    setEditData({ name: w.name, stock: w.stock, demand: w.demand });
-  };
-
-  // Save edit locally (or you can add backend update API)
-  const saveEdit = async (w) => {
-    try {
-      // You can create an updateWarehouse API if needed
-      // For now, just update locally
-      setWarehouses((prev) =>
-        prev.map((wh) =>
-          wh._id === w._id
-            ? { ...wh, name: editData.name, stock: Number(editData.stock), demand: Number(editData.demand) }
-            : wh
-        )
-      );
-      setEditing(null);
-      alert("✏️ Warehouse updated successfully!");
-    } catch (error) {
-      alert("Failed to update warehouse");
-    }
-  };
-
-  // Transfer stock via API
-  const transferStock = async () => {
-    const { from, to, quantity } = transferData;
-    const qty = Number(quantity);
-    if (!from || !to || !qty || from === to) {
-      alert("⚠️ Please select valid warehouses and quantity.");
-      return;
-    }
-
-    try {
-      await axios.post("/api/warehouses/transferItem", {
-        fromWarehouseId: from,
-        toWarehouseId: to,
-        itemId: null, // you may modify to select a default item for this example
-        quantity: qty,
-      });
-      alert(`🔄 Transferred ${qty} units from ${from} to ${to}`);
-      setTransferData({ from: "", to: "", quantity: "" });
-      fetchWarehouses();
-    } catch (error) {
-      alert(error.response?.data?.error || "Failed to transfer stock");
-    }
-  };
-
-  // Allocate inventory locally (you can also make an API for this)
-  const allocateToDemand = () => {
-    const totalStock = warehouses.reduce((sum, w) => sum + w.stock, 0);
-    const totalDemand = warehouses.reduce((sum, w) => sum + w.demand, 0);
-
-    if (totalDemand === 0) {
-      alert("⚠️ Cannot allocate — total demand is zero.");
-      return;
-    }
-
-    const updated = warehouses.map((w) => {
-      const share = Math.round((w.demand / totalDemand) * totalStock);
-      return { ...w, stock: share };
-    });
-
-    setWarehouses(updated);
-    alert("✅ Inventory reallocated based on demand levels.");
   };
 
   return (
     <div>
       <h2>🏬 Inventory Distribution & Warehouse Coordination</h2>
 
-      <h3>📦 Warehouse Records</h3>
+      <h3>📦 Warehouses</h3>
       <table border="1" cellPadding="5">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Warehouse</th>
+            <th>Name</th>
+            <th>Location</th>
             <th>Stock</th>
-            <th>Demand</th>
-            <th>Actions</th>
+            <th>Items</th>
           </tr>
         </thead>
         <tbody>
           {warehouses.map((w) => (
             <tr key={w._id}>
               <td>{w.id}</td>
+              <td>{w.name}</td>
+              <td>{w.location}</td>
+              <td>{w.stock}</td>
               <td>
-                {editing === w._id ? (
-                  <input
-                    value={editData.name}
-                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                  />
-                ) : (
-                  w.name
-                )}
-              </td>
-              <td>
-                {editing === w._id ? (
-                  <input
-                    type="number"
-                    value={editData.stock}
-                    onChange={(e) => setEditData({ ...editData, stock: e.target.value })}
-                  />
-                ) : (
-                  w.stock
-                )}
-              </td>
-              <td>
-                {editing === w._id ? (
-                  <input
-                    type="number"
-                    value={editData.demand}
-                    onChange={(e) => setEditData({ ...editData, demand: e.target.value })}
-                  />
-                ) : (
-                  w.demand
-                )}
-              </td>
-              <td>
-                {editing === w._id ? (
-                  <button onClick={() => saveEdit(w)}>Save</button>
-                ) : (
-                  <button onClick={() => startEdit(w)}>Edit</button>
-                )}
+                {w.items.map((i) => (
+                  <div key={i._id}>
+                    {i.itemId.name} (Qty: {i.quantity})
+                  </div>
+                ))}
               </td>
             </tr>
           ))}
@@ -194,72 +122,52 @@ function InventoryDistribution() {
       </table>
 
       <h3>➕ Add Warehouse</h3>
-      <div>
-        <input
-          type="text"
-          placeholder="Name"
-          value={newWarehouse.name}
-          onChange={(e) => setNewWarehouse({ ...newWarehouse, name: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Stock"
-          value={newWarehouse.stock}
-          onChange={(e) => setNewWarehouse({ ...newWarehouse, stock: e.target.value })}
-        />
-        <input
-          type="number"
-          placeholder="Demand"
-          value={newWarehouse.demand}
-          onChange={(e) => setNewWarehouse({ ...newWarehouse, demand: e.target.value })}
-        />
-        <button onClick={addWarehouse}>Add</button>
-      </div>
+      <input
+        placeholder="Name"
+        value={newWarehouse.name}
+        onChange={(e) => setNewWarehouse({ ...newWarehouse, name: e.target.value })}
+      />
+      <input
+        placeholder="Location"
+        value={newWarehouse.location}
+        onChange={(e) => setNewWarehouse({ ...newWarehouse, location: e.target.value })}
+      />
+      <button onClick={addWarehouse}>Add</button>
 
-      <h3>🚚 Inter-Warehouse Transfer</h3>
-      <div>
-        <label>From: </label>
-        <select
-          value={transferData.from}
-          onChange={(e) => setTransferData({ ...transferData, from: e.target.value })}
-        >
-          <option value="">Select</option>
-          {warehouses.map((w) => (
-            <option key={w._id} value={w._id}>
-              {w.name}
-            </option>
+      <h3>🚚 Transfer Stock</h3>
+      <select value={transferData.from} onChange={(e) => setTransferData({ ...transferData, from: e.target.value })}>
+        <option value="">From Warehouse</option>
+        {warehouses.map((w) => (
+          <option key={w._id} value={w._id}>{w.name}</option>
+        ))}
+      </select>
+      <select value={transferData.to} onChange={(e) => setTransferData({ ...transferData, to: e.target.value })}>
+        <option value="">To Warehouse</option>
+        {warehouses.map((w) => (
+          <option key={w._id} value={w._id}>{w.name}</option>
+        ))}
+      </select>
+      {transferData.from && (
+        <select value={transferData.itemId} onChange={(e) => setTransferData({ ...transferData, itemId: e.target.value })}>
+          <option value="">Select Item</option>
+          {warehouses.find(w => w._id === transferData.from)?.items.map(i => (
+            <option key={i._id} value={i.itemId._id}>{i.itemId.name} (Qty: {i.quantity})</option>
           ))}
         </select>
+      )}
+      <input
+        type="number"
+        placeholder="Quantity"
+        value={transferData.quantity}
+        onChange={(e) => setTransferData({ ...transferData, quantity: e.target.value })}
+      />
+      <button onClick={transferStock}>Transfer</button>
 
-        <label> To: </label>
-        <select
-          value={transferData.to}
-          onChange={(e) => setTransferData({ ...transferData, to: e.target.value })}
-        >
-          <option value="">Select</option>
-          {warehouses.map((w) => (
-            <option key={w._id} value={w._id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
+      <h3>📊 Cost Overview</h3>
+      <p>Transportation + Holding Cost: <strong>₱{totalCost().toFixed(2)}</strong></p>
 
-        <label> Quantity: </label>
-        <input
-          type="number"
-          value={transferData.quantity}
-          onChange={(e) => setTransferData({ ...transferData, quantity: e.target.value })}
-        />
-        <button onClick={transferStock}>Transfer</button>
-      </div>
-
-      <br />
-      <button onClick={allocateToDemand}>Allocate to High-Demand Areas</button>
-
-      <h3>💰 Cost Overview</h3>
-      <p>
-        Estimated Transportation + Holding Cost: <strong>{formatPeso(calculateTotalCost())}</strong>
-      </p>
+      <h3>📈 Allocate Inventory to Demand</h3>
+      <button onClick={allocateInventory}>Allocate</button>
     </div>
   );
 }
