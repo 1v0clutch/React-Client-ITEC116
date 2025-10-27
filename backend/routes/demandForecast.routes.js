@@ -1,53 +1,37 @@
 const express = require("express");
 const router = express.Router();
-const DemandForecast = require("../models/DemandForecast");
+const DemandForecast = require("../models/DemandForecast.model");
 
-// CREATE / POST forecast
+// CREATE
 router.post("/", async (req, res) => {
   try {
-    const { product, salesData, forecast, analysis, recommendation, computation } = req.body;
-
-    // Validate required fields
-    if (!product || !Array.isArray(salesData) || salesData.length === 0 || !Array.isArray(forecast) || forecast.length === 0) {
-      return res.status(400).json({ message: "Missing required fields or forecast not generated yet" });
-    }
-
-    const newForecast = new DemandForecast({
-      product,
-      salesData,
-      forecast,
-      analysis,
-      recommendation,
-      computation,
-    });
-
-    const saved = await newForecast.save();
-    res.status(201).json(saved);
-  } catch (error) {
-    console.error("Error saving forecast:", error);
-    res.status(500).json({ message: "Server error" });
+    const forecast = new DemandForecast(req.body);
+    await forecast.save();
+    console.log("✅ Forecast Saved:", forecast);
+    res.status(201).json(forecast);
+  } catch (err) {
+    console.error("❌ Error Saving Forecast:", err);
+    res.status(500).json({ message: "Error saving forecast", error: err.message });
   }
 });
 
-// GET all forecasts
+// GET
 router.get("/", async (req, res) => {
   try {
-    const forecasts = await DemandForecast.find().sort({ createdAt: -1 });
+    const forecasts = await DemandForecast.find();
     res.json(forecasts);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch forecasts" });
   }
 });
 
-// DELETE forecast
+// DELETE
 router.delete("/:id", async (req, res) => {
   try {
     await DemandForecast.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.json({ message: "Forecast deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete forecast" });
   }
 });
 
