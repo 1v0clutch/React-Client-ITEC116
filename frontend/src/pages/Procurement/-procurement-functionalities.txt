@@ -1,0 +1,29 @@
+
+Requisition.jsx:
+  Handles creation at approval ng purchase requisition. 
+  May table view ng mga request na may status kung pending, approved, o rejected.
+  May form para maglagay ng item details, purpose, at requester info, at buttons para mag-approve, reject, o i-edit ang requisition.
+
+Suppliers.jsx:
+  Displays list ng mga registered suppliers. 
+  May form para mag-add o mag-update ng supplier information tulad ng name, contact, email, at address.
+  Search bar para mabilis hanapin ang supplier at may delete function din.
+
+PurchaseOrders.jsx:
+  Gumagawa at nagdi-display ng purchase orders mula sa approved requisitions at existing suppliers.
+  May form para maglagay ng supplier, item details, quantity, at total price. 
+  Nakikita rin dito ang status ng bawat PO kung pending o delivered.
+
+Invoices.jsx:
+  Nagre-record ng mga invoice kapag na-deliver na ang goods galing sa supplier.
+  May form para mag-input ng purchase order reference, received items, quantity, condition, at receiver name. 
+  Nag-a-update din ng PO status to delivered.
+
+Integration Notes:
+  • Requisition.jsx → HR Module - Connected sa HR module para makuha ang employee information ng requester at approver details.
+  • Requisition.jsx → Project Management - Puwede ring i-link sa Project Management module kapag project-based ang request gamit ang budget code reference.
+  • Suppliers.jsx → Supply Chain Management Module - Connected sa Supply Chain Management module para sa supplier coordination at performance monitoring.
+  • PurchaseOrders.jsx → Finance Module - Connected sa Finance module para sa budget validation at automatic generation ng payable records.
+  • PurchaseOrders.jsx → Inventory Module - Connected din sa Warehouse page para sa delivery schedule tracking at expected item arrival.
+  • Invoices.jsx → Inventory Module - Connected sa Transaction page module para sa automatic stock updates kapag confirmed na ang goods receipt.
+  • Invoices.jsx → Inventory Module - Nakalink din sa Warehouse page para sa verification ng actual quantity at item condition bago i-update ang inventory.
