@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { Plus, Edit, Trash2, X, Search } from "lucide-react";
 
 export default function Supplier() {
   const [suppliers, setSuppliers] = useState([]);
@@ -12,6 +13,9 @@ export default function Supplier() {
   });
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+
+  const firstInputRef = useRef(null);
 
   const fetchSuppliers = async () => {
     try {
@@ -43,20 +47,24 @@ export default function Supplier() {
 
       if (!res.ok) throw new Error("Failed to save supplier");
       await fetchSuppliers();
-
-      setForm({
-        name: "",
-        contactPerson: "",
-        email: "",
-        phone: "",
-        address: "",
-        paymentTerms: "",
-      });
-      setEditingId(null);
+      resetForm();
+      setShowModal(false);
     } catch (err) {
       console.error("Submit supplier error:", err);
       alert("Error saving supplier.");
     }
+  };
+
+  const resetForm = () => {
+    setForm({
+      name: "",
+      contactPerson: "",
+      email: "",
+      phone: "",
+      address: "",
+      paymentTerms: "",
+    });
+    setEditingId(null);
   };
 
   const handleDelete = async (id) => {
@@ -68,6 +76,7 @@ export default function Supplier() {
   const handleEdit = (s) => {
     setForm(s);
     setEditingId(s._id);
+    setShowModal(true);
   };
 
   const filtered = suppliers.filter((s) =>
@@ -77,87 +86,30 @@ export default function Supplier() {
       .includes(search.toLowerCase())
   );
 
+  // Auto-focus first input when modal opens
+  useEffect(() => {
+    if (showModal && firstInputRef.current) {
+      firstInputRef.current.focus();
+    }
+  }, [showModal]);
+
   return (
-    <div className="p-6">
-      {/* PAGE TITLE */}
-      <h2 className="text-2xl font-bold mb-6 border-b-2 pb-2">
-        Supplier Management
-      </h2>
+    <div className="p-8 min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 text-gray-800">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h2 className="text-3xl font-bold text-blue-800">Supplier Management</h2>
+        <button
+          onClick={() => { resetForm(); setShowModal(true); }}
+          className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-5 py-2 rounded-lg shadow transition-all"
+        >
+          <Plus size={18} /> Add Supplier
+        </button>
+      </div>
 
-      {/* FORM CARD */}
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-8 rounded-2xl shadow-lg mb-8 border border-gray-200"
-      >
-        <div>
-          <label className="font-semibold text-gray-700">Supplier Name</label>
-          <input
-            type="text"
-            placeholder="Enter supplier name"
-            className="w-full border rounded p-2 mt-1  mb-3"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
-          />
-          <label className="font-semibold text-gray-700">Contact Person</label>
-          <input
-            type="text"
-            placeholder="Enter contact person"
-            className="w-full border rounded p-2 mt-1 mb-3"
-            value={form.contactPerson}
-            onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
-          />
-          <label className="font-semibold text-gray-700">Email</label>
-          <input
-            type="email"
-            placeholder="Enter email address"
-            className="w-full border rounded p-2 mt-1"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="font-semibold text-gray-700">Phone Number</label>
-          <input
-            type="text"
-            placeholder="Enter phone number"
-            className="w-full border rounded p-2 mt-1 mb-3"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-          />
-          <label className="font-semibold text-gray-700">Address</label>
-          <input
-            type="text"
-            placeholder="Enter address"
-            className="w-full border rounded p-2 mt-1 mb-3"
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
-          />
-          <label className="font-semibold text-gray-700">Payment Terms</label>
-          <input
-            type="text"
-            placeholder="e.g. Net 30 Days"
-            className="w-full border rounded p-2 mt-1"
-            value={form.paymentTerms}
-            onChange={(e) => setForm({ ...form, paymentTerms: e.target.value })}
-          />
-        </div>
-
-        <div className="col-span-full text-right mt-2">
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition font-medium"
-          >
-            {editingId ? "Update Supplier" : "Add Supplier"}
-          </button>
-        </div>
-      </form>
-
-      {/* SEARCH BAR */}
-      <div className="mb-4">
-        <div className="flex items-center bg-white p-3 rounded-md shadow-sm border border-gray-200">
-          <span className="text-gray-400 mr-2">🔍</span>
+      {/* Search Bar */}
+      <div className="mb-4 max-w-md">
+        <div className="flex items-center bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+          <Search size={16} className="text-gray-400 mr-2" />
           <input
             type="text"
             placeholder="Search suppliers..."
@@ -168,17 +120,17 @@ export default function Supplier() {
         </div>
       </div>
 
-      {/* SUPPLIER TABLE */}
+      {/* Supplier Table */}
       <div className="overflow-x-auto bg-white rounded-2xl shadow-lg border border-gray-200">
         <table className="w-full text-sm text-gray-700">
           <thead className="bg-blue-50 text-blue-800">
             <tr>
-              <th className="p-2.5 border text-left">Name</th>
-              <th className="p-2.5 border text-left">Contact Person</th>
-              <th className="p-2.5 border text-left">Email</th>
-              <th className="p-2.5 border text-left">Phone</th>
-              <th className="p-2.5 border text-left">Payment Terms</th>
-              <th className="p-2.5 border text-center">Actions</th>
+              <th className="p-3 border text-center">Name</th>
+              <th className="p-3 border text-center">Contact Person</th>
+              <th className="p-3 border text-center">Email</th>
+              <th className="p-3 border text-center">Phone</th>
+              <th className="p-3 border text-center">Payment Terms</th>
+              <th className="p-3 border text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -188,12 +140,12 @@ export default function Supplier() {
                   key={s._id}
                   className="hover:bg-gray-50 transition border-b border-gray-100"
                 >
-                  <td className="p-2 border">{s.name}</td>
-                  <td className="p-2 border">{s.contactPerson}</td>
-                  <td className="p-2 border">{s.email}</td>
-                  <td className="p-2 border">{s.phone}</td>
-                  <td className="p-2 border">{s.paymentTerms}</td>
-                  <td className="p-2 border text-center">
+                  <td className="p-3 border text-center">{s.name}</td>
+                  <td className="p-3 border text-center">{s.contactPerson}</td>
+                  <td className="p-3 border text-center">{s.email}</td>
+                  <td className="p-3 border text-center">{s.phone}</td>
+                  <td className="p-3 border text-center">{s.paymentTerms}</td>
+                  <td className="p-3 border text-center">
                     <div className="flex justify-center gap-2">
                       <button
                         onClick={() => handleEdit(s)}
@@ -213,10 +165,7 @@ export default function Supplier() {
               ))
             ) : (
               <tr>
-                <td
-                  colSpan="6"
-                  className="text-center text-gray-500 py-4 italic"
-                >
+                <td colSpan="6" className="text-center text-gray-500 py-4 italic">
                   No suppliers found.
                 </td>
               </tr>
@@ -224,6 +173,99 @@ export default function Supplier() {
           </tbody>
         </table>
       </div>
+
+      {/* Modal Form */}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 transition-opacity duration-300"
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 relative transform scale-90 opacity-0 transition-all duration-300 animate-modal-in"
+          >
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+            >
+              <X size={20} />
+            </button>
+
+            <h3 className="text-2xl font-semibold mb-6 text-blue-800">
+              {editingId ? "Edit Supplier" : "New Supplier"}
+            </h3>
+
+            <form
+              onSubmit={handleSubmit}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="Supplier Name"
+                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  required
+                  ref={firstInputRef}
+                />
+                <input
+                  type="text"
+                  placeholder="Contact Person"
+                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={form.contactPerson}
+                  onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
+                />
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="Phone Number"
+                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="Address"
+                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={form.address}
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="Payment Terms"
+                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={form.paymentTerms}
+                  onChange={(e) => setForm({ ...form, paymentTerms: e.target.value })}
+                />
+              </div>
+
+              <div className="col-span-full text-right mt-4">
+                <button
+                  type="submit"
+                  className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition font-medium"
+                >
+                  {editingId ? "Update Supplier" : "Add Supplier"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        .animate-modal-in {
+          transform: scale(1);
+          opacity: 1;
+        }
+      `}</style>
     </div>
   );
 }
