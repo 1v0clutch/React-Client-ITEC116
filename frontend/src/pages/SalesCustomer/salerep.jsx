@@ -64,24 +64,24 @@ function SalesReport() {
         </select>
       </div>
       <h3>Sales Data</h3>
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px", background: "#fff" }}>
         <thead>
-          <tr style={{ background: "#e0d9d9ff" }}>
-            <th>Date</th>
-            <th>Product</th>
-            <th>Region</th>
-            <th>Rep</th>
-            <th>Amount</th>
+          <tr style={{ background: "#ee7829", color: "#fff" }}>
+            <th style={{ padding: "12px", textAlign: "left", fontWeight: "600", border: "1px solid #ddd" }}>Date</th>
+            <th style={{ padding: "12px", textAlign: "left", fontWeight: "600", border: "1px solid #ddd" }}>Product</th>
+            <th style={{ padding: "12px", textAlign: "left", fontWeight: "600", border: "1px solid #ddd" }}>Region</th>
+            <th style={{ padding: "12px", textAlign: "left", fontWeight: "600", border: "1px solid #ddd" }}>Rep</th>
+            <th style={{ padding: "12px", textAlign: "left", fontWeight: "600", border: "1px solid #ddd" }}>Amount</th>
           </tr>
         </thead>
         <tbody>
           {filtered.map(s => (
-            <tr key={s.id}>
-              <td>{s.date}</td>
-              <td>{s.product}</td>
-              <td>{s.region}</td>
-              <td>{s.rep}</td>
-              <td>${s.amount}</td>
+            <tr key={s.id} style={{ background: "#fff", color: "#232526", borderBottom: "1px solid #ddd" }}>
+              <td style={{ padding: "12px", border: "1px solid #ddd" }}>{s.date}</td>
+              <td style={{ padding: "12px", border: "1px solid #ddd" }}>{s.product}</td>
+              <td style={{ padding: "12px", border: "1px solid #ddd" }}>{s.region}</td>
+              <td style={{ padding: "12px", border: "1px solid #ddd" }}>{s.rep}</td>
+              <td style={{ padding: "12px", border: "1px solid #ddd" }}>${s.amount}</td>
             </tr>
           ))}
         </tbody>
