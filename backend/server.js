@@ -28,6 +28,8 @@ const employeeRoutes = require("./routes/employee.routes"); //
 const projectBudgetRoutes = require("./routes/projectBudget.routes");
 const salesOrderRoutes = require("./routes/salesOrder.routes");
 const quotationRoutes = require("./routes/quotation.routes");
+const ecommerceRoutes = require("./routes/ecommerce.routes"); // Module 6 - Separate customer portal
+const uploadRoutes = require("./routes/upload.routes");
 
 //Middleware
 app.use(
@@ -39,6 +41,9 @@ app.use(
 );
 
 app.use(express.json());
+
+// Serve static files (uploaded images)
+app.use("/uploads", express.static("uploads"));
 
 // =============================
 // CONNECT TO DATABASE
@@ -82,6 +87,12 @@ app.use("/api/employee", employeeRoutes);
 app.use("/api/projectBudget", projectBudgetRoutes);
 app.use("/api/sales-orders", salesOrderRoutes);
 app.use("/api/quotations", quotationRoutes);
+
+// ✅ E-Commerce (Module 6) - Separate customer-facing portal
+app.use("/api/ecommerce", ecommerceRoutes);
+
+// ✅ File Upload
+app.use("/api/upload", uploadRoutes);
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);

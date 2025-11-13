@@ -513,6 +513,12 @@ function SalesOrderManagement() {
         <>
           <h3>Orders</h3>
           {orders.length === 0 && <p>No orders yet.</p>}
+          
+          {orders.length > 0 && (
+            <div style={{ marginBottom: "10px", padding: "10px", backgroundColor: "#e3f2fd", borderRadius: "5px", border: "1px solid #2196f3" }}>
+              <strong>ℹ️ Note:</strong> Orders from E-Commerce customers (Module 6) are marked in blue and integrated automatically.
+            </div>
+          )}
 
           {orders.length > 0 && (
             <table className="orders-table">
@@ -534,7 +540,12 @@ function SalesOrderManagement() {
                 {orders.map((o) => (
                   <tr key={o._id}>
                     <td>{o._id}</td>
-                    <td>{customers.find((c) => c.id === o.customerId)?.name}</td>
+                    <td>
+                      {customers.find((c) => c.id === o.customerId)?.name || 
+                       <span className="text-blue-600" title="E-Commerce Customer">
+                         E-Commerce Customer (ID: {o.customerId})
+                       </span>}
+                    </td>
                     <td>{products.find((p) => p._id === o.productId)?.name || products.find((p) => p._id === o.productId?._id)?.name}</td>
                     <td>{o.quantity}</td>
                     <td>{o.discount}%</td>
@@ -557,7 +568,9 @@ function SalesOrderManagement() {
                     </td>
                     <td className="actions-cell">
                       <button onClick={() => generateInvoice(o)} className="btn-action">Invoice</button>
-                      <button onClick={() => checkCustomerCredit(o.customerId)} className="btn-action">Credit</button>
+                      {customers.find((c) => c.id === o.customerId) && (
+                        <button onClick={() => checkCustomerCredit(o.customerId)} className="btn-action">Credit</button>
+                      )}
                       <button onClick={() => deleteOrder(o._id)} className="btn-delete">Delete</button>
                     </td>
                   </tr>
