@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-// Unique ID generator
+
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 const SAMPLE_ARTICLES = [
@@ -16,10 +16,10 @@ export default function HelpdeskSystem() {
   const [detailTicket, setDetailTicket] = useState(null);
   const [newTicket, setNewTicket] = useState({ customer: "", subject: "", description: "", priority: "Medium" });
 
-  // SLA configuration
+  // pag config ng sla
   const [sla, setSla] = useState(() => JSON.parse(localStorage.getItem("sla")) || { response: 2, resolution: 24 }); // in hours
 
-  // Update localStorage
+  // pag update ng local storage
   useEffect(() => {
     localStorage.setItem("tickets", JSON.stringify(tickets));
   }, [tickets]);
@@ -28,7 +28,7 @@ export default function HelpdeskSystem() {
     localStorage.setItem("sla", JSON.stringify(sla));
   }, [sla]);
 
-  // Periodic SLA check
+  // sla check
   useEffect(() => {
     const interval = setInterval(() => {
       checkSLACompliance();
@@ -36,7 +36,7 @@ export default function HelpdeskSystem() {
     return () => clearInterval(interval);
   }, [tickets, sla]);
 
-  // Create new ticket
+  // para makagawa ng new ticket
   const createTicket = () => {
     if (!newTicket.customer || !newTicket.subject) return alert("Please fill out all fields");
     const now = new Date().toISOString();
@@ -56,7 +56,7 @@ export default function HelpdeskSystem() {
     setNewTicket({ customer: "", subject: "", description: "", priority: "Medium" });
   };
 
-  // Update ticket status (includes auto follow-up)
+  // pang update ng ticket status ksama ng auto-follow up
   const updateTicketStatus = (id, status) => {
     setTickets((prev) =>
       prev.map((t) => {
@@ -84,7 +84,7 @@ export default function HelpdeskSystem() {
     );
   };
 
-  // SLA Checker
+  // pang sla check
   const checkSLACompliance = () => {
     const now = new Date();
     setTickets((prev) =>
@@ -133,7 +133,7 @@ export default function HelpdeskSystem() {
     );
   };
 
-  // Update ticket fields
+  // for updation ng field ng ticket
   const updateTicketField = (id, changes) => {
     setTickets((prev) =>
       prev.map((t) => {
@@ -159,7 +159,7 @@ export default function HelpdeskSystem() {
     }
   };
 
-  // Messaging
+  // message
   const sendMessage = (ticketId, text, from) => {
     setTickets((prev) =>
       prev.map((t) => {
@@ -170,7 +170,7 @@ export default function HelpdeskSystem() {
     );
   };
 
-  // Derived data for Communication History
+  // pang derived ng data sa communication history
   const customerConversations = tickets.reduce((acc, t) => {
     if (!t.customer) return acc;
     if (!acc[t.customer]) acc[t.customer] = [];
@@ -178,7 +178,7 @@ export default function HelpdeskSystem() {
     return acc;
   }, {});
 
-  // SLA Performance Metrics
+  // metrics ng sla performance
   const totalTickets = tickets.length;
   const metSLA = tickets.filter((t) => !t.escalated).length;
   const performance = totalTickets > 0 ? ((metSLA / totalTickets) * 100).toFixed(1) : 100;
@@ -219,8 +219,8 @@ export default function HelpdeskSystem() {
         </div>
       </div>
 
-      {/* PANELS */}
-      {/* 1️⃣ Ticket Management */}
+      
+      {/* 1 Ticket Management */}
       {panel === "tickets" && (
         <div className="flex flex-col md:flex-row gap-6">
           <div className="w-full md:w-[60%] bg-white rounded-lg p-4 shadow">
@@ -345,7 +345,7 @@ export default function HelpdeskSystem() {
         </div>
       )}
 
-      {/* 2️⃣ Self-Service Portal */}
+      {/* 2️ Self-Service Portal */}
       {panel === "articles" && (
         <section className="bg-white rounded-lg p-6 shadow">
           <h2 className="text-xl font-semibold mb-3 text-center text-blue-700">Self-Service Portal</h2>
@@ -359,7 +359,7 @@ export default function HelpdeskSystem() {
         </section>
       )}
 
-      {/* 3️⃣ Communication History */}
+      {/* 3️ Communication History */}
       {panel === "history" && (
         <section className="bg-white rounded shadow p-5">
           <h2 className="text-xl font-semibold mb-3 text-center text-blue-700">Customer Communication History</h2>
@@ -385,7 +385,7 @@ export default function HelpdeskSystem() {
         </section>
       )}
 
-      {/* 4️⃣ SLA Tracking */}
+      {/* 4️ SLA Tracking */}
       {panel === "sla" && (
         <section className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4 text-center text-blue-700">Service Level Agreement Tracking</h2>
