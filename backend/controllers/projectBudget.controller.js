@@ -66,14 +66,28 @@ exports.syncProjectBudget = async (req, res) => {
   }
 };
 
-// ✅ Get project budget
+// Helper: Calculate total actualCost from all tasks
+const calculateTotalActualCost = (tasks) => {
+  return tasks.reduce((sum, task) => sum + (task.actualCost || 0), 0);
+};
+
+// Get project budget
 exports.getBudgetByProject = async (req, res) => {
   try {
     const { projectId } = req.params;
     const budget = await ProjectBudget.findOne({ project: projectId });
     if (!budget)
       return res.status(404).json({ message: "Project budget not found" });
-    res.status(200).json(budget);
+
+    // Calculate total actualCost from all tasks
+    const totalActualCost = calculateTotalActualCost(budget.tasks || []);
+
+    res.status(200).json({
+      ...budget.toObject(),
+      actualCost: totalActualCost,
+      spent: totalActualCost, // alias for frontend
+      variance: (budget.totalBudget || 0) - totalActualCost,
+    });
   } catch (err) {
     console.error("Error fetching project budget:", err);
     res.status(500).json({ message: "Failed to fetch project budget" });
