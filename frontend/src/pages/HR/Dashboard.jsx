@@ -9,17 +9,29 @@ export default function Dashboard({ data, setData }) {
     name: "",
     email: "",
     position: "",
-    resume: "",
+    contact: "",
   });
 
   const pendingLeaves = leaves.filter((l) => l.status === "Pending");
 
+  // Validate PH contact number
+  const isValidPHNumber = (num) => {
+    const phRegex = /^(?:\+63|0)9\d{9}$/; // +639xxxxxxxxx or 09xxxxxxxxx
+    return phRegex.test(num);
+  };
+
   // Add new applicant
   const addApplicant = () => {
-    if (!applicant.name || !applicant.email || !applicant.position) {
+    if (!applicant.name || !applicant.email || !applicant.position || !applicant.contact) {
       alert("Please fill in all required fields.");
       return;
     }
+
+    if (!isValidPHNumber(applicant.contact)) {
+      alert("Please enter a valid Philippine contact number (e.g., +639123456789 or 09123456789).");
+      return;
+    }
+
     const newApplicant = {
       ...applicant,
       id: Date.now(),
@@ -30,7 +42,7 @@ export default function Dashboard({ data, setData }) {
       ...data,
       applicants: [...(data.applicants || []), newApplicant],
     });
-    setApplicant({ id: "", name: "", email: "", position: "", resume: "" });
+    setApplicant({ id: "", name: "", email: "", position: "", contact: "" });
     setShowApplicationForm(false);
     setActiveTab("applicants"); // after submit, go to applicants tab
   };
@@ -162,13 +174,9 @@ export default function Dashboard({ data, setData }) {
                   className="border p-2 rounded"
                 />
                 <input
-                  type="file"
-                  onChange={(e) =>
-                    setApplicant({
-                      ...applicant,
-                      resume: e.target.files[0]?.name || "",
-                    })
-                  }
+                  value={applicant.contact}
+                  onChange={(e) => setApplicant({ ...applicant, contact: e.target.value })}
+                  placeholder="Contact Number (+639 or 09...)"
                   className="border p-2 rounded"
                 />
                 <button
@@ -194,7 +202,7 @@ export default function Dashboard({ data, setData }) {
                   <th className="border px-3 py-2 text-left">Name</th>
                   <th className="border px-3 py-2 text-left">Email</th>
                   <th className="border px-3 py-2 text-left">Position</th>
-                  <th className="border px-3 py-2 text-left">Resume</th>
+                  <th className="border px-3 py-2 text-left">Contact</th>
                   <th className="border px-3 py-2 text-left">Status</th>
                   <th className="border px-3 py-2 text-left">Interview Date</th>
                   <th className="border px-3 py-2 text-left">Actions</th>
@@ -206,7 +214,7 @@ export default function Dashboard({ data, setData }) {
                     <td className="border px-3 py-2">{a.name}</td>
                     <td className="border px-3 py-2">{a.email}</td>
                     <td className="border px-3 py-2">{a.position}</td>
-                    <td className="border px-3 py-2">{a.resume || "N/A"}</td>
+                    <td className="border px-3 py-2">{a.contact}</td>
                     <td className="border px-3 py-2">{a.status}</td>
                     <td className="border px-3 py-2">
                       {a.status === "Interview Scheduled" ? (

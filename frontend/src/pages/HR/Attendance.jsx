@@ -1,321 +1,424 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-export default function LeaveAttendance({ data, setData }) {
-  const [activeTab, setActiveTab] = useState("form");
+const API_BASE = "http://localhost:5000/api";
 
-  // States for attendance
-  const [employee, setEmployee] = useState("");
-  const [date, setDate] = useState("");
-  const [timeInValue, setTimeInValue] = useState("");
-  const [timeOutValue, setTimeOutValue] = useState("");
+export default function LeaveAttendance({ data = {} }) {
+  const [activeTab, setActiveTab] = useState("attendance");
+  const [attendanceSearch, setAttendanceSearch] = useState("");
+  const [leaveSearch, setLeaveSearch] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [leaveRecords, setLeaveRecords] = useState([]);
+  const [showAttendanceDropdown, setShowAttendanceDropdown] = useState(false);
+  const [showLeaveDropdown, setShowLeaveDropdown] = useState(false);
 
-  // States for leave
-  const [leaveEmployee, setLeaveEmployee] = useState("");
-  const [leaveType, setLeaveType] = useState("");
-  const [reason, setReason] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [leaveForm, setLeaveForm] = useState({
+    type: "",
+    reason: "",
+    startDate: "",
+    endDate: "",
+  });
 
-  const attendance = data?.attendance || [];
-  const leaves = data?.leaves || [];
+  // Fetch attendance and leave records
+  useEffect(() => {
+    fetch(`${API_BASE}/attendance`)
+      .then((res) => res.json())
+      .then(setAttendanceRecords)
+      .catch(() => console.error("Error fetching attendance"));
 
-  // Save Time In
-  const saveTimeIn = () => {
-    if (!employee || !date || !timeInValue) {
-      alert("Fill out all fields for Time In.");
-      return;
-    }
-    const record = {
-      id: Date.now(),
-      employee,
-      date,
-      timeIn: timeInValue,
-      timeOut: null,
-    };
-    setData({ ...data, attendance: [...attendance, record] });
-    setEmployee("");
-    setDate("");
-    setTimeInValue("");
-  };
+    fetch(`${API_BASE}/leaves`)
+      .then((res) => res.json())
+      .then(setLeaveRecords)
+      .catch(() => console.error("Error fetching leaves"));
+  }, []);
 
-  // Save Time Out
-  const saveTimeOut = () => {
-    const lastRecord = attendance.find(
-      (rec) => rec.employee === employee && rec.date === date && !rec.timeOut
-    );
-    if (!lastRecord) {
-      alert("No record found to time-out.");
-      return;
-    }
-    setData({
-      ...data,
-      attendance: attendance.map((rec) =>
-        rec.id === lastRecord.id ? { ...rec, timeOut: timeOutValue } : rec
-      ),
-    });
-    setEmployee("");
-    setDate("");
-    setTimeOutValue("");
-  };
+  // Filters
+  const employees = data?.employees || [];
 
-  // Submit Leave
-  const submitLeave = () => {
-    if (!leaveEmployee || !leaveType || !reason || !startDate || !endDate) {
-      alert("Fill out all leave fields.");
-      return;
-    }
-    const leave = {
-      id: Date.now(),
-      employee: leaveEmployee,
-      leaveType,
-      reason,
-      startDate,
-      endDate,
-    };
-    setData({ ...data, leaves: [...leaves, leave] });
-    setLeaveEmployee("");
-    setLeaveType("");
-    setReason("");
-    setStartDate("");
-    setEndDate("");
-  };
+  const filteredAttendanceEmployees = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(attendanceSearch.toLowerCase()) ||
+      emp.empId.toLowerCase().includes(attendanceSearch.toLowerCase())
+  );
 
-  // Compute report
-  const generateReport = () => {
-    return attendance.map((rec) => {
-      let workedHours = 0;
-      if (rec.timeIn && rec.timeOut) {
-        const start = new Date(`${rec.date}T${rec.timeIn}`);
-        const end = new Date(`${rec.date}T${rec.timeOut}`);
-        workedHours = (end - start) / (1000 * 60 * 60);
-      }
-      return {
-        ...rec,
-        workedHours: workedHours > 0 ? workedHours.toFixed(2) : "0.00",
-        pay: (workedHours * (data.settings?.hourlyRate || 100)).toFixed(2),
+  const filteredLeaveEmployees = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(leaveSearch.toLowerCase()) ||
+      emp.empId.toLowerCase().includes(leaveSearch.toLowerCase())
+  );
+
+  // Record attendance
+  const handleRecordAttendance = async (type) => {
+    if (!selectedEmployee) return alert("Please select an employee.");
+    const now = new Date();
+
+    if (type === "in") {
+      const alreadyIn = attendanceRecords.find(
+        (r) => r.empId === selectedEmployee.empId && !r.timeOut
+      );
+      if (alreadyIn) return alert("Already timed in!");
+
+      const newRecord = {
+        empId: selectedEmployee.empId,
+        name: selectedEmployee.name,
+        timeIn: now,
+        timeOut: null,
+        overtime: "0 hours",
       };
+
+      const res = await fetch(`${API_BASE}/attendance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newRecord),
+      });
+      const saved = await res.json();
+      setAttendanceRecords([...attendanceRecords, saved]);
+    } else if (type === "out") {
+      const lastRecord = attendanceRecords.find(
+        (r) => r.empId === selectedEmployee.empId && !r.timeOut
+      );
+      if (!lastRecord) return alert("No time-in record found.");
+
+      const timeIn = new Date(lastRecord.timeIn);
+      const diffHours = (now - timeIn) / (1000 * 60 * 60);
+      const overtime = diffHours > 8 ? (diffHours - 8).toFixed(1) : 0;
+
+      const res = await fetch(`${API_BASE}/attendance/${lastRecord._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          timeOut: now,
+          overtime: `${overtime} hours`,
+        }),
+      });
+      const updated = await res.json();
+      setAttendanceRecords(
+        attendanceRecords.map((rec) =>
+          rec._id === updated._id ? updated : rec
+        )
+      );
+    }
+
+    setSelectedEmployee(null);
+    setAttendanceSearch("");
+  };
+
+  // Apply Leave
+  const handleApplyLeave = async () => {
+    if (!selectedEmployee) return alert("Please select an employee.");
+    if (!leaveForm.type || !leaveForm.reason || !leaveForm.startDate || !leaveForm.endDate)
+      return alert("Please fill all leave details.");
+
+    const newLeave = {
+      empId: selectedEmployee.empId,
+      name: selectedEmployee.name,
+      type: leaveForm.type,
+      reason: leaveForm.reason,
+      startDate: leaveForm.startDate,
+      endDate: leaveForm.endDate,
+      status: "Pending",
+    };
+
+    const res = await fetch(`${API_BASE}/leaves`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newLeave),
     });
+    const saved = await res.json();
+    setLeaveRecords([...leaveRecords, saved]);
+    setLeaveForm({ type: "", reason: "", startDate: "", endDate: "" });
+    setSelectedEmployee(null);
+    setLeaveSearch("");
+  };
+
+  // Approve / Reject / Delete Leave
+  const handleLeaveAction = async (index, action) => {
+    const leave = leaveRecords[index];
+    if (action === "delete") {
+      setLeaveRecords(leaveRecords.filter((_, i) => i !== index));
+      return;
+    }
+
+    const res = await fetch(`${API_BASE}/leaves/${leave._id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: action === "approve" ? "Approved" : "Rejected",
+      }),
+    });
+    const updated = await res.json();
+    setLeaveRecords(
+      leaveRecords.map((rec) =>
+        rec._id === updated._id ? updated : rec
+      )
+    );
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Leave & Attendance Management</h2>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        {/* Tabs */}
+        <div className="flex gap-4 mb-4">
+          <button
+            onClick={() => {
+              setActiveTab("attendance");
+              setSelectedEmployee(null);
+              setShowAttendanceDropdown(false);
+            }}
+            className={`px-4 py-2 rounded ${
+              activeTab === "attendance" ? "bg-blue-500 text-white" : "bg-gray-200"
+            }`}
+          >
+            Attendance
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("leaves");
+              setSelectedEmployee(null);
+              setShowLeaveDropdown(false);
+            }}
+            className={`px-4 py-2 rounded ${
+              activeTab === "leaves" ? "bg-blue-500 text-white" : "bg-gray-200"
+            }`}
+          >
+            Leaves
+          </button>
+        </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setActiveTab("form")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "form"
-              ? "bg-green-500 text-white"
-              : "bg-gray-200 text-black"
-          }`}
-        >
-          Attendance & Leave Form
-        </button>
-        <button
-          onClick={() => setActiveTab("report")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "report"
-              ? "bg-green-500 text-white"
-              : "bg-gray-200 text-black"
-          }`}
-        >
-          Attendance Report
-        </button>
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "history"
-              ? "bg-green-500 text-white"
-              : "bg-gray-200 text-black"
-          }`}
-        >
-          Leaves History
-        </button>
+        {/* Attendance Section */}
+        {activeTab === "attendance" && (
+          <div>
+            <h2 className="font-semibold mb-2">Record Attendance</h2>
+
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search employee by name or ID..."
+                value={attendanceSearch}
+                onChange={(e) => {
+                  setAttendanceSearch(e.target.value);
+                  setShowAttendanceDropdown(true);
+                  setSelectedEmployee(null);
+                }}
+                className="border p-2 w-full mb-2 rounded"
+              />
+
+              {showAttendanceDropdown &&
+                attendanceSearch &&
+                filteredAttendanceEmployees.length > 0 &&
+                !selectedEmployee && (
+                  <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
+                    {filteredAttendanceEmployees.map((emp) => (
+                      <li
+                        key={emp.empId}
+                        onClick={() => {
+                          setSelectedEmployee(emp);
+                          setAttendanceSearch(`${emp.name} (${emp.empId})`);
+                          setShowAttendanceDropdown(false);
+                        }}
+                        className="p-2 hover:bg-gray-100 cursor-pointer border-b"
+                      >
+                        <div className="font-semibold">{emp.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {emp.empId} — {emp.department} — Hired: {emp.hireDate}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+            </div>
+
+            {selectedEmployee && (
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={() => handleRecordAttendance("in")}
+                  className="bg-green-500 text-white px-3 py-1 rounded"
+                >
+                  Time In
+                </button>
+                <button
+                  onClick={() => handleRecordAttendance("out")}
+                  className="bg-red-500 text-white px-3 py-1 rounded"
+                >
+                  Time Out
+                </button>
+              </div>
+            )}
+
+            <table className="w-full mt-4 border text-sm">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Employee ID</th>
+                  <th className="border p-2">Employee</th>
+                  <th className="border p-2">Time In</th>
+                  <th className="border p-2">Time Out</th>
+                  <th className="border p-2">Overtime</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attendanceRecords.map((rec, i) => (
+                  <tr key={i}>
+                    <td className="border p-2">{rec.empId}</td>
+                    <td className="border p-2">{rec.name}</td>
+                    <td className="border p-2">
+                      {rec.timeIn ? new Date(rec.timeIn).toLocaleTimeString() : "-"}
+                    </td>
+                    <td className="border p-2">
+                      {rec.timeOut ? new Date(rec.timeOut).toLocaleTimeString() : "-"}
+                    </td>
+                    <td className="border p-2">{rec.overtime}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Leaves Section */}
+        {activeTab === "leaves" && (
+          <div>
+            <h2 className="font-semibold mb-2">Apply Leave</h2>
+
+            <div className="relative mb-3">
+              <input
+                type="text"
+                placeholder="Search employee by name or ID..."
+                value={leaveSearch}
+                onChange={(e) => {
+                  setLeaveSearch(e.target.value);
+                  setShowLeaveDropdown(true);
+                  setSelectedEmployee(null);
+                }}
+                className="border p-2 w-full rounded"
+              />
+
+              {showLeaveDropdown &&
+                leaveSearch &&
+                filteredLeaveEmployees.length > 0 &&
+                !selectedEmployee && (
+                  <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
+                    {filteredLeaveEmployees.map((emp) => (
+                      <li
+                        key={emp.empId}
+                        onClick={() => {
+                          setSelectedEmployee(emp);
+                          setLeaveSearch(`${emp.name} (${emp.empId})`);
+                          setShowLeaveDropdown(false);
+                        }}
+                        className="p-2 hover:bg-gray-100 cursor-pointer border-b"
+                      >
+                        <div className="font-semibold">{emp.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {emp.empId} — {emp.department} — Hired: {emp.hireDate}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+            </div>
+
+            {selectedEmployee && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                  <select
+                    value={leaveForm.type}
+                    onChange={(e) =>
+                      setLeaveForm({ ...leaveForm, type: e.target.value })
+                    }
+                    className="border p-2 rounded"
+                  >
+                    <option value="">Select Leave Type</option>
+                    <option value="Sick Leave">Sick Leave</option>
+                    <option value="Vacation Leave">Vacation Leave</option>
+                    <option value="Emergency Leave">Emergency Leave</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    placeholder="Reason"
+                    value={leaveForm.reason}
+                    onChange={(e) =>
+                      setLeaveForm({ ...leaveForm, reason: e.target.value })
+                    }
+                    className="border p-2 rounded"
+                  />
+                  <input
+                    type="date"
+                    value={leaveForm.startDate}
+                    onChange={(e) =>
+                      setLeaveForm({ ...leaveForm, startDate: e.target.value })
+                    }
+                    className="border p-2 rounded"
+                  />
+                  <input
+                    type="date"
+                    value={leaveForm.endDate}
+                    onChange={(e) =>
+                      setLeaveForm({ ...leaveForm, endDate: e.target.value })
+                    }
+                    className="border p-2 rounded"
+                  />
+                </div>
+
+                <button
+                  onClick={handleApplyLeave}
+                  className="bg-blue-500 text-white px-4 py-2 rounded"
+                >
+                  Apply Leave
+                </button>
+              </>
+            )}
+
+            <table className="w-full mt-4 border text-sm">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Employee ID</th>
+                  <th className="border p-2">Employee</th>
+                  <th className="border p-2">Type</th>
+                  <th className="border p-2">Reason</th>
+                  <th className="border p-2">Start Date</th>
+                  <th className="border p-2">End Date</th>
+                  <th className="border p-2">Status</th>
+                  <th className="border p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaveRecords.map((rec, i) => (
+                  <tr key={i}>
+                    <td className="border p-2">{rec.empId}</td>
+                    <td className="border p-2">{rec.name}</td>
+                    <td className="border p-2">{rec.type}</td>
+                    <td className="border p-2">{rec.reason}</td>
+                    <td className="border p-2">{rec.startDate}</td>
+                    <td className="border p-2">{rec.endDate}</td>
+                    <td className="border p-2">{rec.status}</td>
+                    <td className="border p-2 text-center">
+                      <button
+                        onClick={() => handleLeaveAction(i, "approve")}
+                        className="bg-green-500 text-white px-2 py-1 rounded mr-1"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleLeaveAction(i, "reject")}
+                        className="bg-yellow-500 text-white px-2 py-1 rounded mr-1"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        onClick={() => handleLeaveAction(i, "delete")}
+                        className="bg-red-500 text-white px-2 py-1 rounded"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-
-      {/* Attendance & Leave Form */}
-      {activeTab === "form" && (
-        <div>
-          {/* Record Attendance */}
-          <div className="bg-white p-4 rounded-lg shadow mb-6">
-            <h3 className="text-lg font-semibold mb-3">Record Attendance</h3>
-            <input
-              type="text"
-              value={employee}
-              onChange={(e) => setEmployee(e.target.value)}
-              placeholder="Employee Name"
-              className="border p-2 rounded w-full mb-2"
-            />
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="border p-2 rounded w-full mb-2"
-            />
-            <div className="flex gap-2 mb-2">
-              <input
-                type="time"
-                value={timeInValue}
-                onChange={(e) => setTimeInValue(e.target.value)}
-                className="border p-2 rounded w-full"
-              />
-              <input
-                type="time"
-                value={timeOutValue}
-                onChange={(e) => setTimeOutValue(e.target.value)}
-                className="border p-2 rounded w-full"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={saveTimeIn}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-              >
-                Save Time In
-              </button>
-              <button
-                onClick={saveTimeOut}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              >
-                Save Time Out
-              </button>
-            </div>
-          </div>
-
-          {/* Request Leave */}
-          <div className="bg-white p-4 rounded-lg shadow mb-6">
-            <h3 className="text-lg font-semibold mb-3">Request Leave</h3>
-            <input
-              type="text"
-              value={leaveEmployee}
-              onChange={(e) => setLeaveEmployee(e.target.value)}
-              placeholder="Employee Name"
-              className="border p-2 rounded w-full mb-2"
-            />
-            <select
-              value={leaveType}
-              onChange={(e) => setLeaveType(e.target.value)}
-              className="border p-2 rounded w-full mb-2"
-            >
-              <option value="">Select Leave Type</option>
-              <option value="Sick Leave">Sick Leave</option>
-              <option value="Vacation Leave">Vacation Leave</option>
-              <option value="Emergency Leave">Emergency Leave</option>
-            </select>
-            <input
-              type="text"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Reason"
-              className="border p-2 rounded w-full mb-2"
-            />
-            <div className="flex gap-2 mb-2">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="border p-2 rounded w-full"
-              />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="border p-2 rounded w-full"
-              />
-            </div>
-            <button
-              onClick={submitLeave}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-            >
-              Submit Leave Request
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Attendance Report */}
-      {activeTab === "report" && (
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-3">Attendance Report</h3>
-          <table className="w-full border border-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border px-3 py-2 text-left">Employee</th>
-                <th className="border px-3 py-2 text-left">Date</th>
-                <th className="border px-3 py-2 text-left">Time In</th>
-                <th className="border px-3 py-2 text-left">Time Out</th>
-                <th className="border px-3 py-2 text-left">Hours Worked</th>
-                <th className="border px-3 py-2 text-left">Pay</th>
-              </tr>
-            </thead>
-            <tbody>
-              {generateReport().length > 0 ? (
-                generateReport().map((rec) => (
-                  <tr key={rec.id} className="hover:bg-gray-50">
-                    <td className="border px-3 py-2">{rec.employee}</td>
-                    <td className="border px-3 py-2">{rec.date}</td>
-                    <td className="border px-3 py-2">{rec.timeIn}</td>
-                    <td className="border px-3 py-2">{rec.timeOut || "-"}</td>
-                    <td className="border px-3 py-2">{rec.workedHours}</td>
-                    <td className="border px-3 py-2">₱{rec.pay}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="text-center py-4 text-gray-500 italic"
-                  >
-                    No attendance records yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Leaves History */}
-      {activeTab === "history" && (
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-3">Leaves History</h3>
-          <table className="w-full border border-gray-200">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border px-3 py-2 text-left">Employee</th>
-                <th className="border px-3 py-2 text-left">Type</th>
-                <th className="border px-3 py-2 text-left">Reason</th>
-                <th className="border px-3 py-2 text-left">Start Date</th>
-                <th className="border px-3 py-2 text-left">End Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaves.length > 0 ? (
-                leaves.map((leave) => (
-                  <tr key={leave.id} className="hover:bg-gray-50">
-                    <td className="border px-3 py-2">{leave.employee}</td>
-                    <td className="border px-3 py-2">{leave.leaveType}</td>
-                    <td className="border px-3 py-2">{leave.reason}</td>
-                    <td className="border px-3 py-2">{leave.startDate}</td>
-                    <td className="border px-3 py-2">{leave.endDate}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="text-center py-4 text-gray-500 italic"
-                  >
-                    No leave records yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }

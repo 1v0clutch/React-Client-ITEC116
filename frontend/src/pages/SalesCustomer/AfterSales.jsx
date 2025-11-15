@@ -29,6 +29,10 @@ function AfterSalesSupport() {
     setCases(cases.map((c) => (c.id === id ? { ...c, satisfaction: rating } : c)));
   };
 
+  const deleteCase = (id) => {
+    setCases(cases.filter((c) => c.id !== id));
+  };
+
   return (
     <div className="aftersales-container">
       <h2>After-Sales Support & Case Management</h2>
@@ -55,28 +59,53 @@ function AfterSalesSupport() {
       </div>
 
       <h3>Support Cases</h3>
-      {cases.map((c) => (
-        <div key={c.id} className="case-card">
-          <p>
-            <strong>Case #{c.id}</strong><br />
-            Customer: {c.customer} <br />
-            Issue: {c.issue} <br />
-            Status: {c.status} <br />
-            Assigned To: {c.assignedTo} <br />
-            Satisfaction: {c.satisfaction}
-          </p>
-          <select value={c.status} onChange={e => updateStatus(c.id, e.target.value)}>
-            <option value="open">open</option>
-            <option value="in progress">in progress</option>
-            <option value="resolved">resolved</option>
-          </select>
-          <select value={c.assignedTo} onChange={e => updateAssignment(c.id, e.target.value)}>
-            <option value="Team A">Team A</option>
-            <option value="Team B">Team B</option>
-          </select>
-          <input type="number" min={1} max={5} value={c.satisfaction} onChange={e => updateSatisfaction(c.id, parseInt(e.target.value))} />
+      {cases.length === 0 ? (
+        <p className="no-cases">No cases yet.</p>
+      ) : (
+        <div className="table-wrapper">
+          <table className="cases-table">
+            <thead>
+              <tr>
+                <th>Case ID</th>
+                <th>Customer</th>
+                <th>Issue</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Satisfaction</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cases.map((c) => (
+                <tr key={c.id}>
+                  <td>#{c.id}</td>
+                  <td>{c.customer}</td>
+                  <td>{c.issue}</td>
+                  <td>
+                    <select value={c.status} onChange={e => updateStatus(c.id, e.target.value)} className="table-select">
+                      <option value="open">open</option>
+                      <option value="in progress">in progress</option>
+                      <option value="resolved">resolved</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select value={c.assignedTo} onChange={e => updateAssignment(c.id, e.target.value)} className="table-select">
+                      <option value="Team A">Team A</option>
+                      <option value="Team B">Team B</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input type="number" min={1} max={5} value={c.satisfaction} onChange={e => updateSatisfaction(c.id, parseInt(e.target.value))} className="satisfaction-input" />
+                  </td>
+                  <td>
+                    <button onClick={() => deleteCase(c.id)} className="btn-delete-case">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
+      )}
     </div>
   );
 }
