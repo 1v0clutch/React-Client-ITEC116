@@ -1,0 +1,45 @@
+Budget.jsx
+==> Fetch the project budget from the ProjectBudget Database
+==> Can update and delete.
+==> Automatically calculate the actual cost, variance, and overhead after the labor and material/equipment cost.
+==> After selecting a newly created project, clicked the sync budget button to get the budget table but its important that you can only clicked it only once to a project, if ypu clicked it again, it will reset the data excluding the estimated budget.
+
+ProjectForm.jsx
+==> Create new project, with input fields: Phase Name, Start and End Date, Phase and Its own Task with each start and end date.
+
+DependencySetup.jsx
+==> Next page of the ProjectForm.
+==> Assign Dependency to each task.
+==> Input Total Budget to the project and allocate resource to employees.
+
+Employee.jsx
+==> Temporary employee form since the employee database is not working.
+
+Overview.jsx
+==> Display the Progression, Total budget used, Team size and Day Remaining
+==> Display project timeline with button to view gantt chart.
+
+Project.jsx
+==> The main interface of the module.
+==> Display the pages of overview, wbs, task dependencies, resource, budget, and report page.
+==> With project selector, button to view project list and add new project.
+
+ProjectGantt.jsx
+==> Display the selected project gantt chart.
+
+ProjectList.jsx
+==> Display the list of projects.
+==> Can update and delete.
+
+Resource.jsx
+==> Display the resource allocation table.
+==> Can add, update, and delete.
+==> Display the total budget, total allocations, and overload workers.
+
+TaskSchedule.jsx
+==> Display the task dependencies table of the selected project.
+==> Can update and delete.
+
+WorkBreakdowns.jsx
+==> Display the task wbs of the selected project.
+==> Can add, update, and delete.

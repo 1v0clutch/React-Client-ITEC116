@@ -1,0 +1,4 @@
+Libraries I used:
+
+For Gantt Chart: gantt-task-react
+Installation Command: npm install gantt-task-react --legacy-peer-deps
