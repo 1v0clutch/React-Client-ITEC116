@@ -3,6 +3,9 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 
+const app = express();
+
+//Import Routes
 // =============================
 // ROUTE IMPORTS
 // =============================
@@ -17,10 +20,14 @@ const financeRoutes = require("./routes/finance.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
+const demandForecastRoutes = require("./routes/demandForecast.routes");
+const logisticsRoutes = require("./routes/logistics.routes");
+const procurementRoutes = require("./routes/procurement.routes");
 const projectRoutes = require("./routes/project.routes");
 const employeeRoutes = require("./routes/employee.routes"); //
 const projectBudgetRoutes = require("./routes/projectBudget.routes");
-const app = express();
+const salesOrderRoutes = require("./routes/salesOrder.routes");
+const quotationRoutes = require("./routes/quotation.routes");
 
 //Middleware
 app.use(
@@ -67,9 +74,14 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
+app.use("/api/demandForecast", demandForecastRoutes);
+app.use("/api/logistics", logisticsRoutes);
+app.use("/api/procurement", require("./routes/procurement.routes"));
 app.use("/api/project", projectRoutes);
 app.use("/api/employee", employeeRoutes);
 app.use("/api/projectBudget", projectBudgetRoutes);
+app.use("/api/sales-orders", salesOrderRoutes);
+app.use("/api/quotations", quotationRoutes);
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);
@@ -84,5 +96,5 @@ app.get("/", (req, res) => {
 // =============================
 // START SERVER
 // =============================
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
