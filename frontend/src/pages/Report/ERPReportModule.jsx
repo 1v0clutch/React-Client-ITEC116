@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Table from "../../components/layouts/Table";
 import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 export default function ERPReportModule() {
   // Note: Update these URLs if your backend runs on a different port
