@@ -26,6 +26,7 @@ const employeeRoutes = require("./routes/employee.routes"); //
 const projectBudgetRoutes = require("./routes/projectBudget.routes");
 const salesOrderRoutes = require("./routes/salesOrder.routes");
 const quotationRoutes = require("./routes/quotation.routes");
+const crmRoutes = require("./routes/crm.routes");
 
 //Middleware
 app.use(
@@ -78,6 +79,7 @@ app.use("/api/employee", employeeRoutes);
 app.use("/api/projectBudget", projectBudgetRoutes);
 app.use("/api/sales-orders", salesOrderRoutes);
 app.use("/api/quotations", quotationRoutes);
+app.use("/api/crm", crmRoutes);
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);
