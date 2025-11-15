@@ -15,6 +15,7 @@ const financeRoutes = require('./routes/finance.routes');
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
+const biRoutes = require("./routes/bi.routes");
 const app = express();
 
 
@@ -47,6 +48,7 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
+app.use("/api/bi", biRoutes); // Business Intelligence Module 7
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
