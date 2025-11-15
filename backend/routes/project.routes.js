@@ -22,6 +22,8 @@ router.put("/projects/assign-employee", projectController.assignEmployee);
 // Get all tasks (grouped by phase) for a specific project
 router.get("/projects/:id/tasks", projectController.getProjectTasks);
 
+router.delete("/projects/:id", projectController.deleteProject);
+
 // ✅ CORRECTED ROUTES FOR RESOURCE ALLOCATIONS
 router.get(
   "/projects/:id/allocations",

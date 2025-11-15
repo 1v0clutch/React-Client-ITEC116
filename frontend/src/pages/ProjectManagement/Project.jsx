@@ -5,14 +5,14 @@ import WorkBreakdown from "./WorkBreakdowns";
 import TaskSchedule from "./TaskSchedule";
 import Resource from "./Resource";
 import Budget from "./Budget";
-import { FiPlus, FiBell } from "react-icons/fi";
+import { FiPlus, FiBell, FiList } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
 const API_PROJECT = "http://localhost:8000/api/project";
 
 function Project() {
   const [showAdd, setShowAdd] = useState(false);
-  const [activeTab, setActiveTab] = useState("gantt"); // Track active tab
+  const [activeTab, setActiveTab] = useState("gantt");
   const [projects, setProjects] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
@@ -59,7 +59,6 @@ function Project() {
     return Math.round(project.progress || 0);
   };
 
-  // Render content based on active tab and pass selected project
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
@@ -85,6 +84,7 @@ function Project() {
           <h1 className="text-2xl font-semibold text-gray-900">
             Project Management
           </h1>
+
           <div className="flex items-center gap-3 mt-3">
             {/* Project selector */}
             <div>
@@ -103,7 +103,7 @@ function Project() {
               </select>
             </div>
 
-            {/* status badge */}
+            {/* Status badge */}
             <div className="flex items-center gap-2">
               <span
                 className={`text-xs px-3 py-1 rounded-full ${
@@ -129,15 +129,26 @@ function Project() {
 
         {/* Right controls */}
         <div className="flex items-center gap-4">
+          {/* Notifications */}
           <button
             type="button"
             className="relative p-2 rounded-md hover:bg-gray-100"
           >
             <FiBell className="text-gray-700" />
-            {/* small red dot */}
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
           </button>
 
+          {/* View Projects Button */}
+          <button
+            onClick={() => navigate("/project-management/list")}
+            className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+            type="button"
+          >
+            <FiList />
+            View Projects
+          </button>
+
+          {/* Add Project Button */}
           <button
             onClick={() => navigate("/project-management/form")}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
@@ -149,11 +160,11 @@ function Project() {
         </div>
       </div>
 
-      {/* Tabs - updated: removed Planning, added WBS and Task Dependencies */}
+      {/* Tabs */}
       <div className="flex gap-6 mt-4 border-b pb-3">
         <button
           className={`pb-2 text-sm ${
-            activeTab === "gantt"
+            activeTab === "overview"
               ? "text-blue-600 border-b-2 border-blue-600"
               : "text-gray-500 hover:text-gray-700"
           }`}
@@ -205,6 +216,7 @@ function Project() {
         >
           Budget
         </button>
+
         <button className="pb-2 text-sm text-gray-500 hover:text-gray-700">
           Reports
         </button>
@@ -213,7 +225,6 @@ function Project() {
       {/* Content */}
       <div className="mt-6">{renderContent()}</div>
 
-      {/* Inline form (not modal) */}
       {showAdd && (
         <div className="mt-6">
           <ProjectForm

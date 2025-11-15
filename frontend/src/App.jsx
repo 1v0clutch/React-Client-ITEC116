@@ -21,6 +21,9 @@ import Customer from "./pages/Finance/CustomerReport";
 import Report from "./pages/Finance/FinanceReport";
 import InventoryReport from "./pages/Finance/InventoryReport";
 import EmployeePayrollReport from "./pages/Finance/EmployeePayrollReport";
+import FinanceApprovalsOverview from "./pages/Finance/FinanceApprovalsOverview";
+import FinancePendingApprovals from "./pages/Finance/FinancePendingApprovals";
+import FinanceApprovalHistory from "./pages/Finance/FinanceApprovalHistory";
 
 // HR //
 import Attendance from "./pages/HR/Attendance";
@@ -51,9 +54,8 @@ import ProjectForm from "./pages/ProjectManagement/ProjectForm";
 import ProjectGantt from "./pages/ProjectManagement/ProjectGantt";
 import DependencySetup from "./pages/ProjectManagement/DependencySetup";
 import Employee from "./pages/ProjectManagement/Employee";
-{
-  /* This is a temporary form */
-}
+import ProjectList from "./pages/ProjectManagement/ProjectList";
+
 const API_BASE = "http://localhost:5000/api";
 
 function App() {
@@ -140,6 +142,18 @@ function App() {
               path="/finance/payroll-report"
               element={<EmployeePayrollReport />}
             />
+            <Route
+              path="/finance/approvals/overview"
+              element={<FinanceApprovalsOverview />}
+            />
+            <Route
+              path="/finance/approvals/pending"
+              element={<FinancePendingApprovals />}
+            />
+            <Route
+              path="/finance/approvals/history"
+              element={<FinanceApprovalHistory />}
+            />
 
             {/* HR */}
             <Route
@@ -180,10 +194,22 @@ function App() {
             <Route path="/sales/sales-report" element={<SalesReport />} />
 
             {/* SupplyChain */}
-            <Route path="/supply-chain/demand-forecast" element={<DemandForecast />} />
-            <Route path="/supply-chain/procurement-supply-chain" element={<ProcurementSupplyChain />} />
-            <Route path="/supply-chain/logistics-supply-chain" element={<LogisticsSupplyChain />} />
-            <Route path="/supply-chain/inventory-supply-chain" element={<InventorySupplyChain />} />
+            <Route
+              path="/supply-chain/demand-forecast"
+              element={<DemandForecast />}
+            />
+            <Route
+              path="/supply-chain/procurement-supply-chain"
+              element={<ProcurementSupplyChain />}
+            />
+            <Route
+              path="/supply-chain/logistics-supply-chain"
+              element={<LogisticsSupplyChain />}
+            />
+            <Route
+              path="/supply-chain/inventory-supply-chain"
+              element={<InventorySupplyChain />}
+            />
 
             {/* Project Management */}
             <Route path="/project-management/project" element={<Project />} />
@@ -197,6 +223,7 @@ function App() {
               element={<DependencySetup />}
             />
             <Route path="/project-management/employee" element={<Employee />} />
+            <Route path="/project-management/list" element={<ProjectList />} />
           </Routes>
         </div>
       </div>
