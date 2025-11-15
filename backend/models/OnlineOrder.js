@@ -43,6 +43,10 @@ const OnlineOrderSchema = new mongoose.Schema({
     ref: "SalesOrder",
     default: null,
   },
+  salesOrderIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "SalesOrder",
+  }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 }, { timestamps: true });

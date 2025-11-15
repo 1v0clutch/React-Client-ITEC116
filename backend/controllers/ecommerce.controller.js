@@ -198,29 +198,38 @@ exports.createOrder = async (req, res) => {
       );
     }
     
-    // Step 6: Create corresponding Sales Order (Integration with Module 8)
-    // For simplicity, create one sales order per online order
-    // In production, you might want to create one per item or handle differently
-    if (orderItems.length > 0) {
-      const firstItem = orderItems[0];
-      
-      // Generate a numeric customer ID for SalesOrder (Module 8 compatibility)
-      // Using timestamp + random number to ensure uniqueness
-      const numericCustomerId = Date.now() % 1000000 + Math.floor(Math.random() * 1000);
+    // Step 6: Create corresponding Sales Orders (Integration with Module 8)
+    // Create one sales order per item in the cart
+    const salesOrderIds = [];
+    
+    // Generate a numeric customer ID for SalesOrder (Module 8 compatibility)
+    // Using timestamp + random number to ensure uniqueness
+    const numericCustomerId = Date.now() % 1000000 + Math.floor(Math.random() * 1000);
+    
+    for (const item of orderItems) {
+      // Calculate tax (12%) for this item
+      const itemSubtotal = item.subtotal;
+      const taxAmount = itemSubtotal * 0.12;
+      const itemTotalWithTax = itemSubtotal + taxAmount;
       
       const salesOrder = new SalesOrder({
         customerId: numericCustomerId,
-        productId: firstItem.productId,
-        quantity: firstItem.quantity,
-        totalAmount: totalAmount,
+        productId: item.productId,
+        quantity: item.quantity,
+        totalAmount: itemTotalWithTax,
+        tax: 12,
+        discount: 0,
         status: "pending",
         invoiceStatus: "unpaid",
       });
       
       await salesOrder.save();
-      
-      // Link sales order to online order
-      order.salesOrderId = salesOrder._id;
+      salesOrderIds.push(salesOrder._id);
+    }
+    
+    // Link all sales orders to online order
+    if (salesOrderIds.length > 0) {
+      order.salesOrderIds = salesOrderIds;
       await order.save();
     }
     
@@ -239,7 +248,8 @@ exports.getAllOrders = async (req, res) => {
     const orders = await OnlineOrder.find()
       .populate("customerId")
       .populate("items.productId")
-      .populate("salesOrderId");
+      .populate("salesOrderId")
+      .populate("salesOrderIds");
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -252,7 +262,8 @@ exports.getOrderById = async (req, res) => {
     const order = await OnlineOrder.findById(req.params.id)
       .populate("customerId")
       .populate("items.productId")
-      .populate("salesOrderId");
+      .populate("salesOrderId")
+      .populate("salesOrderIds");
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json(order);
   } catch (error) {
@@ -265,7 +276,8 @@ exports.getOrdersByCustomer = async (req, res) => {
   try {
     const orders = await OnlineOrder.find({ customerId: req.params.customerId })
       .populate("items.productId")
-      .populate("salesOrderId");
+      .populate("salesOrderId")
+      .populate("salesOrderIds");
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -285,11 +297,13 @@ exports.updateOrderStatus = async (req, res) => {
     if (!order) return res.status(404).json({ error: "Order not found" });
     
     // Update corresponding sales order status if exists
-    if (order.salesOrderId) {
-      await SalesOrder.findByIdAndUpdate(
-        order.salesOrderId,
-        { status }
-      );
+    if (order.salesOrderIds && order.salesOrderIds.length > 0) {
+      for (const salesOrderId of order.salesOrderIds) {
+        await SalesOrder.findByIdAndUpdate(salesOrderId, { status });
+      }
+    } else if (order.salesOrderId) {
+      // Backward compatibility for old orders with single salesOrderId
+      await SalesOrder.findByIdAndUpdate(order.salesOrderId, { status });
     }
     
     res.json({ message: "Order status updated", order });
@@ -311,11 +325,15 @@ exports.updatePaymentStatus = async (req, res) => {
     if (!order) return res.status(404).json({ error: "Order not found" });
     
     // Update corresponding sales order invoice status if exists
-    if (order.salesOrderId && paymentStatus === "paid") {
-      await SalesOrder.findByIdAndUpdate(
-        order.salesOrderId,
-        { invoiceStatus: "paid" }
-      );
+    if (paymentStatus === "paid") {
+      if (order.salesOrderIds && order.salesOrderIds.length > 0) {
+        for (const salesOrderId of order.salesOrderIds) {
+          await SalesOrder.findByIdAndUpdate(salesOrderId, { invoiceStatus: "paid" });
+        }
+      } else if (order.salesOrderId) {
+        // Backward compatibility for old orders with single salesOrderId
+        await SalesOrder.findByIdAndUpdate(order.salesOrderId, { invoiceStatus: "paid" });
+      }
     }
     
     res.json({ message: "Payment status updated", order });
@@ -351,12 +369,14 @@ exports.cancelOrder = async (req, res) => {
     order.updatedAt = Date.now();
     await order.save();
     
-    // Update corresponding sales order if exists
-    if (order.salesOrderId) {
-      await SalesOrder.findByIdAndUpdate(
-        order.salesOrderId,
-        { status: "cancelled" }
-      );
+    // Update corresponding sales orders if exist
+    if (order.salesOrderIds && order.salesOrderIds.length > 0) {
+      for (const salesOrderId of order.salesOrderIds) {
+        await SalesOrder.findByIdAndUpdate(salesOrderId, { status: "cancelled" });
+      }
+    } else if (order.salesOrderId) {
+      // Backward compatibility for old orders with single salesOrderId
+      await SalesOrder.findByIdAndUpdate(order.salesOrderId, { status: "cancelled" });
     }
     
     res.json({ message: "Order cancelled and inventory restored", order });
@@ -385,8 +405,13 @@ exports.deleteOrder = async (req, res) => {
       }
     }
     
-    // Delete corresponding sales order if exists
-    if (order.salesOrderId) {
+    // Delete corresponding sales orders if exist
+    if (order.salesOrderIds && order.salesOrderIds.length > 0) {
+      for (const salesOrderId of order.salesOrderIds) {
+        await SalesOrder.findByIdAndDelete(salesOrderId);
+      }
+    } else if (order.salesOrderId) {
+      // Backward compatibility for old orders with single salesOrderId
       await SalesOrder.findByIdAndDelete(order.salesOrderId);
     }
     
@@ -418,8 +443,13 @@ exports.deleteAllOrders = async (req, res) => {
         }
       }
       
-      // Delete corresponding sales order if exists
-      if (order.salesOrderId) {
+      // Delete corresponding sales orders if exist
+      if (order.salesOrderIds && order.salesOrderIds.length > 0) {
+        for (const salesOrderId of order.salesOrderIds) {
+          await SalesOrder.findByIdAndDelete(salesOrderId);
+        }
+      } else if (order.salesOrderId) {
+        // Backward compatibility for old orders with single salesOrderId
         await SalesOrder.findByIdAndDelete(order.salesOrderId);
       }
     }

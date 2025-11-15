@@ -162,7 +162,7 @@ function ShoppingCart() {
           <p className="text-gray-500 mb-4">Your cart is empty</p>
           <button
             onClick={() => navigate("/")}
-            className="bg-[#3b82f6] text-white px-6 py-2 rounded hover:bg-[#2563eb]"
+            className="bg-[#36454F] text-white px-6 py-2 rounded hover:bg-[#818589]"
           >
             Browse Products
           </button>

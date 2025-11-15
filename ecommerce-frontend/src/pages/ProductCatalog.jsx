@@ -145,7 +145,7 @@ function ProductCatalog() {
         <h1 className="text-2xl font-bold">Product Catalog</h1>
         <button
           onClick={viewCart}
-          className="bg-[#3b82f6] text-white px-4 py-2 rounded hover:bg-[#2563eb]"
+          className="bg-[#36454F] text-white px-4 py-2 rounded hover:bg-[#818589]"
         >
           🛒 Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
         </button>
@@ -296,7 +296,7 @@ function ProductCatalog() {
                   className={`w-full py-2 rounded text-sm font-medium ${
                     product.quantity === 0
                       ? "bg-gray-300 cursor-not-allowed text-gray-600"
-                      : "bg-[#3b82f6] text-white hover:bg-[#2563eb]"
+                      : "bg-[#36454F] text-white hover:bg-[#818589]"
                   }`}
                 >
                   {product.quantity === 0 ? "Out of Stock" : "🛒 Add to Cart"}

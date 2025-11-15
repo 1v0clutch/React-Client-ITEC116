@@ -44,7 +44,11 @@ function SalesOrderManagement() {
       .then((res) => res.json())
       .then((data) => {
         console.log("Fetched quotations:", data);
-        setQuotations(data);
+        // Sort quotations by creation date - newest first
+        const sortedQuotations = Array.isArray(data)
+          ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          : data;
+        setQuotations(sortedQuotations);
       })
       .catch((err) => console.error("Error fetching quotations:", err));
 
@@ -52,7 +56,11 @@ function SalesOrderManagement() {
       .then((res) => res.json())
       .then((data) => {
         console.log("Fetched orders:", data);
-        setOrders(data);
+        // Sort orders by creation date - newest first
+        const sortedOrders = Array.isArray(data)
+          ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          : data;
+        setOrders(sortedOrders);
       })
       .catch((err) => console.error("Error fetching orders:", err));
   }, []);
@@ -104,7 +112,8 @@ function SalesOrderManagement() {
         body: JSON.stringify(quotationData),
       });
       const createdQuotation = await response.json();
-      setQuotations([...quotations, createdQuotation.quotation]);
+      // Add new quotation at the beginning (top) of the list
+      setQuotations([createdQuotation.quotation, ...quotations]);
       setNewQuotation({
         customerId: "",
         productId: "",
@@ -163,7 +172,8 @@ function SalesOrderManagement() {
         body: JSON.stringify(newOrderData),
       });
       const createdOrder = await response.json();
-      setOrders([...orders, createdOrder.order]);
+      // Add new order at the beginning (top) of the list
+      setOrders([createdOrder.order, ...orders]);
       setNewOrder({
         customerId: "",
         productId: "",
@@ -190,7 +200,8 @@ function SalesOrderManagement() {
       const { order, quotation } = await response.json();
       
       setQuotations(quotations.map((q) => (q._id === quotationId ? quotation : q)));
-      setOrders([...orders, order]);
+      // Add new order at the beginning (top) of the list
+      setOrders([order, ...orders]);
       alert("Quotation converted to Order successfully!");
     } catch (error) {
       console.error("Error converting quotation:", error);

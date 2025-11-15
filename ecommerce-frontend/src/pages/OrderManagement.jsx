@@ -20,7 +20,11 @@ function OrderManagement() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setOrders(Array.isArray(data) ? data : []);
+      // Sort orders by creation date - newest first
+      const sortedOrders = Array.isArray(data) 
+        ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        : [];
+      setOrders(sortedOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
       setToast({
@@ -335,10 +339,18 @@ function OrderManagement() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-gray-100 font-bold">
-                  <tr>
-                    <td colSpan="3" className="px-3 py-2 text-right">Total:</td>
+                <tfoot>
+                  <tr className="border-t">
+                    <td colSpan="3" className="px-3 py-2 text-right font-semibold">Subtotal:</td>
                     <td className="px-3 py-2 text-center">${selectedOrder.totalAmount.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan="3" className="px-3 py-2 text-right text-sm text-gray-600">Tax (12%):</td>
+                    <td className="px-3 py-2 text-center text-sm text-gray-600">${(selectedOrder.totalAmount * 0.12).toFixed(2)}</td>
+                  </tr>
+                  <tr className="bg-gray-100 font-bold border-t">
+                    <td colSpan="3" className="px-3 py-2 text-right">Total (with tax):</td>
+                    <td className="px-3 py-2 text-center">${(selectedOrder.totalAmount * 1.12).toFixed(2)}</td>
                   </tr>
                 </tfoot>
               </table>

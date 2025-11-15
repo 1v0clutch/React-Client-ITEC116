@@ -148,8 +148,16 @@ function Checkout() {
     }
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const calculateTax = () => {
+    return calculateSubtotal() * 0.12; // 12% tax
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateTax();
   };
 
   return (
@@ -330,7 +338,15 @@ function Checkout() {
           </div>
           
           <div className="border-t pt-4 mb-4">
-            <div className="flex justify-between text-xl font-bold">
+            <div className="flex justify-between mb-2">
+              <span>Subtotal:</span>
+              <span>${calculateSubtotal().toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between mb-2 text-sm text-gray-600">
+              <span>Tax (12%):</span>
+              <span>${calculateTax().toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xl font-bold border-t pt-2">
               <span>Total:</span>
               <span className="text-green-600">${calculateTotal().toFixed(2)}</span>
             </div>
