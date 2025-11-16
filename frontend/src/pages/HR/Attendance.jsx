@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 
-const API_BASE = "http://localhost:8000/api";
+// Use env var if available, otherwise fallback to backend port 8000
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
 
 export default function LeaveAttendance({ data = {} }) {
   const [activeTab, setActiveTab] = useState("attendance");
@@ -23,9 +24,11 @@ export default function LeaveAttendance({ data = {} }) {
 
   // helper fetch functions
   const fetchAttendance = async () => {
+    const url = `${API_BASE}/attendance`;
     try {
-      const res = await fetch(`${API_BASE}/attendance`);
-      if (!res.ok) throw new Error("Failed to fetch attendance");
+      console.log("[Attendance] GET", url);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch attendance (status ${res.status})`);
       const data = await res.json();
       setAttendanceRecords(Array.isArray(data) ? data : []);
       setServerOnline(true);
@@ -36,9 +39,11 @@ export default function LeaveAttendance({ data = {} }) {
   };
 
   const fetchLeaves = async () => {
+    const url = `${API_BASE}/leaves`;
     try {
-      const res = await fetch(`${API_BASE}/leaves`);
-      if (!res.ok) throw new Error("Failed to fetch leaves");
+      console.log("[Leaves] GET", url);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch leaves (status ${res.status})`);
       const data = await res.json();
       setLeaveRecords(Array.isArray(data) ? data : []);
       setServerOnline(true);
@@ -48,10 +53,18 @@ export default function LeaveAttendance({ data = {} }) {
     }
   };
 
-  // Fetch attendance and leave records on mount
+  // Fetch attendance and leave records on mount and poll for updates
   useEffect(() => {
     fetchAttendance();
     fetchLeaves();
+
+    const interval = setInterval(() => {
+      // try fetching periodically; respects serverOnline flag for logging/behavior
+      fetchAttendance();
+      fetchLeaves();
+    }, 5000); // every 5 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   // Filters
@@ -61,7 +74,7 @@ export default function LeaveAttendance({ data = {} }) {
     const q = attendanceSearch.toLowerCase();
     return (
       (emp?.name || "").toLowerCase().includes(q) ||
-      (emp?.empId || "").toLowerCase().includes(q)
+      (emp?.employeeId || "").toLowerCase().includes(q)
     );
   });
 
@@ -69,7 +82,7 @@ export default function LeaveAttendance({ data = {} }) {
     const q = leaveSearch.toLowerCase();
     return (
       (emp?.name || "").toLowerCase().includes(q) ||
-      (emp?.empId || "").toLowerCase().includes(q)
+      (emp?.employeeId || "").toLowerCase().includes(q)
     );
   });
 
@@ -83,15 +96,16 @@ export default function LeaveAttendance({ data = {} }) {
 
       if (type === "in") {
         const alreadyIn = attendanceRecords.find(
-          (r) => r.empId === selectedEmployee.empId && !r.timeOut
+          (r) => r.empId === selectedEmployee.employeeId && !r.timeOut
         );
         if (alreadyIn) {
           alert("Already timed in!");
+          setIsProcessing(false);
           return;
         }
 
         const newRecord = {
-          empId: selectedEmployee.empId,
+          empId: selectedEmployee.employeeId,
           name: selectedEmployee.name,
           timeIn: nowIso,
           timeOut: null,
@@ -106,13 +120,17 @@ export default function LeaveAttendance({ data = {} }) {
         if (!res.ok) throw new Error("Failed to save time in");
         const saved = await res.json();
         setAttendanceRecords((prev) => [...prev, saved]);
+        setSelectedEmployee(null);
+        setAttendanceSearch("");
+        setShowAttendanceDropdown(false);
       } else if (type === "out") {
         const lastRecord = attendanceRecords
           .slice()
           .reverse()
-          .find((r) => r.empId === selectedEmployee.empId && !r.timeOut);
+          .find((r) => r.empId === selectedEmployee.employeeId && !r.timeOut);
         if (!lastRecord) {
           alert("No time-in record found.");
+          setIsProcessing(false);
           return;
         }
 
@@ -134,15 +152,15 @@ export default function LeaveAttendance({ data = {} }) {
         setAttendanceRecords((prev) =>
           prev.map((rec) => (rec._id === updated._id ? updated : rec))
         );
+        setSelectedEmployee(null);
+        setAttendanceSearch("");
+        setShowAttendanceDropdown(false);
       }
     } catch (err) {
       console.error(err);
       alert("An error occurred. Check console for details.");
     } finally {
       setIsProcessing(false);
-      setSelectedEmployee(null);
-      setAttendanceSearch("");
-      setShowAttendanceDropdown(false);
     }
   };
 
@@ -161,7 +179,7 @@ export default function LeaveAttendance({ data = {} }) {
     setIsProcessing(true);
     try {
       const newLeave = {
-        empId: selectedEmployee.empId,
+        empId: selectedEmployee.employeeId,
         name: selectedEmployee.name,
         type: leaveForm.type,
         reason: leaveForm.reason,
@@ -191,28 +209,33 @@ export default function LeaveAttendance({ data = {} }) {
 
   // Approve / Reject / Delete Leave
   const handleLeaveAction = async (index, action) => {
+    if (!serverOnline) return alert("Server is offline. Start backend to perform this action.");
     const leave = leaveRecords[index];
     if (!leave) return;
-    if (action === "delete") {
-      // optimistic UI delete (implement backend DELETE if desired)
-      setLeaveRecords((prev) => prev.filter((_, i) => i !== index));
-      return;
-    }
 
     setIsProcessing(true);
     try {
-      const res = await fetch(`${API_BASE}/leaves/${leave._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: action === "approve" ? "Approved" : "Rejected",
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to update leave status");
-      const updated = await res.json();
-      setLeaveRecords((prev) =>
-        prev.map((rec) => (rec._id === updated._id ? updated : rec))
-      );
+      if (action === "delete") {
+        const res = await fetch(`${API_BASE}/leaves/${leave._id}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error("Failed to delete leave");
+        setLeaveRecords((prev) => prev.filter((rec) => rec._id !== leave._id));
+      } else {
+        const res = await fetch(`${API_BASE}/leaves/${leave._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: action === "approve" ? "Approved" : "Rejected",
+          }),
+        });
+        if (!res.ok) throw new Error("Failed to update leave status");
+        const updated = await res.json();
+        setLeaveRecords((prev) =>
+          prev.map((rec) => (rec._id === updated._id ? updated : rec))
+        );
+      }
     } catch (err) {
       console.error(err);
       alert("An error occurred. Check console for details.");
@@ -288,20 +311,20 @@ export default function LeaveAttendance({ data = {} }) {
                 filteredAttendanceEmployees.length > 0 &&
                 !selectedEmployee && (
                   <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
-                    {filteredAttendanceEmployees.map((emp) => (
+                    {filteredAttendanceEmployees.map((emp, index) => (
                       <li
-                        key={emp.empId}
+                        key={emp.employeeId || index}
                         onMouseDown={(e) => e.preventDefault()} // prevent blur
                         onClick={() => {
                           setSelectedEmployee(emp);
-                          setAttendanceSearch(`${emp.name} (${emp.empId})`);
+                          setAttendanceSearch(`${emp.name} (${emp.employeeId})`);
                           setShowAttendanceDropdown(false);
                         }}
                         className="p-2 hover:bg-gray-100 cursor-pointer border-b"
                       >
                         <div className="font-semibold">{emp.name}</div>
                         <div className="text-xs text-gray-500">
-                          {emp.empId} — {emp.department} — Hired: {emp.hireDate}
+                          {emp.employeeId} — {emp.department} — Hired: {emp.hireDate}
                         </div>
                       </li>
                     ))}
@@ -382,20 +405,20 @@ export default function LeaveAttendance({ data = {} }) {
                 filteredLeaveEmployees.length > 0 &&
                 !selectedEmployee && (
                   <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
-                    {filteredLeaveEmployees.map((emp) => (
+                    {filteredLeaveEmployees.map((emp, index) => (
                       <li
-                        key={emp.empId}
+                        key={emp.employeeId || index}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           setSelectedEmployee(emp);
-                          setLeaveSearch(`${emp.name} (${emp.empId})`);
+                          setLeaveSearch(`${emp.name} (${emp.employeeId})`);
                           setShowLeaveDropdown(false);
                         }}
                         className="p-2 hover:bg-gray-100 cursor-pointer border-b"
                       >
                         <div className="font-semibold">{emp.name}</div>
                         <div className="text-xs text-gray-500">
-                          {emp.empId} — {emp.department} — Hired: {emp.hireDate}
+                          {emp.employeeId} — {emp.department} — Hired: {emp.hireDate}
                         </div>
                       </li>
                     ))}

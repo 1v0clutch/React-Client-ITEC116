@@ -32,3 +32,14 @@ exports.update = async (req, res) => {
     res.status(400).json({ message: "Update failed" });
   }
 };
+
+exports.delete = async (req, res) => {
+  try {
+    const deleted = await Leave.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Not found" });
+    res.json({ message: "Leave deleted successfully", deleted });
+  } catch (err) {
+    console.error("leave.delete:", err);
+    res.status(400).json({ message: "Delete failed" });
+  }
+};
