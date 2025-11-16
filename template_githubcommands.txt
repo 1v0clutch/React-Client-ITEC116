@@ -1,0 +1,67 @@
+npm create vite@latest my-react-app -- --template react
+cd my-react-app
+
+
+npm install tailwindcss @tailwindcss/vite
+
+https://www.youtube.com/watch?v=sHnG8tIYMB4
+
+
+Repository Setup
+
+git init → Initializes a new Git repository in the current folder.
+git clone <url> → Copies (clones) a remote repository to your local machine.
+
+Staging & Committing
+
+git status → Shows changes (modified, staged, untracked files).
+git add <file> → Stages specific file(s) for commit.
+git add . → Stages all changed files.
+git commit -m "message" → Commits staged changes with a message.
+git log → Shows commit history.
+
+Working with Remotes
+
+git remote -v → Lists remote repositories connected.
+git remote add origin <url> → Connects a local repo to a GitHub repo.
+git push origin main → Pushes local commits to the remote main branch.
+git pull origin main → Pulls updates from remote main branch into local.
+git fetch origin → Fetches updates from remote without merging automatically.
+
+Branching
+
+git branch → Lists all branches, shows which one you’re on.
+git branch <name> → Creates a new branch.
+git checkout <name> → Switches to another branch.
+git checkout -b <name> → Creates and switches to a new branch in one step.
+git switch <name> → Alternative modern command to switch branches.
+git switch -c <name> → Creates + switches to a new branch.
+
+Merging
+
+git merge <branch> → Merges the specified branch into the current branch.
+Example: git merge feature-branch (while on main) merges feature into main.
+
+git merge --abort → Cancels a merge if conflicts happen.
+
+Resetting & Undoing
+
+git restore <file> → Discards local changes (unstaged).
+git reset <file> → Unstages a staged file.
+git reset --hard HEAD → Resets working directory to the last commit (⚠️ deletes changes).
+git revert <commit> → Creates a new commit that undoes the changes from a specific commit.
+
+Stashing (temporary storage)
+
+git stash → Saves uncommitted changes temporarily.
+git stash pop → Restores the stashed changes.
+
+Other Useful Commands
+
+git diff → Shows line-by-line changes not yet staged.
+git diff --staged → Shows changes staged for the next commit.
+git tag <name> → Marks a commit with a version tag (useful for releases).
+
+
+
+
