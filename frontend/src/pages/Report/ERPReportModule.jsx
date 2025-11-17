@@ -4,7 +4,6 @@ import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
-
 export default function ERPReportModule() {
   // Note: Update these URLs if your backend runs on a different port
   // Backend default is 5000, but frontend uses 8000 in other files
@@ -17,6 +16,21 @@ export default function ERPReportModule() {
     department: "All",
     region: "All",
   });
+  
+  const user = { role: "admin" };  
+
+  // Reports with access roles
+  const REPORTS = [
+    { id: "sales", name: "Sales Summary", roles: ["admin", "sales", "finance"] },
+    { id: "inventory", name: "Inventory Stock", roles: ["admin", "inventory"] },
+    { id: "pnl", name: "Profit & Loss", roles: ["admin", "finance"] },
+    { id: "warehouse", name: "Warehouse Report", roles: ["admin", "warehouse"] },
+    { id: "hr", name: "HR Report", roles: ["admin", "hr"] },
+    { id: "audit", name: "Audit Trail", roles: ["admin", "finance", "audit"] },
+    { id: "tax", name: "Tax Compliance", roles: ["admin", "finance"] },
+  ];
+  
+const availableReports = REPORTS.filter(r => r.roles.includes(user.role));
 
   const [reports] = useState([
     { id: 1, name: "Sales Summary", type: "sales", moduleId: 8 },
