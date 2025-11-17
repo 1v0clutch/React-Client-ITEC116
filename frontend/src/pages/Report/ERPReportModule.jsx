@@ -635,11 +635,38 @@ export default function ERPReportModule() {
   };
 
   // 🔹 Schedule recurring reports
-  const scheduleReport = (frequency) => {
-    setSchedule(frequency);
-    addLog(`Scheduled ${selectedReport?.name} to run ${frequency.toLowerCase()}`);
-    // In a real implementation, this would set up a cron job or scheduled task
-  };
+  const scheduleReport = async (frequency) => {
+  if (!selectedReport) {
+    addLog("Please select a report first.");
+    return;
+  }
+
+  setSchedule(frequency);
+  addLog(`Scheduling ${selectedReport.name} to run ${frequency.toLowerCase()}...`);
+
+  try {
+    const response = await fetch("http://localhost:8000/api/schedules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reportId: selectedReport.id,
+        reportType: selectedReport.type,
+        frequency,
+        filters,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      addLog(`Report "${selectedReport.name}" scheduled successfully!`);
+    } else {
+      addLog(`Failed to schedule report: ${result.message}`);
+    }
+  } catch (error) {
+    addLog(`Error scheduling report: ${error.message}`);
+  }
+};
 
   return (
     <div className="p-6 space-y-6">
