@@ -20,6 +20,9 @@ const financeRoutes = require("./routes/finance.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
+const biRoutes = require("./routes/bi.routes");
+
+
 const demandForecastRoutes = require("./routes/demandForecast.routes");
 const logisticsRoutes = require("./routes/logistics.routes");
 const procurementRoutes = require("./routes/procurement.routes");
@@ -79,6 +82,7 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
+app.use("/api/bi", biRoutes); // Business Intelligence Module 7
 app.use("/api/demandForecast", demandForecastRoutes);
 app.use("/api/logistics", logisticsRoutes);
 app.use("/api/procurement", require("./routes/procurement.routes"));

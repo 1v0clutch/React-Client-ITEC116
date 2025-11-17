@@ -61,8 +61,16 @@ const categories = [
       { path: "/hr/employees", label: "Employees" },
       { path: "/hr/payroll-employee", label: "Payroll" },
       { path: "/hr/salary", label: "Salary" },
+
     ],
   },
+{
+   label: "Report",
+    links: [
+      { path: "/report", label: "Reports" },
+      
+    ]
+},
   {
     label: "SupplyChain",
     links: [
