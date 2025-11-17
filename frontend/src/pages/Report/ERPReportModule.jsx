@@ -88,7 +88,7 @@ export default function ERPReportModule() {
   const exportPDF = () => {
   if (!selectedReport || data.length === 0) {
     alert("Please generate a report before exporting.");
-    return;
+    return; 
   }
 
   const doc = new jsPDF("landscape", "pt", "A4");
