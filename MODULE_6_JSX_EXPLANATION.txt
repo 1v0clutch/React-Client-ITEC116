@@ -1,0 +1,114 @@
+MODULE 6 - E-COMMERCE JSX FILES EXPLANATION
+===========================================
+
+1. ProductCatalog.jsx
+---------------------
+PURPOSE: Displays all available products from inventory for customers to browse and add to cart.
+
+KEY FEATURES:
+- Fetches products from inventory API endpoint (/api/ecommerce/products/all)
+- Shows product details: name, SKU, description, category, price, and stock quantity
+- Real-time stock validation before adding items to cart
+- Prevents adding out-of-stock items (button disabled when quantity = 0)
+- Cart counter displays total items in shopping cart
+- Stores cart data in localStorage for persistence
+
+CRITICAL INTEGRATION:
+- READ from Module 1 (Inventory): Validates real-time stock availability before adding to cart
+- Checks current product quantity to prevent overselling
+
+MAIN FUNCTIONS:
+- fetchProducts(): Retrieves all inventory items
+- addToCart(): Validates stock and adds product to cart with quantity check
+- viewCart(): Navigates to shopping cart page
+
+
+2. ShoppingCart.jsx
+-------------------
+PURPOSE: Manages cart items, allows quantity updates, and validates stock before checkout.
+
+KEY FEATURES:
+- Displays all items in cart with quantity, price, and subtotal
+- Update quantity with +/- buttons (validates against available stock)
+- Remove items from cart
+- Shows available stock for each item
+- Calculates total order amount
+- Validates all items' stock availability before proceeding to checkout
+
+CRITICAL INTEGRATION:
+- READ from Module 1 (Inventory): Validates stock for each item when updating quantities
+- Batch validation endpoint (/api/ecommerce/products/validate-stock) checks all cart items
+
+MAIN FUNCTIONS:
+- updateQuantity(): Validates stock availability before updating item quantity
+- removeItem(): Removes product from cart
+- validateAndProceed(): Validates all cart items against current inventory before checkout
+- calculateTotal(): Computes total order amount
+
+
+3. Checkout.jsx
+---------------
+PURPOSE: Handles customer selection/creation and order placement with inventory deduction.
+
+KEY FEATURES:
+- Customer selection from existing customers or create new customer
+- New customer form with complete address details
+- Order summary showing all cart items and total
+- Places order and automatically deducts inventory quantities
+- Creates linked sales order in Module 8
+- Clears cart after successful order placement
+
+CRITICAL INTEGRATION:
+- READ from Module 1 (Inventory): Final validation before order creation
+- WRITE to Module 1 (Inventory): Deducts product quantities when order is placed
+- WRITE to Module 8 (Sales): Creates sales order automatically with linked order ID
+
+MAIN FUNCTIONS:
+- fetchCustomers(): Retrieves all customers
+- handleCreateCustomer(): Creates new customer with address
+- handlePlaceOrder(): Creates order, deducts inventory, creates sales order, clears cart
+
+
+4. OrderManagement.jsx
+----------------------
+PURPOSE: Manages all online orders with status updates and cancellation with inventory restoration.
+
+KEY FEATURES:
+- Lists all orders with customer details, items, totals, and statuses
+- Update order status (pending, processing, shipped, delivered, cancelled)
+- Update payment status (unpaid, paid, refunded)
+- Cancel orders with automatic inventory restoration
+- View detailed order information in modal
+- Shows linked sales order ID from Module 8
+
+CRITICAL INTEGRATION:
+- WRITE to Module 1 (Inventory): Restores product quantities when order is cancelled
+- READ/WRITE to Module 8 (Sales): Displays linked sales order ID and syncs status updates
+
+MAIN FUNCTIONS:
+- fetchOrders(): Retrieves all online orders
+- updateOrderStatus(): Changes order status (pending → delivered)
+- updatePaymentStatus(): Changes payment status (unpaid → paid)
+- cancelOrder(): Cancels order and restores inventory quantities
+- viewOrderDetails(): Shows complete order information in modal
+
+
+INTEGRATION SUMMARY
+===================
+
+Module 6 → Module 1 (Inventory):
+- READ: Product catalog, stock validation, quantity checks
+- WRITE: Inventory deduction on order placement, inventory restoration on cancellation
+
+Module 6 → Module 8 (Sales):
+- WRITE: Automatic sales order creation on checkout
+- READ: Display linked sales order ID in order management
+
+DATA FLOW:
+1. Customer browses products (reads inventory)
+2. Customer adds to cart (validates stock)
+3. Customer proceeds to checkout (validates all items)
+4. Order placed → Inventory deducted + Sales order created
+5. Order cancelled → Inventory restored
+
+All operations use API endpoints at http://localhost:8000/api/ecommerce/
