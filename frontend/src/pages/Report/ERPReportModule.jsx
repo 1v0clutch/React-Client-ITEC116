@@ -8,8 +8,8 @@ import autoTable from "jspdf-autotable";
 export default function ERPReportModule() {
   // Note: Update these URLs if your backend runs on a different port
   // Backend default is 5000, but frontend uses 8000 in other files
-  const API_BASE_URL = "http://localhost:5000/api/bi"; // BI Module API (adjust port if needed)
-  const API_MODULES_BASE = "http://localhost:5000/api"; // Direct module APIs (fallback, adjust port if needed)
+  const API_BASE_URL = "http://localhost:8000/api/bi"; // BI Module API (adjust port if needed)
+  const API_MODULES_BASE = "http://localhost:8000/api"; // Direct module APIs (fallback, adjust port if needed)
   
   const [filters, setFilters] = useState({
     dateFrom: "",
@@ -88,7 +88,7 @@ export default function ERPReportModule() {
   const exportPDF = () => {
   if (!selectedReport || data.length === 0) {
     alert("Please generate a report before exporting.");
-    return; 
+    return;
   }
 
   const doc = new jsPDF("landscape", "pt", "A4");
@@ -226,18 +226,23 @@ export default function ERPReportModule() {
       // Fallback: Fetch directly from module APIs
       switch (report.type) {
         case "inventory":
-          response = await fetch(`${API_MODULES_BASE}/inventory/getItems`);
+          const response = await fetch(`${API_MODULES_BASE}/inventory/getItems`);
           const inventoryData = await response.json();
-          moduleData = inventoryData.map((item, idx) => ({
+          const items = inventoryData.items || [];
+
+          moduleData = items.map((item, idx) => ({
             ID: idx + 1,
             Name: item.name || "N/A",
             SKU: item.sku || "N/A",
             Category: item.category || "N/A",
             Quantity: item.quantity || 0,
             Unit: item.unit || "pcs",
-            Updated: item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "N/A",
+            Updated: item.updatedAt
+              ? new Date(item.updatedAt).toLocaleDateString()
+              : "N/A",
           }));
           break;
+
 
         case "transaction":
           response = await fetch(`${API_MODULES_BASE}/transactions`);
