@@ -5,6 +5,7 @@ import WorkBreakdown from "./WorkBreakdowns";
 import TaskSchedule from "./TaskSchedule";
 import Resource from "./Resource";
 import Budget from "./Budget";
+import Report from "./Report";
 import { FiPlus, FiBell, FiList } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 
@@ -71,6 +72,8 @@ function Project() {
         return <Resource project={selectedProject} />;
       case "budget":
         return <Budget project={selectedProject} />;
+      case "report":
+        return <Report project={selectedProject} />;
       default:
         return <Overview project={selectedProject} />;
     }
@@ -217,7 +220,14 @@ function Project() {
           Budget
         </button>
 
-        <button className="pb-2 text-sm text-gray-500 hover:text-gray-700">
+        <button
+          className={`pb-2 text-sm ${
+            activeTab === "budget"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+          onClick={() => setActiveTab("report")}
+        >
           Reports
         </button>
       </div>
