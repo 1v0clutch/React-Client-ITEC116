@@ -5,8 +5,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export default function ERPReportModule() {
-  // Note: Update these URLs if your backend runs on a different port
-  // Backend default is 5000, but frontend uses 8000 in other files
+
   const API_BASE_URL = "http://localhost:8000/api/bi"; // BI Module API (adjust port if needed)
   const API_MODULES_BASE = "http://localhost:8000/api"; // Direct module APIs (fallback, adjust port if needed)
   
@@ -30,7 +29,7 @@ export default function ERPReportModule() {
     { id: "tax", name: "Tax Compliance", roles: ["admin", "finance"] },
   ];
   
-const availableReports = REPORTS.filter(r => r.roles.includes(user.role));
+  const availableReports = REPORTS.filter(r => r.roles.includes(user.role));
 
   const [reports] = useState([
     { id: 1, name: "Sales Summary", type: "sales", moduleId: 8 },
@@ -236,11 +235,13 @@ const availableReports = REPORTS.filter(r => r.roles.includes(user.role));
       } catch (biError) {
         console.log("BI data not available, trying direct API...", biError);
       }
-
+      
       // Fallback: Fetch directly from module APIs
+      
       switch (report.type) {
+
         case "inventory":
-          const response = await fetch(`${API_MODULES_BASE}/inventory/getItems`);
+          response = await fetch(`${API_MODULES_BASE}/inventory/getItems`);
           const inventoryData = await response.json();
           const items = inventoryData.items || [];
 
@@ -261,27 +262,39 @@ const availableReports = REPORTS.filter(r => r.roles.includes(user.role));
         case "transaction":
           response = await fetch(`${API_MODULES_BASE}/transactions`);
           const transactionData = await response.json();
+
           moduleData = transactionData.map((t, idx) => ({
             ID: idx + 1,
             Type: t.type || "N/A",
             Quantity: t.quantity || 0,
             Item: t.itemId?.name || t.itemId || "N/A",
-            Date: t.transactionDate ? new Date(t.transactionDate).toLocaleDateString() : "N/A",
+            Date: t.transactionDate
+              ? new Date(t.transactionDate).toLocaleDateString()
+              : "N/A",
             Remarks: t.remarks || "N/A",
           }));
           break;
 
+
         case "warehouse":
           response = await fetch(`${API_MODULES_BASE}/warehouses/getAllWarehouse`);
+          if (!response.ok) throw new Error("Failed to fetch warehouse data");
+
           const warehouseData = await response.json();
+
+          if (!Array.isArray(warehouseData)) {
+            throw new Error("Invalid warehouse response format");
+          }
+
           moduleData = warehouseData.map((w, idx) => ({
             ID: idx + 1,
-            Name: w.name || "N/A",
-            Location: w.location || "N/A",
-            Capacity: w.capacity || 0,
-            CurrentStock: w.currentStock || 0,
+            Name: w.name ?? "N/A",
+            Location: w.location ?? "N/A",
+            Capacity: w.capacity ?? 0,
+            CurrentStock: w.currentStock ?? 0,
           }));
           break;
+
 
         case "procurement":
           // Fetch from multiple procurement endpoints
