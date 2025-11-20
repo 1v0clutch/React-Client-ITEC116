@@ -43,7 +43,7 @@ export default function ERPReportModule() {
     { id: 9, name: "Comprehensive Dashboard", type: "dashboard", moduleId: null },
   ]);
 
-  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null); 
   const [data, setData] = useState([]);
   const [isRealTime, setIsRealTime] = useState(false);
   const [log, setLog] = useState([]);
