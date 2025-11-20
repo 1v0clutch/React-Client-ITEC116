@@ -297,14 +297,13 @@ export default function ERPReportModule() {
 
 
         case "procurement":
-          // Fetch from multiple procurement endpoints
           const [suppliersRes, requisitionsRes, posRes, invoicesRes] = await Promise.all([
             fetch(`${API_MODULES_BASE}/suppliers`).catch(() => ({ json: () => [] })),
             fetch(`${API_MODULES_BASE}/requisitions`).catch(() => ({ json: () => [] })),
             fetch(`${API_MODULES_BASE}/purchase-orders`).catch(() => ({ json: () => [] })),
             fetch(`${API_MODULES_BASE}/invoices`).catch(() => ({ json: () => [] })),
           ]);
-          
+
           const [suppliers, requisitions, pos, invoices] = await Promise.all([
             suppliersRes.json().catch(() => []),
             requisitionsRes.json().catch(() => []),
@@ -313,42 +312,41 @@ export default function ERPReportModule() {
           ]);
 
           moduleData = [
-          ...(Array.isArray(suppliers) ? suppliers : []).map((s, idx) => ({
-            ID: `S${idx + 1}`,
-            Type: "Supplier",
-            Name: s.name || "N/A",
-            Contact: s.contactPerson || "N/A",
-            Status: "Active",
-          })),
+            ...suppliers.map((s, idx) => ({
+              ID: `S${idx + 1}`,
+              Type: "Supplier",
+              Name: s.name || "N/A",
+              Contact: s.contactPerson || "N/A",
+              Status: "Active",
+            })),
 
-          ...(Array.isArray(requisitions) ? requisitions : []).map((r, idx) => ({
-            ID: `R${idx + 1}`,
-            Type: "Requisition",
-            Description: r.description || "N/A",
-            Quantity: r.quantity || 0,
-            Status: r.status || "N/A",
-          })),
+            ...requisitions.map((r, idx) => ({
+              ID: `R${idx + 1}`,
+              Type: "Requisition",
+              Description: r.description || "N/A",
+              Quantity: r.quantity || 0,
+              Status: r.status || "N/A",
+            })),
 
-          ...(Array.isArray(pos) ? pos : []).map((po, idx) => ({
-            ID: `PO${idx + 1}`,
-            Type: "Purchase Order",
-            Description: po.description || "N/A",
-            Status: po.status || "N/A",
-            Date: po.orderDate
-              ? new Date(po.orderDate).toLocaleDateString()
-              : "N/A",
-          })),
+            ...pos.map((po, idx) => ({
+              ID: `PO${idx + 1}`,
+              Type: "Purchase Order",
+              Description: po.description || "N/A",
+              Status: po.status || "N/A",
+              Date: po.orderDate ? new Date(po.orderDate).toLocaleDateString() : "N/A",
+            })),
 
-          ...(Array.isArray(invoices) ? invoices : []).map((inv, idx) => ({
-            ID: `INV${idx + 1}`,
-            Type: "Invoice",
-            Amount: inv.totalAmount || 0,
-            Status: inv.status || "N/A",
-            Date: inv.dateIssued
-              ? new Date(inv.dateIssued).toLocaleDateString()
-              : "N/A",
-          })),
-        ];
+            ...invoices.map((inv, idx) => ({
+              ID: `INV${idx + 1}`,
+              Type: "Invoice",
+              Amount: inv.totalAmount || 0,
+              Status: inv.status || "N/A",
+              Date: inv.dateIssued ? new Date(inv.dateIssued).toLocaleDateString() : "N/A",
+            })),
+          ];
+          break;
+
+          
 
         case "finance":
           const [financeTransRes, payrollRes] = await Promise.all([
