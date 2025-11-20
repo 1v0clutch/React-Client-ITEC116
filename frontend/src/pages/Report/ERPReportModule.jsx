@@ -243,7 +243,8 @@ export default function ERPReportModule() {
         case "inventory":
           response = await fetch(`${API_MODULES_BASE}/inventory/getItems`);
           const inventoryData = await response.json();
-          const items = inventoryData.items || [];
+
+          const items = Array.isArray(inventoryData) ? inventoryData : [];
 
           moduleData = items.map((item, idx) => ({
             ID: idx + 1,
@@ -257,7 +258,6 @@ export default function ERPReportModule() {
               : "N/A",
           }));
           break;
-
 
         case "transaction":
           response = await fetch(`${API_MODULES_BASE}/transactions`);
