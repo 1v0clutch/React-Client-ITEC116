@@ -388,22 +388,34 @@ export default function ERPReportModule() {
           break;
 
         case "sales":
-          // Sales module may not exist yet, try to fetch or show message
           try {
-            response = await fetch(`${API_MODULES_BASE}/sales/orders`);
+            const response = await fetch(`${API_MODULES_BASE}/sales-orders/all`);
             const salesData = await response.json();
-            moduleData = salesData.map((s, idx) => ({
+
+            const list = Array.isArray(salesData) ? salesData : [];
+
+            moduleData = list.map((s, idx) => ({
               ID: idx + 1,
               OrderNumber: s.orderNumber || "N/A",
+              Product: s.productId?.name || s.productId?._id || "N/A",
               Customer: s.customerName || "N/A",
               Amount: s.totalAmount || 0,
               Status: s.status || "N/A",
-              Date: s.orderDate ? new Date(s.orderDate).toLocaleDateString() : "N/A",
+              Date: s.createdAt
+                ? new Date(s.createdAt).toLocaleDateString()
+                : "N/A",
             }));
           } catch (salesError) {
-            moduleData = [{ ID: 1, Message: "Sales module API not available yet. Please implement Module 8." }];
+            moduleData = [
+              {
+                ID: 1,
+                Message: "Sales module API not available or returned invalid data.",
+              },
+            ];
           }
           break;
+
+
 
         case "customer_service":
           try {
