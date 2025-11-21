@@ -298,18 +298,21 @@ export default function ERPReportModule() {
 
         case "procurement":
           const [suppliersRes, requisitionsRes, posRes, invoicesRes] = await Promise.all([
-            fetch(`${API_MODULES_BASE}/suppliers`).catch(() => ({ json: () => [] })),
-            fetch(`${API_MODULES_BASE}/requisitions`).catch(() => ({ json: () => [] })),
-            fetch(`${API_MODULES_BASE}/purchase-orders`).catch(() => ({ json: () => [] })),
-            fetch(`${API_MODULES_BASE}/invoices`).catch(() => ({ json: () => [] })),
+            fetch(`${API_MODULES_BASE}/suppliers`).catch(() => ({ json: () => ({ data: [] }) })),
+            fetch(`${API_MODULES_BASE}/requisitions`).catch(() => ({ json: () => ({ data: [] }) })),
+            fetch(`${API_MODULES_BASE}/purchase-orders`).catch(() => ({ json: () => ({ data: [] }) })),
+            fetch(`${API_MODULES_BASE}/invoices`).catch(() => ({ json: () => ({ data: [] }) })),
           ]);
 
-          const [suppliers, requisitions, pos, invoices] = await Promise.all([
-            suppliersRes.json().catch(() => []),
-            requisitionsRes.json().catch(() => []),
-            posRes.json().catch(() => []),
-            invoicesRes.json().catch(() => []),
-          ]);
+          const suppliersJson = await suppliersRes.json().catch(() => ({ data: [] }));
+          const requisitionsJson = await requisitionsRes.json().catch(() => ({ data: [] }));
+          const posJson = await posRes.json().catch(() => ({ data: [] }));
+          const invoicesJson = await invoicesRes.json().catch(() => ({ data: [] }));
+
+          const suppliers = suppliersJson.data || suppliersJson || [];
+          const requisitions = requisitionsJson.data || requisitionsJson || [];
+          const pos = posJson.data || posJson || [];
+          const invoices = invoicesJson.data || invoicesJson || [];
 
           moduleData = [
             ...suppliers.map((s, idx) => ({
@@ -341,12 +344,13 @@ export default function ERPReportModule() {
               Type: "Invoice",
               Amount: inv.totalAmount || 0,
               Status: inv.status || "N/A",
-              Date: inv.dateIssued ? new Date(inv.dateIssued).toLocaleDateString() : "N/A",
+              Date: inv.dateReceived
+                ? new Date(inv.dateReceived).toLocaleDateString()
+                : "N/A",
             })),
           ];
           break;
 
-          
 
         case "finance":
           const [financeTransRes, payrollRes] = await Promise.all([
