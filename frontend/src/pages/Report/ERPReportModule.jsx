@@ -421,20 +421,36 @@ export default function ERPReportModule() {
 
         case "customer_service":
           try {
-            response = await fetch(`${API_MODULES_BASE}/customer-service/tickets`);
+            const response = await fetch(`${API_MODULES_BASE}/customer-service/tickets`);
+
+            if (!response.ok) {
+              throw new Error(`API returned status ${response.status}`);
+            }
+
             const ticketsData = await response.json();
+
             moduleData = ticketsData.map((t, idx) => ({
               ID: idx + 1,
-              TicketNumber: t.ticketNumber || "N/A",
-              Customer: t.customerName || "N/A",
-              Issue: t.issue || "N/A",
-              Status: t.status || "N/A",
-              Created: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "N/A",
+              TicketNumber: t.ticketNumber ?? "N/A",
+              Customer: t.customerName ?? "N/A",
+              Issue: t.issue ?? "N/A",
+              Status: t.status ?? "N/A",
+              Created: t.createdAt
+                ? new Date(t.createdAt).toLocaleDateString()
+                : "N/A",
             }));
+
           } catch (csError) {
-            moduleData = [{ ID: 1, Message: "Customer Service module API not available yet. Please implement Module 9." }];
+            console.error("Customer Service Fetch Error:", csError);
+            moduleData = [
+              {
+                ID: 1,
+                Message:
+                  "Customer Service module API is not available. Please implement Module 9 or check the backend route.",
+              },
+            ];
           }
-          break;
+          break;                          
 
         default:
           moduleData = [];
