@@ -1,42 +1,31 @@
 import React from "react";
+import "./Table.css";
 
 export default function Table({ reportType, data }) {
   if (!reportType || data.length === 0)
     return <p className="text-gray-400">No data to display yet.</p>;
 
-  let headers = [];
-  switch (reportType) {
-    case "sales":
-      headers = ["ID", "Product", "Amount", "Date"];
-      break;
-    case "inventory":
-      headers = ["ID", "Item", "Stock", "Date"];
-      break;
-    case "finance":
-      headers = ["ID", "Category", "Value", "Date"];
-      break;
-    default:
-      headers = ["Data"];
-  }
+  // Dynamically extract headers from the first data row
+  const headers = data.length > 0 ? Object.keys(data[0]) : [];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border text-sm">
-        <thead className="bg-gray-100">
+    <div className="table-container">
+      <table className="report-table">
+        <thead>
           <tr>
-            {headers.map((h) => (
-              <th key={h} className="px-4 py-2 border-b text-left">
-                {h}
+            {headers.map((header) => (
+              <th key={header}>
+                {header}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {data.map((row) => (
-            <tr key={row.id} className="odd:bg-white even:bg-gray-50">
-              {Object.values(row).map((val, i) => (
-                <td key={i} className="px-4 py-2 border-b">
-                  {val}
+          {data.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {headers.map((header, colIndex) => (
+                <td key={colIndex}>
+                  {row[header] !== null && row[header] !== undefined ? row[header] : "N/A"}
                 </td>
               ))}
             </tr>
