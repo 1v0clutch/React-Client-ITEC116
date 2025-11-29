@@ -32,19 +32,20 @@ export default function ERPReportModule() {
   const availableReports = REPORTS.filter(r => r.roles.includes(user.role));
 
   const [reports] = useState([
-    { id: 1, name: "Sales Summary", type: "sales", moduleId: 8 },
-    { id: 2, name: "Inventory Stock", type: "inventory", moduleId: 1 },
-    { id: 3, name: "Profit & Loss", type: "finance", moduleId: 5 },
-    { id: 4, name: "Transaction Report", type: "transaction", moduleId: 2 },
-    { id: 5, name: "Warehouse Report", type: "warehouse", moduleId: 3 },
-    { id: 6, name: "Procurement Report", type: "procurement", moduleId: 4 },
-    { id: 7, name: "HR Report", type: "hr", moduleId: 10 },
-    { id: 8, name: "Customer Service Report", type: "customer_service", moduleId: 9 },
-    { id: 9, name: "Comprehensive Dashboard", type: "dashboard", moduleId: null },
+    { id: 1, name: "Sales Summary", type: "sales", moduleId: 8, department: "Sales" },
+    { id: 2, name: "Inventory Stock", type: "inventory", moduleId: 1, department: "Inventory" },
+    { id: 3, name: "Profit & Loss", type: "finance", moduleId: 5, department: "Finance" },
+    { id: 4, name: "Transaction Report", type: "transaction", moduleId: 2, department: "Finance" },
+    { id: 5, name: "Warehouse Report", type: "warehouse", moduleId: 3, department: "Warehouse" },
+    { id: 6, name: "Procurement Report", type: "procurement", moduleId: 4, department: "Procurement" },
+    { id: 7, name: "HR Report", type: "hr", moduleId: 10, department: "HR" },
   ]);
+
+  const [filteredReports, setFilteredReports] = useState(reports);
 
   const [selectedReport, setSelectedReport] = useState(null); 
   const [data, setData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [isRealTime, setIsRealTime] = useState(false);
   const [log, setLog] = useState([]);
   const [schedule, setSchedule] = useState(null);
@@ -54,6 +55,119 @@ export default function ERPReportModule() {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // ✅ Filter available reports based on selected department
+  useEffect(() => {
+    if (filters.department === "All") {
+      setFilteredReports(reports);
+      addLog(`Showing all ${reports.length} reports`);
+    } else {
+      const filtered = reports.filter(report => 
+        report.department === filters.department || report.department === "All"
+      );
+      setFilteredReports(filtered);
+      addLog(`Filtered reports: ${filtered.length} reports for ${filters.department} department`);
+    }
+  }, [filters.department, reports]);
+
+  // ✅ Client-side data filtering - filters table data without re-fetching from API
+  useEffect(() => {
+    if (data.length === 0) {
+      setFilteredData([]);
+      return;
+    }
+
+    let filtered = [...data];
+
+    // Filter by date range
+    if (filters.dateFrom || filters.dateTo) {
+      filtered = filtered.filter((row) => {
+        const dateFields = ['Date', 'Updated', 'Created', 'date', 'updatedAt', 'createdAt'];
+        const rowDateField = dateFields.find(field => row[field]);
+        
+        if (!rowDateField) return true;
+        
+        const date = new Date(row[rowDateField]);
+        const fromDate = filters.dateFrom ? new Date(filters.dateFrom) : null;
+        const toDate = filters.dateTo ? new Date(filters.dateTo) : null;
+
+        if (fromDate && date < fromDate) return false;
+        if (toDate && date > toDate) return false;
+        return true;
+      });
+    }
+
+    // Filter by department
+    if (filters.department !== "All") {
+      filtered = filtered.filter((row) => {
+        const deptFields = ['Department', 'department', 'Type', 'type'];
+        const rowDeptField = deptFields.find(field => row[field]);
+        
+        if (!rowDeptField) return true;
+        
+        return row[rowDeptField]?.toString().toLowerCase().includes(filters.department.toLowerCase());
+      });
+    }
+
+    // Filter by region
+    if (filters.region !== "All") {
+      filtered = filtered.filter((row) => {
+        const regionFields = ['Region', 'region', 'Location', 'location'];
+        const rowRegionField = regionFields.find(field => row[field]);
+        
+        if (!rowRegionField) return true;
+        
+        return row[rowRegionField]?.toString().toLowerCase().includes(filters.region.toLowerCase());
+      });
+    }
+
+    setFilteredData(filtered);
+    if (data.length > 0) {
+      addLog(`Table filtered: ${filtered.length} of ${data.length} records`);
+    }
+  }, [data, filters]);
+
+  // ✅ Calculate summary statistics from filtered data
+  const calculateSummary = () => {
+    if (filteredData.length === 0) return null;
+
+    const summary = {
+      totalRecords: filteredData.length,
+      originalRecords: data.length,
+      filterApplied: filteredData.length !== data.length,
+    };
+
+    // Calculate numeric summaries
+    const numericFields = Object.keys(filteredData[0]).filter(key => {
+      const value = filteredData[0][key];
+      return typeof value === 'number' || (!isNaN(parseFloat(value)) && key !== 'ID');
+    });
+
+    numericFields.forEach(field => {
+      const values = filteredData.map(row => parseFloat(row[field]) || 0);
+      summary[field] = {
+        total: values.reduce((sum, val) => sum + val, 0),
+        average: values.reduce((sum, val) => sum + val, 0) / values.length,
+        min: Math.min(...values),
+        max: Math.max(...values),
+      };
+    });
+
+    // Count by categories
+    const categoryFields = ['Department', 'Type', 'Status', 'Category', 'Region'];
+    categoryFields.forEach(field => {
+      if (filteredData[0][field]) {
+        const counts = {};
+        filteredData.forEach(row => {
+          const value = row[field] || 'Unknown';
+          counts[value] = (counts[value] || 0) + 1;
+        });
+        summary[`${field}Breakdown`] = counts;
+      }
+    });
+
+    return summary;
   };
 
   const handleGenerateReport = async (report) => {
@@ -80,26 +194,30 @@ export default function ERPReportModule() {
   // ✅ Export as CSV
   const exportCSV = () => {
     if (!selectedReport) return;
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    const dataToExport = filteredData.length > 0 ? filteredData : data;
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, selectedReport.name);
     XLSX.writeFile(workbook, `${selectedReport.name}.csv`);
-    addLog(`Exported ${selectedReport.name} to CSV`);
+    addLog(`Exported ${dataToExport.length} records to CSV`);
   };
 
   // ✅ Export as Excel
   const exportExcel = () => {
     if (!selectedReport) return;
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    const dataToExport = filteredData.length > 0 ? filteredData : data;
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, selectedReport.name);
     XLSX.writeFile(workbook, `${selectedReport.name}.xlsx`);
-    addLog(`Exported ${selectedReport.name} to Excel`);
+    addLog(`Exported ${dataToExport.length} records to Excel`);
   };
 
   // ✅ Fixed Export as PDF
   const exportPDF = () => {
-    if (!selectedReport || data.length === 0) {
+    const dataToExport = filteredData.length > 0 ? filteredData : data;
+    
+    if (!selectedReport || dataToExport.length === 0) {
       alert("Please generate a report before exporting.");
       return;
     }
@@ -774,10 +892,13 @@ export default function ERPReportModule() {
             onChange={handleFilterChange}
             className="border p-2 rounded"
           >
-            <option>All</option>
-            <option>Sales</option>
-            <option>Finance</option>
-            <option>Inventory</option>
+            <option value="All">All</option>
+            <option value="Sales">Sales</option>
+            <option value="Finance">Finance</option>
+            <option value="Inventory">Inventory</option>
+            <option value="Warehouse">Warehouse</option>
+            <option value="Procurement">Procurement</option>
+            <option value="HR">HR</option>
           </select>
           <select
             name="region"
@@ -808,27 +929,140 @@ export default function ERPReportModule() {
 
       {/* REPORTS */}
       <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="font-medium mb-3">Available Reports</h2>
-        {reports.map((r) => (
-          <div key={r.id} className="flex justify-between items-center border-b py-2">
-            <span>{r.name}</span>
-            <button
-              onClick={() => handleGenerateReport(r)}
-              disabled={loading}
-              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? "Loading..." : "Generate"}
-            </button>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-semibold text-lg text-gray-800">Available Reports</h2>
+          {filters.department !== "All" && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                {filters.department}
+              </span>
+              <span className="text-xs text-gray-500">
+                {filteredReports.length} of {reports.length} reports
+              </span>
+            </div>
+          )}
+        </div>
+
+        {filteredReports.length > 0 ? (
+          <div className="space-y-2">
+            {filteredReports.map((r) => (
+              <div 
+                key={r.id} 
+                className="flex justify-between items-center border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-800">{r.name}</span>
+                    <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                      {r.department}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleGenerateReport(r)}
+                  disabled={loading}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md"
+                >
+                  {loading ? "Loading..." : "Generate"}
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="text-center py-8">
+            <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-gray-500 font-medium">No reports available for {filters.department} department</p>
+            <p className="text-sm text-gray-400 mt-1">Try selecting a different department or "All Departments"</p>
+          </div>
+        )}
       </div>
+
+      {/* SUMMARY SECTION */}
+      {selectedReport && (filteredData.length > 0 || data.length > 0) && (() => {
+        const dataForSummary = filteredData.length > 0 ? filteredData : data;
+        if (dataForSummary.length === 0) return null;
+        
+        const summary = calculateSummary();
+        return summary ? (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg shadow-md border border-blue-200">
+            <h2 className="font-semibold text-xl text-gray-800 mb-4 flex items-center gap-2">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Report Summary
+            </h2>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <p className="text-xs text-gray-500 uppercase font-medium">Total Records</p>
+                <p className="text-2xl font-bold text-blue-600">{summary.totalRecords}</p>
+                {summary.filterApplied && (
+                  <p className="text-xs text-gray-500 mt-1">of {summary.originalRecords} total</p>
+                )}
+              </div>
+              
+              {Object.keys(summary).filter(key => typeof summary[key] === 'object' && summary[key].total !== undefined).slice(0, 3).map((field, idx) => (
+                <div key={idx} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                  <p className="text-xs text-gray-500 uppercase font-medium">{field}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {summary[field].total.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Avg: {summary[field].average.toFixed(2)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Category Breakdowns */}
+            {Object.keys(summary).filter(key => key.endsWith('Breakdown')).length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.keys(summary).filter(key => key.endsWith('Breakdown')).map((breakdownKey, idx) => {
+                  const breakdown = summary[breakdownKey];
+                  const label = breakdownKey.replace('Breakdown', '');
+                  return (
+                    <div key={idx} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                      <p className="text-sm font-semibold text-gray-700 mb-2">{label} Distribution</p>
+                      <div className="space-y-1">
+                        {Object.entries(breakdown).slice(0, 5).map(([key, value]) => (
+                          <div key={key} className="flex justify-between items-center text-xs">
+                            <span className="text-gray-600 truncate">{key}</span>
+                            <span className="font-semibold text-gray-800 ml-2">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : null;
+      })()}
 
       {/* TABLE PREVIEW */}
       <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="font-medium mb-3">Report Preview</h2>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-semibold text-lg text-gray-800">Report Preview</h2>
+          {filteredData.length > 0 && filteredData.length !== data.length && (
+            <span className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+              Showing {filteredData.length} of {data.length} records
+            </span>
+          )}
+        </div>
         {selectedReport ? (
           <>
-            <Table reportType={selectedReport.type} data={data} />
+            <Table reportType={selectedReport.type} data={filteredData.length > 0 ? filteredData : data} />
             <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-200">
               <button 
                 onClick={exportCSV} 
