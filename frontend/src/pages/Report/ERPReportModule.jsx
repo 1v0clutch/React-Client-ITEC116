@@ -843,148 +843,246 @@ export default function ERPReportModule() {
 };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">ERP Report Module (BI Module 7)</h1>
-        <button
-          onClick={pullAllModulesData}
-          disabled={loading}
-          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50"
-        >
-          {loading ? "Pulling..." : "Pull All Modules Data"}
-        </button>
-      </div>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <strong>Error:</strong> {error}
-          <button onClick={() => setError(null)} className="float-right font-bold">×</button>
-        </div>
-      )}
-
-      {loading && (
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-          Loading data...
-        </div>
-      )}
-
-      {/* FILTERS */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <h2 className="font-medium mb-3">Customize Reports</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <input
-            type="date"
-            name="dateFrom"
-            value={filters.dateFrom}
-            onChange={handleFilterChange}
-            className="border p-2 rounded"
-          />
-          <input
-            type="date"
-            name="dateTo"
-            value={filters.dateTo}
-            onChange={handleFilterChange}
-            className="border p-2 rounded"
-          />
-          <select
-            name="department"
-            value={filters.department}
-            onChange={handleFilterChange}
-            className="border p-2 rounded"
-          >
-            <option value="All">All</option>
-            <option value="Sales">Sales</option>
-            <option value="Finance">Finance</option>
-            <option value="Inventory">Inventory</option>
-            <option value="Warehouse">Warehouse</option>
-            <option value="Procurement">Procurement</option>
-            <option value="HR">HR</option>
-          </select>
-          <select
-            name="region"
-            value={filters.region}
-            onChange={handleFilterChange}
-            className="border p-2 rounded"
-          >
-             <option>All</option>
-              <option>NCR</option>
-              <option>Region I – Ilocos</option>
-              <option>Region II – Cagayan Valley</option>
-              <option>Region III – Central Luzon</option>
-              <option>Region IV-A – CALABARZON</option>
-              <option>Region V – Bicol Region</option>
-              <option>Region VI – Western Visayas</option>
-              <option>Region VII – Central Visayas</option>
-              <option>Region VIII – Eastern Visayas</option>
-              <option>Region IX – Zamboanga Peninsula</option>
-              <option>Region X – Northern Mindanao</option>
-              <option>Region XI – Davao Region</option>
-              <option>Region XII – SOCCSKSARGEN</option>
-              <option>CAR – Cordillera Administrative Region</option>
-              <option>BARMM – Bangsamoro</option>
-              <option>Region XIII – Caraga</option>
-          </select>
-        </div>
-      </div>
-
-      {/* REPORTS */}
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-lg text-gray-800">Available Reports</h2>
-          {filters.department !== "All" && (
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-                {filters.department}
-              </span>
-              <span className="text-xs text-gray-500">
-                {filteredReports.length} of {reports.length} reports
-              </span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6 space-y-6">
+      {/* Enhanced Header with Gradient */}
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-6 text-white">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </div>
-          )}
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Business Intelligence</h1>
+              <p className="text-white/80 text-sm mt-1">Module 7 - Advanced Reporting & Analytics</p>
+            </div>
+          </div>
+          <button
+            onClick={pullAllModulesData}
+            disabled={loading}
+            className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {loading ? "Syncing..." : "Sync All Data"}
+            </div>
+          </button>
         </div>
+      </div>
 
-        {filteredReports.length > 0 ? (
-          <div className="space-y-2">
-            {filteredReports.map((r) => (
+      {/* Enhanced Error Alert */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-xl shadow-lg animate-pulse">
+          <div className="flex items-start gap-3">
+            <svg className="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <strong className="font-semibold">Error Occurred:</strong>
+              <p className="mt-1">{error}</p>
+            </div>
+            <button 
+              onClick={() => setError(null)} 
+              className="text-red-500 hover:text-red-700 font-bold text-xl transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Loading State */}
+      {loading && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-800 px-6 py-4 rounded-xl shadow-lg">
+          <div className="flex items-center gap-3">
+            <svg className="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="font-semibold">Loading data, please wait...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Filters Section */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+          <div className="flex items-center gap-3 text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            <h2 className="text-xl font-bold">Customize Reports</h2>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Date From
+              </label>
+              <input
+                type="date"
+                name="dateFrom"
+                value={filters.dateFrom}
+                onChange={handleFilterChange}
+                className="w-full border-2 border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 group-hover:border-indigo-300"
+              />
+            </div>
+            <div className="group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Date To
+              </label>
+              <input
+                type="date"
+                name="dateTo"
+                value={filters.dateTo}
+                onChange={handleFilterChange}
+                className="w-full border-2 border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 group-hover:border-indigo-300"
+              />
+            </div>
+            <div className="group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Department
+              </label>
+              <select
+                name="department"
+                value={filters.department}
+                onChange={handleFilterChange}
+                className="w-full border-2 border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 group-hover:border-purple-300 cursor-pointer"
+              >
+                <option value="All">All Departments</option>
+                <option value="Sales">Sales</option>
+                <option value="Finance">Finance</option>
+                <option value="Inventory">Inventory</option>
+                <option value="Warehouse">Warehouse</option>
+                <option value="Procurement">Procurement</option>
+                <option value="HR">HR</option>
+              </select>
+            </div>
+            <div className="group">
+              <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <svg className="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Region
+              </label>
+              <select
+                name="region"
+                value={filters.region}
+                onChange={handleFilterChange}
+                className="w-full border-2 border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 group-hover:border-pink-300 cursor-pointer"
+              >
+                <option value="All">All Regions</option>
+                <option value="NCR">NCR</option>
+                <option value="Region I">Region I – Ilocos</option>
+                <option value="Region II">Region II – Cagayan Valley</option>
+                <option value="Region III">Region III – Central Luzon</option>
+                <option value="Region IV-A">Region IV-A – CALABARZON</option>
+                <option value="Region V">Region V – Bicol Region</option>
+                <option value="Region VI">Region VI – Western Visayas</option>
+                <option value="Region VII">Region VII – Central Visayas</option>
+                <option value="Region VIII">Region VIII – Eastern Visayas</option>
+                <option value="Region IX">Region IX – Zamboanga Peninsula</option>
+                <option value="Region X">Region X – Northern Mindanao</option>
+                <option value="Region XI">Region XI – Davao Region</option>
+                <option value="Region XII">Region XII – SOCCSKSARGEN</option>
+                <option value="CAR">CAR – Cordillera Administrative Region</option>
+                <option value="BARMM">BARMM – Bangsamoro</option>
+                <option value="Region XIII">Region XIII – Caraga</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Available Reports Section */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
+        <div className="bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3 text-white">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h2 className="text-xl font-bold">Available Reports</h2>
+            </div>
+            {filters.department !== "All" && (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-4 py-2 bg-white/20 backdrop-blur-sm text-white text-sm rounded-full font-semibold">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  {filters.department}
+                </span>
+                <span className="text-xs text-white/80">
+                  {filteredReports.length} of {reports.length} reports
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          {filteredReports.length > 0 ? (
+            <div className="space-y-3">
+              {filteredReports.map((r) => (
               <div 
                 key={r.id} 
-                className="flex justify-between items-center border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                className="group relative bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0 bg-gradient-to-br from-blue-500 to-cyan-600 p-3 rounded-xl shadow-md group-hover:shadow-xl transition-shadow">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="font-bold text-gray-800 text-lg">{r.name}</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500 bg-gradient-to-r from-gray-100 to-gray-200 px-3 py-1 rounded-full font-medium">
+                          {r.department}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium text-gray-800">{r.name}</span>
-                    <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                      {r.department}
-                    </span>
-                  </div>
+                  <button
+                    onClick={() => handleGenerateReport(r)}
+                    disabled={loading}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-md hover:shadow-xl transform hover:scale-105"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      {loading ? "Loading..." : "Generate"}
+                    </div>
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleGenerateReport(r)}
-                  disabled={loading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md"
-                >
-                  {loading ? "Loading..." : "Generate"}
-                </button>
               </div>
             ))}
           </div>
-        ) : (
-          <div className="text-center py-8">
-            <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p className="text-gray-500 font-medium">No reports available for {filters.department} department</p>
-            <p className="text-sm text-gray-400 mt-1">Try selecting a different department or "All Departments"</p>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-12">
+              <svg className="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-gray-600 font-semibold text-lg">No reports available for {filters.department} department</p>
+              <p className="text-sm text-gray-400 mt-2">Try selecting a different department or "All Departments"</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* SUMMARY SECTION */}
