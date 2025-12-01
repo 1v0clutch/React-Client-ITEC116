@@ -17,7 +17,6 @@ function InventoryDistribution() {
       const res = await axios.get(
         "http://localhost:8000/api/warehouses/getAllWarehouse"
       );
-
       const mapped = res.data.map((w, index) => ({
         id: index + 1,
         _id: w._id,
@@ -25,8 +24,8 @@ function InventoryDistribution() {
         location: w.location,
         stock: w.items?.reduce((sum, i) => sum + i.quantity, 0) || 0,
         items: w.items || [],
+        demand: w.demand || 0,
       }));
-
       setWarehouses(mapped);
     } catch (err) {
       console.error(err);
@@ -41,8 +40,7 @@ function InventoryDistribution() {
   // Add warehouse
   const addWarehouse = async () => {
     if (!newWarehouse.name || !newWarehouse.location) {
-      alert("Fill name and location.");
-      return;
+      return alert("Fill name and location.");
     }
     try {
       await axios.post(
@@ -57,29 +55,32 @@ function InventoryDistribution() {
     }
   };
 
-  // Allocate inventory to demand
-  const allocateInventory = () => {
-    const totalStock = warehouses.reduce((sum, w) => sum + w.stock, 0);
-    const totalDemand = warehouses.reduce((sum, w) => sum + (w.demand || 0), 0);
-
-    if (totalDemand === 0) return alert("Cannot allocate: total demand = 0");
-
-    const updated = warehouses.map((w) => ({
-      ...w,
-      stock: Math.round(((w.demand || 0) / totalDemand) * totalStock),
-    }));
-
-    setWarehouses(updated);
-    alert("Inventory allocated to demand areas.");
+  // Get available stock of an item in a warehouse
+  const getAvailableStock = () => {
+    if (!transferData.from || !transferData.itemId) return 0;
+    const source = warehouses.find((w) => w._id === transferData.from);
+    if (!source) return 0;
+    const item = source.items.find(
+      (i) => (i.itemId?._id || i._id) === transferData.itemId
+    );
+    return item ? item.quantity : 0;
   };
 
   // Transfer stock
   const transferStock = async () => {
     const { from, to, itemId, quantity } = transferData;
-    console.log("Transfer Data:", { from, to, itemId, quantity });
+    const qty = Number(quantity);
 
-    if (!from || !to || !itemId || !quantity || from === to) {
+    if (!from || !to || !itemId || !qty || from === to) {
       return alert("Select valid warehouses, item, and quantity");
+    }
+
+    const availableStock = getAvailableStock();
+
+    if (qty > availableStock) {
+      return alert(
+        `Not enough stock in source warehouse. Available: ${availableStock}`
+      );
     }
 
     try {
@@ -87,7 +88,7 @@ function InventoryDistribution() {
         fromWarehouseId: from,
         toWarehouseId: to,
         itemId,
-        quantity: Number(quantity),
+        quantity: qty,
       });
       setTransferData({ from: "", to: "", itemId: "", quantity: 0 });
       fetchWarehouses();
@@ -97,10 +98,41 @@ function InventoryDistribution() {
     }
   };
 
-  // Cost calculation
+  // Allocate inventory proportionally to demand
+  const allocateInventory = async () => {
+    const totalDemand = warehouses.reduce((sum, w) => sum + (w.demand || 0), 0);
+    if (totalDemand === 0) return alert("No demand to allocate");
+
+    try {
+      for (const w of warehouses) {
+        for (const item of w.items) {
+          const allocation = Math.round(
+            ((w.demand || 0) / totalDemand) * item.quantity
+          );
+          await axios.post(
+            "http://localhost:8000/api/warehouses/allocateItem",
+            {
+              warehouseId: w._id,
+              itemId: item.itemId?._id || item._id,
+              quantity: allocation,
+            }
+          );
+        }
+      }
+      fetchWarehouses();
+      alert("Inventory allocated successfully!");
+    } catch (err) {
+      alert(err.response?.data?.error || "Allocation failed");
+    }
+  };
+
+  // Calculate total cost
   const totalCost = () => {
     const transportCost = warehouses.length * 150;
-    const holdingCost = warehouses.reduce((sum, w) => sum + w.stock * 0.5, 0);
+    const holdingCost = warehouses.reduce(
+      (sum, w) => sum + w.items.reduce((s, i) => s + i.quantity * 0.5, 0),
+      0
+    );
     return transportCost + holdingCost;
   };
 
@@ -129,7 +161,7 @@ function InventoryDistribution() {
               <td>
                 {w.items.map((i) => (
                   <div key={i._id}>
-                    {(i.itemId?.name || "Unknown Item")} (Qty: {i.quantity})
+                    {(i.itemId?.name || "Unknown")} (Qty: {i.quantity})
                   </div>
                 ))}
               </td>
@@ -172,9 +204,7 @@ function InventoryDistribution() {
 
       <select
         value={transferData.to}
-        onChange={(e) =>
-          setTransferData({ ...transferData, to: e.target.value })
-        }
+        onChange={(e) => setTransferData({ ...transferData, to: e.target.value })}
       >
         <option value="">To Warehouse</option>
         {warehouses.map((w) => (
@@ -188,35 +218,47 @@ function InventoryDistribution() {
         <select
           value={transferData.itemId}
           onChange={(e) =>
-            setTransferData({ ...transferData, itemId: e.target.value })
+            setTransferData({ ...transferData, itemId: e.target.value, quantity: 0 })
           }
         >
           <option value="">Select Item</option>
           {warehouses
             .find((w) => w._id === transferData.from)
             ?.items.map((i) => (
-              <option key={i._id} value={i.itemId?._id || i._id || ""}>
+              <option key={i._id} value={i.itemId?._id || i._id}>
                 {(i.itemId?.name || "Unknown")} (Qty: {i.quantity})
               </option>
             ))}
         </select>
       )}
 
+      {transferData.itemId && (
+        <p>
+          Available Stock: <strong>{getAvailableStock()}</strong>
+        </p>
+      )}
+
       <input
         type="number"
         placeholder="Quantity"
         value={transferData.quantity}
-        onChange={(e) =>
-          setTransferData({ ...transferData, quantity: Number(e.target.value) })
-        }
+        min={1}
+        max={getAvailableStock()}
+        onChange={(e) => {
+          const val = Number(e.target.value);
+          if (val > getAvailableStock()) {
+            alert(`Cannot exceed available stock: ${getAvailableStock()}`);
+            return;
+          }
+          setTransferData({ ...transferData, quantity: val });
+        }}
       />
 
       <button onClick={transferStock}>Transfer</button>
 
       <h3>📊 Cost Overview</h3>
       <p>
-        Transportation + Holding Cost:{" "}
-        <strong>₱{totalCost().toFixed(2)}</strong>
+        Transportation + Holding Cost: <strong>₱{totalCost().toFixed(2)}</strong>
       </p>
 
       <h3>📈 Allocate Inventory to Demand</h3>
