@@ -213,7 +213,7 @@ function OrderManagement() {
                   </td>
                   <td className="px-4 py-3 text-center">{order.items.length}</td>
                   <td className="px-4 py-3 text-center font-semibold">
-                    ${order.totalAmount.toFixed(2)}
+                    ₱{order.totalAmount.toFixed(2)}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <select
@@ -334,23 +334,23 @@ function OrderManagement() {
                     <tr key={index} className="border-t">
                       <td className="px-3 py-2">{item.productName}</td>
                       <td className="px-3 py-2 text-center">{item.quantity}</td>
-                      <td className="px-3 py-2 text-center">${item.unitPrice.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-center">${item.subtotal.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-center">₱{item.unitPrice.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-center">₱{item.subtotal.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t">
                     <td colSpan="3" className="px-3 py-2 text-right font-semibold">Subtotal:</td>
-                    <td className="px-3 py-2 text-center">${selectedOrder.totalAmount.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-center">₱{selectedOrder.totalAmount.toFixed(2)}</td>
                   </tr>
                   <tr>
                     <td colSpan="3" className="px-3 py-2 text-right text-sm text-gray-600">Tax (12%):</td>
-                    <td className="px-3 py-2 text-center text-sm text-gray-600">${(selectedOrder.totalAmount * 0.12).toFixed(2)}</td>
+                    <td className="px-3 py-2 text-center text-sm text-gray-600">₱{(selectedOrder.totalAmount * 0.12).toFixed(2)}</td>
                   </tr>
                   <tr className="bg-gray-100 font-bold border-t">
                     <td colSpan="3" className="px-3 py-2 text-right">Total (with tax):</td>
-                    <td className="px-3 py-2 text-center">${(selectedOrder.totalAmount * 1.12).toFixed(2)}</td>
+                    <td className="px-3 py-2 text-center">₱{(selectedOrder.totalAmount * 1.12).toFixed(2)}</td>
                   </tr>
                 </tfoot>
               </table>

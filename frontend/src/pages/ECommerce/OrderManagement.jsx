@@ -164,7 +164,7 @@ function OrderManagement() {
                   </td>
                   <td className="px-4 py-3 text-center">{order.items.length}</td>
                   <td className="px-4 py-3 text-center font-semibold">
-                    ${order.totalAmount.toFixed(2)}
+                    ₱{order.totalAmount.toFixed(2)}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <select
@@ -281,15 +281,15 @@ function OrderManagement() {
                     <tr key={index} className="border-t">
                       <td className="px-3 py-2">{item.productName}</td>
                       <td className="px-3 py-2 text-center">{item.quantity}</td>
-                      <td className="px-3 py-2 text-center">${item.unitPrice.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-center">${item.subtotal.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-center">₱{item.unitPrice.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-center">₱{item.subtotal.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-gray-100 font-bold">
                   <tr>
                     <td colSpan="3" className="px-3 py-2 text-right">Total:</td>
-                    <td className="px-3 py-2 text-center">${selectedOrder.totalAmount.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-center">₱{selectedOrder.totalAmount.toFixed(2)}</td>
                   </tr>
                 </tfoot>
               </table>

@@ -134,7 +134,7 @@ function ProductCatalog() {
               
               <div className="mb-3">
                 <p className="text-lg font-bold text-green-600">
-                  ${product.quantity} {/* Using quantity as price for demo */}
+                  ₱{product.quantity} {/* Using quantity as price for demo */}
                 </p>
                 <p className={`text-sm ${product.quantity > 10 ? "text-green-600" : "text-orange-600"}`}>
                   Stock: {product.quantity} {product.unit}

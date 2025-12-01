@@ -185,7 +185,7 @@ function ShoppingCart() {
                 {cart.map((item) => (
                   <tr key={item.productId} className="border-t">
                     <td className="px-4 py-3">{item.name}</td>
-                    <td className="px-4 py-3 text-center">${item.price}</td>
+                    <td className="px-4 py-3 text-center">₱{item.price}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
                         <button
@@ -209,7 +209,7 @@ function ShoppingCart() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center font-semibold">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      ₱{(item.price * item.quantity).toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
@@ -230,7 +230,7 @@ function ShoppingCart() {
               <div className="flex justify-between mb-3">
                 <span className="font-semibold">Total:</span>
                 <span className="text-2xl font-bold text-green-600">
-                  ${calculateTotal().toFixed(2)}
+                  ₱{calculateTotal().toFixed(2)}
                 </span>
               </div>
               <button

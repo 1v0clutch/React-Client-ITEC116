@@ -324,7 +324,7 @@ function Checkout() {
                   <p className="font-medium">{item.name}</p>
                   <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                 </div>
-                <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                <p className="font-semibold">₱{(item.price * item.quantity).toFixed(2)}</p>
               </div>
             ))}
           </div>
@@ -332,7 +332,7 @@ function Checkout() {
           <div className="border-t pt-4 mb-4">
             <div className="flex justify-between text-xl font-bold">
               <span>Total:</span>
-              <span className="text-green-600">${calculateTotal().toFixed(2)}</span>
+              <span className="text-green-600">₱{calculateTotal().toFixed(2)}</span>
             </div>
           </div>
           
