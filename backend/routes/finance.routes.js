@@ -1,13 +1,21 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const FinanceController = require('../controllers/finance.controller');
+const FinanceController = require("../controllers/finance.controller");
 
-router.get('/supplier-report', FinanceController.getSupplierReport);
-router.get('/customer-report', FinanceController.getCustomerReport);
-router.get('/inventory-transactions', FinanceController.getInventoryTransactions);
-router.get('/payroll-report', FinanceController.getPayrollReport);
-router.post('/inventory-transaction', FinanceController.handleInventoryTransaction);
-router.post('/recordInvoice', FinanceController.recordInvoice);
+router.get("/supplier-report", FinanceController.getSupplierReport);
+router.get("/customer-report", FinanceController.getCustomerReport);
+router.get(
+  "/inventory-transactions",
+  FinanceController.getInventoryTransactions
+);
+router.get("/payroll-report", FinanceController.getPayrollReport);
+router.post(
+  "/inventory-transaction",
+  FinanceController.handleInventoryTransaction
+);
+router.post("/recordInvoice", FinanceController.recordInvoice);
 // router.post('/payroll', FinanceController.receivePayroll); // Optional
+// Add this route to your existing finance routes
+router.get("/project-report", FinanceController.getProjectReport);
 
 module.exports = router;
