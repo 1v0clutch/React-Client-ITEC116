@@ -13,29 +13,41 @@ export default function ProjectGantt({
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState(ViewMode.Week);
 
+  // Reset project when propProject changes
   useEffect(() => {
     setProject(propProject);
   }, [propProject]);
 
+  // Fetch project data when projectId changes or when propProject is null
   useEffect(() => {
     let mounted = true;
+
     const fetchProject = async () => {
       setLoading(true);
       try {
-        let data = propProject;
-        if (!data) {
-          if (projectId) {
-            const res = await fetch(`${API_PROJECT}/gantt/${projectId}`);
-            if (!res.ok) throw new Error("Failed to fetch project");
-            data = await res.json();
-          } else {
-            const res = await fetch(`${API_PROJECT}/projects`);
-            if (!res.ok) throw new Error("Failed to fetch projects list");
-            const arr = await res.json();
-            data = Array.isArray(arr) ? arr[0] : arr;
-          }
+        let data = null;
+
+        // If we have a projectId, fetch that specific project
+        if (projectId) {
+          const res = await fetch(`${API_PROJECT}/gantt/${projectId}`);
+          if (!res.ok) throw new Error("Failed to fetch project");
+          data = await res.json();
         }
-        if (mounted) setProject(data || null);
+        // If no projectId but we have propProject, use it
+        else if (propProject) {
+          data = propProject;
+        }
+        // If neither, fetch the first project (fallback)
+        else {
+          const res = await fetch(`${API_PROJECT}/projects`);
+          if (!res.ok) throw new Error("Failed to fetch projects list");
+          const arr = await res.json();
+          data = Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
+        }
+
+        if (mounted && data) {
+          setProject(data);
+        }
       } catch (err) {
         console.error("ProjectGantt: fetch error", err);
         if (mounted) setProject(null);
@@ -43,12 +55,15 @@ export default function ProjectGantt({
         if (mounted) setLoading(false);
       }
     };
-    if (!propProject) fetchProject();
+
+    fetchProject();
+
     return () => {
       mounted = false;
     };
-  }, [propProject, projectId]);
+  }, [propProject, projectId]); // Add projectId to dependency array
 
+  // Convert project data to Gantt tasks
   useEffect(() => {
     if (!project || !project.phases) {
       setTasks([]);
@@ -145,7 +160,9 @@ export default function ProjectGantt({
             <button
               key={mode}
               onClick={() => setViewMode(ViewMode[mode])}
-              className="px-3 py-1 border rounded text-sm hover:bg-gray-100"
+              className={`px-3 py-1 border rounded text-sm hover:bg-gray-100 ${
+                viewMode === ViewMode[mode] ? "bg-blue-100 border-blue-300" : ""
+              }`}
             >
               {mode}
             </button>

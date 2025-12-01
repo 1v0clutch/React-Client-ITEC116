@@ -24,6 +24,7 @@ import EmployeePayrollReport from "./pages/Finance/EmployeePayrollReport";
 import FinanceApprovalsOverview from "./pages/Finance/FinanceApprovalsOverview";
 import FinancePendingApprovals from "./pages/Finance/FinancePendingApprovals";
 import FinanceApprovalHistory from "./pages/Finance/FinanceApprovalHistory";
+import ProjectFinanceReport from "./pages/Finance/ProjectFinanceReport";
 
 // HR //
 import Attendance from "./pages/HR/Attendance";
@@ -142,6 +143,10 @@ function App() {
             <Route
               path="/finance/payroll-report"
               element={<EmployeePayrollReport />}
+            />
+            <Route
+              path="/finance/project-report"
+              element={<ProjectFinanceReport />}
             />
             <Route
               path="/finance/approvals/overview"

@@ -42,6 +42,7 @@ const categories = [
       { path: "/finance/customer-report", label: "Customer Report" },
       { path: "/finance/finance-report", label: "Finance Report" },
       { path: "/finance/inventory-report", label: "Inventory Report" },
+      { path: "/finance/project-report", label: "Project Report" },
       {
         label: "Approvals",
         children: [
@@ -75,9 +76,18 @@ const categories = [
     label: "SupplyChain",
     links: [
       { path: "/supply-chain/demand-forecast", label: "Demand Forecast" },
-      { path: "/supply-chain/inventory-supply-chain", label: "Inventory Supply Chain" },
-      { path: "/supply-chain/logistics-supply-chain", label: "Logisctics Supply Chain" },
-      { path: "/supply-chain/procurement-supply-chain", label: "Procurement Supply Chain" },
+      {
+        path: "/supply-chain/inventory-supply-chain",
+        label: "Inventory Supply Chain",
+      },
+      {
+        path: "/supply-chain/logistics-supply-chain",
+        label: "Logisctics Supply Chain",
+      },
+      {
+        path: "/supply-chain/procurement-supply-chain",
+        label: "Procurement Supply Chain",
+      },
     ],
   },
   {
@@ -129,7 +139,9 @@ function Sidebar() {
               {cat.links.map((link) => {
                 if (link.children) {
                   const submenuId = `${cat.label}-${link.label}`;
-                  const childActive = link.children.some((child) => child.path === location.pathname);
+                  const childActive = link.children.some(
+                    (child) => child.path === location.pathname
+                  );
                   const isStoredOpen = openSubmenus.includes(submenuId);
                   const isSubmenuOpen = isStoredOpen || childActive;
                   return (
@@ -146,7 +158,9 @@ function Sidebar() {
                       </button>
                       <div
                         className={`transition-all duration-300 ease-in-out ${
-                          isSubmenuOpen ? "max-h-[400px]" : "max-h-0 overflow-hidden"
+                          isSubmenuOpen
+                            ? "max-h-[400px]"
+                            : "max-h-0 overflow-hidden"
                         }`}
                       >
                         {link.children.map((child) => (
