@@ -286,7 +286,7 @@ function ProductCatalog() {
                 
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-lg font-bold text-green-600">
-                    ${product.price ? product.price.toFixed(2) : "0.00"}
+                    ₱{product.price ? product.price.toFixed(2) : "0.00"}
                   </p>
                 </div>
                 
