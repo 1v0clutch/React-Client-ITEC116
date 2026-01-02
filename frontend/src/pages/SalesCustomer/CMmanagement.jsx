@@ -7,17 +7,18 @@ import "./Module_8style/CM_management.css";
 const API_BASE_URL = "http://localhost:8000/api/crm"; // Assuming your Express server runs on port 8000
 
 function CRMManagement() {
-    // Customers will be fetched from the backend. The 'logs' will now be objects
-    // with _id, message, and timestamp properties, as defined in your LogSchema.
     const [customers, setCustomers] = useState([]);
+    const [customerBehaviors, setCustomerBehaviors] = useState([]);
+    const [analyticsSummary, setAnalyticsSummary] = useState(null);
 
     const [newCustomer, setNewCustomer] = useState({ name: "", email: "", preference: "", segment: "Regular" });
     const [selectedSegment, setSelectedSegment] = useState("");
     const [expandedCustomer, setExpandedCustomer] = useState(null);
     const [newLog, setNewLog] = useState("");
-    const [editingLogId, setEditingLogId] = useState(null); // Format: `${customerId}-${logId}`
+    const [editingLogId, setEditingLogId] = useState(null);
     const [editingLogValue, setEditingLogValue] = useState("");
-    const [loading, setLoading] = useState(false); // New state for loading indicator
+    const [loading, setLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState("customers");
 
     // --- Utility Function to Fetch Customers ---
     const fetchCustomers = async () => {
@@ -35,10 +36,50 @@ function CRMManagement() {
         }
     };
 
+    // --- Utility Function to Calculate Customer Behavior ---
+    const calculateBehaviors = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/api/analytics/calculate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+            if (!response.ok) throw new Error("Failed to calculate behaviors");
+            await fetchCustomerBehaviors();
+            await fetchAnalyticsSummary();
+        } catch (error) {
+            console.error("Error calculating behaviors:", error);
+        }
+    };
+
+    // --- Utility Function to Fetch Customer Behaviors ---
+    const fetchCustomerBehaviors = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/api/analytics/behaviors");
+            if (!response.ok) throw new Error("Failed to fetch behaviors");
+            const data = await response.json();
+            setCustomerBehaviors(data);
+        } catch (error) {
+            console.error("Error fetching behaviors:", error);
+        }
+    };
+
+    // --- Utility Function to Fetch Analytics Summary ---
+    const fetchAnalyticsSummary = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/api/analytics/summary");
+            if (!response.ok) throw new Error("Failed to fetch summary");
+            const data = await response.json();
+            setAnalyticsSummary(data);
+        } catch (error) {
+            console.error("Error fetching summary:", error);
+        }
+    };
+
     // --- Initial Data Load ---
     useEffect(() => {
         fetchCustomers();
-    }, []); // Runs once on mount
+        calculateBehaviors();
+    }, []);
 
     // --- API Handlers ---
 
@@ -167,6 +208,24 @@ function CRMManagement() {
         <div className="crm-container">
             <h2>Customer Relationship Management (CRM)</h2>
 
+            {/* --- Tab Navigation --- */}
+            <div className="crm-tabs">
+                <button
+                    className={`tab-btn ${activeTab === "customers" ? "active" : ""}`}
+                    onClick={() => setActiveTab("customers")}
+                >
+                    Customers & Logs
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === "analytics" ? "active" : ""}`}
+                    onClick={() => setActiveTab("analytics")}
+                >
+                    Customer Analytics
+                </button>
+            </div>
+
+            {activeTab === "customers" && (
+            <>
             {/* --- Add Customer Form --- */}
             <div className="form-card">
                 <label>Name</label>
@@ -352,6 +411,131 @@ function CRMManagement() {
                         </tbody>
                     </table>
                 </div>
+            )}
+            </>
+            )}
+
+            {activeTab === "analytics" && (
+            <>
+                <div className="form-card">
+                    <h3>Analytics Summary</h3>
+                    <button onClick={calculateBehaviors} className="btn-refresh">
+                        Refresh Analytics
+                    </button>
+                    {analyticsSummary && (
+                        <div className="analytics-summary">
+                            <div className="summary-stat">
+                                <span className="stat-label">Total Customers:</span>
+                                <span className="stat-value">{analyticsSummary.totalCustomers}</span>
+                            </div>
+                            <div className="summary-stat">
+                                <span className="stat-label">Avg Loyalty Score:</span>
+                                <span className="stat-value">{analyticsSummary.averageLoyaltyScore}</span>
+                            </div>
+                            <div className="summary-stat">
+                                <span className="stat-label">Total Orders:</span>
+                                <span className="stat-value">{analyticsSummary.totalOrdersAllCustomers}</span>
+                            </div>
+                            <div className="summary-stat">
+                                <span className="stat-label">Total Revenue:</span>
+                                <span className="stat-value">${analyticsSummary.totalRevenueAllCustomers}</span>
+                            </div>
+                            <div className="summary-stat">
+                                <span className="stat-label">Frequent Buyers:</span>
+                                <span className="stat-value">{analyticsSummary.frequentBuyers}</span>
+                            </div>
+                            <div className="summary-stat">
+                                <span className="stat-label">High Risk:</span>
+                                <span className="stat-value">{analyticsSummary.highRiskCustomers}</span>
+                            </div>
+                            <div className="summary-stat">
+                                <span className="stat-label">High Value:</span>
+                                <span className="stat-value">{analyticsSummary.highValueCustomers}</span>
+                            </div>
+                            <div className="summary-stat">
+                                <span className="stat-label">Conversion Rate:</span>
+                                <span className="stat-value">{analyticsSummary.conversionRateAverage}%</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <h3>Customer Behavior & Buying Trends</h3>
+                {customerBehaviors.length === 0 ? (
+                    <p>No customer behavior data available.</p>
+                ) : (
+                    <div className="analytics-table-container">
+                        <table className="analytics-table">
+                            <thead>
+                                <tr>
+                                    <th>Customer Name</th>
+                                    <th>Segment</th>
+                                    <th>Total Orders</th>
+                                    <th>Total Spent</th>
+                                    <th>Avg Order Value</th>
+                                    <th>Quotations</th>
+                                    <th>Conversion Rate</th>
+                                    <th>Order Frequency</th>
+                                    <th>Last Order</th>
+                                    <th>Loyalty Score</th>
+                                    <th>Risk Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {customerBehaviors.map((behavior) => (
+                                    <tr key={behavior._id}>
+                                        <td>{behavior.customerId?.name || "Unknown"}</td>
+                                        <td>
+                                            <span className={`segment-badge ${behavior.customerId?.segment?.toLowerCase()}`}>
+                                                {behavior.customerId?.segment}
+                                            </span>
+                                        </td>
+                                        <td>{behavior.totalOrders}</td>
+                                        <td>${behavior.totalSpent}</td>
+                                        <td>${behavior.averageOrderValue}</td>
+                                        <td>{behavior.totalQuotations}</td>
+                                        <td>{behavior.conversionRate}%</td>
+                                        <td>
+                                            <span className={`frequency-badge ${behavior.orderFrequency}`}>
+                                                {behavior.orderFrequency}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {behavior.lastOrderDate
+                                                ? new Date(behavior.lastOrderDate).toLocaleDateString()
+                                                : "N/A"}
+                                        </td>
+                                        <td>
+                                            <div className="loyalty-score">
+                                                <div className="score-bar">
+                                                    <div
+                                                        className="score-fill"
+                                                        style={{
+                                                            width: `${behavior.loyaltyScore}%`,
+                                                            backgroundColor:
+                                                                behavior.loyaltyScore >= 75
+                                                                    ? "#4CAF50"
+                                                                    : behavior.loyaltyScore >= 50
+                                                                    ? "#FFC107"
+                                                                    : "#F44336",
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                                <span>{behavior.loyaltyScore}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`risk-badge ${behavior.riskCategory}`}>
+                                                {behavior.riskCategory.toUpperCase()}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </>
             )}
         </div>
     );

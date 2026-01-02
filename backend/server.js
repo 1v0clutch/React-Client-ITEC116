@@ -29,6 +29,10 @@ const projectBudgetRoutes = require("./routes/projectBudget.routes");
 const salesOrderRoutes = require("./routes/salesOrder.routes");
 const quotationRoutes = require("./routes/quotation.routes");
 const crmRoutes = require("./routes/crm.routes");
+const analyticsRoutes = require("./routes/analytics.routes");
+const departmentsRoutes = require("./routes/departments.routes");
+const salesTargetRoutes = require("./routes/salesTarget.routes");
+const supportCaseRoutes = require("./routes/supportCase.routes");
 
 //Middleware
 app.use(
@@ -53,7 +57,7 @@ connectDB();
 // ✅ HR Core Routes
 //app.use("/api/hr", hrRoutes);
 //app.use("/api/employees", employeesRoutes);
-//app.use("/api/departments", departmentsRoutes);
+app.use("/api/departments", departmentsRoutes);
 //app.use("/api/salary", salaryRoutes);
 //app.use("/api/payroll", payrollRoutes);
 
@@ -84,6 +88,9 @@ app.use("/api/projectBudget", projectBudgetRoutes);
 app.use("/api/sales-orders", salesOrderRoutes);
 app.use("/api/quotations", quotationRoutes);
 app.use("/api/crm", crmRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/sales-targets", salesTargetRoutes);
+app.use("/api/support-cases", supportCaseRoutes);
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);

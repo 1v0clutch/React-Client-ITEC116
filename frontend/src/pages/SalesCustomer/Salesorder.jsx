@@ -4,14 +4,17 @@ import "./Module_8style/Sales_order.css";
 function SalesOrderManagement() {
   const [activeTab, setActiveTab] = useState("quotations");
 
-  const [customers, setCustomers] = useState([
-    { id: 1, name: "Alice Johnson", creditStatus: "Good" },
-    { id: 2, name: "Bob Smith", creditStatus: "Overdue" },
-  ]);
-
+  const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [quotations, setQuotations] = useState([]);
   const [orders, setOrders] = useState([]);
+
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    email: "",
+    segment: "Regular",
+  });
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
 
   // Consolidated state for new/editing quotation
   const initialQuotationState = {
@@ -36,6 +39,15 @@ function SalesOrderManagement() {
   });
 
   useEffect(() => {
+    // Fetch customers
+    fetch("http://localhost:8000/api/crm/customers")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched customers:", data);
+        setCustomers(data);
+      })
+      .catch((err) => console.error("Error fetching customers:", err));
+
     // Fetch products
     fetch("http://localhost:8000/api/inventory/getItems")
       .then((res) => res.json())
@@ -79,10 +91,45 @@ function SalesOrderManagement() {
     return (netAmount + taxedAmount).toFixed(2);
   };
 
+  // Refresh quotations from server
+  const refreshQuotations = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/quotations/all");
+      const data = await response.json();
+      setQuotations(data);
+    } catch (error) {
+      console.error("Error refreshing quotations:", error);
+    }
+  };
+
+  // Create a new customer
+  const handleCreateCustomer = async () => {
+    if (!newCustomer.name.trim() || !newCustomer.email.trim()) {
+      alert("Please enter customer name and email!");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8000/api/crm/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newCustomer),
+      });
+      const createdCustomer = await response.json();
+      setCustomers([...customers, createdCustomer.customer]);
+      setNewCustomer({ name: "", email: "", segment: "Regular" });
+      setShowCustomerForm(false);
+      alert("Customer created successfully!");
+    } catch (error) {
+      console.error("Error creating customer:", error);
+      alert("Error creating customer!");
+    }
+  };
+
   // Handles both creation and update of a quotation
   const handleQuotationSubmit = async () => {
     const product = products.find((p) => p._id === currentQuotation.productId);
-    const customer = customers.find((c) => c.id === parseInt(currentQuotation.customerId));
+    const customer = customers.find((c) => c._id === currentQuotation.customerId);
 
     if (!product || !customer || !currentQuotation.validUntil) {
       alert("Please select customer, product, and set valid until date!");
@@ -97,11 +144,11 @@ function SalesOrderManagement() {
     );
 
     const quotationData = {
-      customerId: parseInt(currentQuotation.customerId),
+      customerId: currentQuotation.customerId,
       productId: product._id,
-      quantity: currentQuotation.quantity,
-      discount: currentQuotation.discount,
-      tax: currentQuotation.tax,
+      quantity: parseInt(currentQuotation.quantity),
+      discount: parseInt(currentQuotation.discount),
+      tax: parseInt(currentQuotation.tax),
       totalAmount: parseFloat(totalAmount),
       validUntil: currentQuotation.validUntil,
       status: editingQuotationId ? quotations.find((q) => q._id === editingQuotationId)?.status || "draft" : "draft",
@@ -109,26 +156,42 @@ function SalesOrderManagement() {
 
     try {
       if (editingQuotationId) {
-        // UPDATE Logic
         const response = await fetch(`http://localhost:8000/api/quotations/update/${editingQuotationId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(quotationData),
         });
-        const updatedQuotation = await response.json();
-        setQuotations(quotations.map((q) => (q._id === editingQuotationId ? updatedQuotation.quotation : q)));
+        
+        if (!response.ok) {
+          throw new Error("Failed to update quotation");
+        }
+        
+        const result = await response.json();
+        if (result.quotation) {
+          setQuotations(quotations.map((q) => (q._id === editingQuotationId ? result.quotation : q)));
+        } else {
+          await refreshQuotations();
+        }
         cancelEditingQuotation();
         alert("Quotation updated successfully!");
       } else {
-        // CREATE Logic
         const response = await fetch("http://localhost:8000/api/quotations/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(quotationData),
         });
-        const createdQuotation = await response.json();
-        setQuotations([...quotations, createdQuotation.quotation]);
-        setCurrentQuotation(initialQuotationState); // Reset form
+        
+        if (!response.ok) {
+          throw new Error("Failed to create quotation");
+        }
+        
+        const result = await response.json();
+        if (result.quotation) {
+          setQuotations([...quotations, result.quotation]);
+        } else {
+          await refreshQuotations();
+        }
+        setCurrentQuotation(initialQuotationState);
         alert("Quotation Created Successfully!");
       }
     } catch (error) {
@@ -138,14 +201,13 @@ function SalesOrderManagement() {
   };
 
   const startEditingQuotation = (quotation) => {
-    // Determine product ID value, handling both embedded object and simple string
     const productIdValue = typeof quotation.productId === "object" && quotation.productId !== null ? quotation.productId._id : quotation.productId;
-    // Format validUntil date for the input type="date"
+    const customerIdValue = typeof quotation.customerId === "object" && quotation.customerId !== null ? quotation.customerId._id : quotation.customerId;
     const validUntilValue = quotation.validUntil ? new Date(quotation.validUntil).toISOString().split("T")[0] : "";
     
     setEditingQuotationId(quotation._id);
     setCurrentQuotation({
-      customerId: quotation.customerId ? quotation.customerId.toString() : "",
+      customerId: customerIdValue || "",
       productId: productIdValue || "",
       quantity: quotation.quantity ?? 1,
       discount: quotation.discount ?? 0,
@@ -175,15 +237,15 @@ function SalesOrderManagement() {
 
   // ✅ FINANCE MODULE READ SIMULATION
   const checkCustomerCredit = (customerId) => {
-    const customer = customers.find((c) => c.id === parseInt(customerId));
+    const customer = customers.find((c) => c._id === customerId);
     if (!customer) return alert("Customer not found!");
-    alert(`Finance Check: ${customer.name} has ${customer.creditStatus} credit standing.`);
+    alert(`Finance Check: ${customer.name} has credit status available.`);
   };
 
   // Creates a new sales order and deducts the order quantity from inventory stock
   const createOrder = async () => {
     const product = products.find((p) => p._id === newOrder.productId);
-    const customer = customers.find((c) => c.id === parseInt(newOrder.customerId));
+    const customer = customers.find((c) => c._id === newOrder.customerId);
 
     if (!product || !customer) {
       alert("Please select both customer and product!");
@@ -198,7 +260,7 @@ function SalesOrderManagement() {
     const totalAmount = calculateTotalAmount(newOrder.quantity, newOrder.discount, newOrder.tax, newOrder.productId);
 
     const newOrderData = {
-      customerId: parseInt(newOrder.customerId),
+      customerId: newOrder.customerId,
       productId: product._id,
       quantity: newOrder.quantity,
       discount: newOrder.discount,
@@ -346,9 +408,9 @@ function SalesOrderManagement() {
 
   // Generates and displays an invoice summary
   const generateInvoice = (order) => {
-    const customer = customers.find((c) => c.id === order.customerId)?.name;
-    const product = products.find((p) => p._id === order.productId)?.name;
-    alert(`Invoice Generated:\nCustomer: ${customer}\nProduct: ${product}`);
+    const customerName = typeof order.customerId === "object" && order.customerId?.name ? order.customerId.name : customers.find((c) => c._id === order.customerId)?.name;
+    const productName = typeof order.productId === "object" && order.productId?.name ? order.productId.name : products.find((p) => p._id === order.productId)?.name;
+    alert(`Invoice Generated:\nCustomer: ${customerName}\nProduct: ${productName}\nAmount: $${order.totalAmount}`);
   };
 
   // --- End of Omitted functions ---
@@ -370,7 +432,87 @@ function SalesOrderManagement() {
         >
           Orders
         </button>
+        <button
+          className={`tab-btn ${activeTab === "customers" ? "active" : ""}`}
+          onClick={() => setActiveTab("customers")}
+        >
+          Customers
+        </button>
       </div>
+
+      {activeTab === "customers" && (
+        <>
+          <div className="form-card">
+            <h3>{showCustomerForm ? "Add New Customer" : "Customers"}</h3>
+            {!showCustomerForm ? (
+              <button onClick={() => setShowCustomerForm(true)} className="btn-action">
+                + Add Customer
+              </button>
+            ) : (
+              <>
+                <label>Customer Name</label>
+                <input
+                  type="text"
+                  value={newCustomer.name}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                  placeholder="Enter customer name"
+                />
+
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={newCustomer.email}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                  placeholder="Enter customer email"
+                />
+
+                <label>Segment</label>
+                <select
+                  value={newCustomer.segment}
+                  onChange={(e) => setNewCustomer({ ...newCustomer, segment: e.target.value })}
+                >
+                  <option value="Regular">Regular</option>
+                  <option value="Premium">Premium</option>
+                  <option value="VIP">VIP</option>
+                </select>
+
+                <div className="actions-cell">
+                  <button onClick={handleCreateCustomer} className="btn-action">
+                    Create Customer
+                  </button>
+                  <button onClick={() => setShowCustomerForm(false)} className="btn-delete">
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          <h3>Customer List</h3>
+          {customers.length === 0 ? (
+            <p>No customers yet.</p>
+          ) : (
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>Customer Name</th>
+                  <th>Email</th>
+                  <th>Segment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map((c) => (
+                  <tr key={c._id}>
+                    <td>{c.name}</td>
+                    <td>{c.email}</td>
+                    <td>{c.segment}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
 
       {activeTab === "quotations" && (
         <>
@@ -380,11 +522,10 @@ function SalesOrderManagement() {
             <select
               value={currentQuotation.customerId}
               onChange={(e) => setCurrentQuotation({ ...currentQuotation, customerId: e.target.value })}
-              disabled={Boolean(editingQuotationId)} // Optionally disable customer change on edit
             >
               <option value="">Select Customer</option>
               {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c._id} value={c._id}>{c.name}</option>
               ))}
             </select>
 
@@ -473,10 +614,12 @@ function SalesOrderManagement() {
                 </tr>
               </thead>
               <tbody>
-                {quotations.map((q) => (
+                {quotations.map((q) => {
+                  const customerName = typeof q.customerId === "object" && q.customerId?.name ? q.customerId.name : customers.find((c) => c._id === q.customerId)?.name;
+                  return (
                   <tr key={q._id}>
                     <td>{q._id}</td>
-                    <td>{customers.find((c) => c.id === q.customerId)?.name}</td>
+                    <td>{customerName}</td>
                     <td>{products.find((p) => p._id === q.productId)?.name || products.find((p) => p._id === q.productId?._id)?.name}</td>
                     <td>{q.quantity}</td>
                     <td>{q.discount}%</td>
@@ -496,7 +639,7 @@ function SalesOrderManagement() {
                       <button 
                         onClick={() => startEditingQuotation(q)} 
                         className="btn-action" 
-                        disabled={Boolean(q.convertedToOrderId) || q._id === editingQuotationId}
+                        disabled={Boolean(q.convertedToOrderId)}
                       >
                         Edit
                       </button>
@@ -509,7 +652,8 @@ function SalesOrderManagement() {
                       <button onClick={() => deleteQuotation(q._id)} className="btn-delete">Delete</button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -527,7 +671,7 @@ function SalesOrderManagement() {
             >
               <option value="">Select Customer</option>
               {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c._id} value={c._id}>{c.name}</option>
               ))}
             </select>
 
@@ -598,10 +742,12 @@ function SalesOrderManagement() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map((o) => (
+                {orders.map((o) => {
+                  const customerName = typeof o.customerId === "object" && o.customerId?.name ? o.customerId.name : customers.find((c) => c._id === o.customerId)?.name;
+                  return (
                   <tr key={o._id}>
                     <td>{o._id}</td>
-                    <td>{customers.find((c) => c.id === o.customerId)?.name}</td>
+                    <td>{customerName}</td>
                     <td>{products.find((p) => p._id === o.productId)?.name || products.find((p) => p._id === o.productId?._id)?.name}</td>
                     <td>{o.quantity}</td>
                     <td>{o.discount}%</td>
@@ -624,11 +770,12 @@ function SalesOrderManagement() {
                     </td>
                     <td className="actions-cell">
                       <button onClick={() => generateInvoice(o)} className="btn-action">Invoice</button>
-                      <button onClick={() => checkCustomerCredit(o.customerId)} className="btn-action">Credit</button>
+                      <button onClick={() => checkCustomerCredit(typeof o.customerId === "object" ? o.customerId._id : o.customerId)} className="btn-action">Credit</button>
                       <button onClick={() => deleteOrder(o._id)} className="btn-delete">Delete</button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}
