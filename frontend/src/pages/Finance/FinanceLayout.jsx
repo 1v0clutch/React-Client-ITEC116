@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 
-export default function FinanceLayout({ title, children, showNavigation = true }) {
+export default function FinanceLayout({
+  title,
+  children,
+  showNavigation = true,
+}) {
   const [isApprovalsOpen, setIsApprovalsOpen] = useState(false);
   const financeLinks = [
     ["General Ledger", "/finance/general-finance"],
@@ -9,6 +13,7 @@ export default function FinanceLayout({ title, children, showNavigation = true }
     ["Reports and Compliance", "/finance/finance-report"],
     ["Employee Payroll (HR)", "/finance/employee-payroll"],
     ["Inventory Report", "/finance/inventory-report"],
+    ["Project Finance", "/finance/project-report"], // ← ADD THIS LINE
   ];
   const approvalLinks = [
     ["Approvals Overview", "/finance/approvals/overview"],
@@ -18,7 +23,9 @@ export default function FinanceLayout({ title, children, showNavigation = true }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-3xl font-bold text-center text-blue-700 mb-6">{title}</h1>
+      <h1 className="text-3xl font-bold text-center text-blue-700 mb-6">
+        {title}
+      </h1>
 
       {showNavigation ? (
         <nav className="flex flex-wrap justify-center gap-6 text-blue-700 mb-8">
@@ -31,7 +38,10 @@ export default function FinanceLayout({ title, children, showNavigation = true }
               {label}
             </a>
           ))}
-          <div className="relative" onMouseLeave={() => setIsApprovalsOpen(false)}>
+          <div
+            className="relative"
+            onMouseLeave={() => setIsApprovalsOpen(false)}
+          >
             <button
               type="button"
               onClick={() => setIsApprovalsOpen((prev) => !prev)}
@@ -58,7 +68,9 @@ export default function FinanceLayout({ title, children, showNavigation = true }
         </nav>
       ) : null}
 
-      <div className="bg-white shadow rounded-lg p-5 overflow-x-auto">{children}</div>
+      <div className="bg-white shadow rounded-lg p-5 overflow-x-auto">
+        {children}
+      </div>
     </div>
   );
 }

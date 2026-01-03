@@ -6,6 +6,8 @@ const Inventory = require("../models/Inventory");
 const Transaction = require("../models/Transaction");
 const Supplier = require("../models/Supplier");
 const PurchaseOrder = require("../models/PurchaseOrder");
+const Project = require("../models/Project"); // Make sure this path is correct
+const ProjectBudget = require("../models/ProjectBudget"); // Make sure this path is correct
 
 const toNumber = (value) => {
   if (typeof value === "number") {
@@ -20,7 +22,15 @@ const toNumber = (value) => {
 
 exports.recordInvoice = async (req, res) => {
   try {
-    const { invoiceNumber, totalAmount, supplierId, dateIssued, purchaseOrderId, items, status } = req.body;
+    const {
+      invoiceNumber,
+      totalAmount,
+      supplierId,
+      dateIssued,
+      purchaseOrderId,
+      items,
+      status,
+    } = req.body;
     // Save invoice data to Finance DB
     const financeInvoice = new FinanceInvoice({
       invoiceNumber,
@@ -29,10 +39,10 @@ exports.recordInvoice = async (req, res) => {
       dateIssued,
       purchaseOrderId,
       items,
-      status
+      status,
     });
     await financeInvoice.save();
-    res.status(201).json({ message: 'Invoice recorded in Finance.' });
+    res.status(201).json({ message: "Invoice recorded in Finance." });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -66,15 +76,29 @@ exports.getCustomerReport = async (req, res) => {
       }
     }
 
-    const uniqueSupplierIds = [...new Set(supplierIdStrings.filter((id) => mongoose.Types.ObjectId.isValid(id)))];
-    const uniquePurchaseOrderIds = [...new Set(purchaseOrderIdStrings.filter((id) => mongoose.Types.ObjectId.isValid(id)))];
+    const uniqueSupplierIds = [
+      ...new Set(
+        supplierIdStrings.filter((id) => mongoose.Types.ObjectId.isValid(id))
+      ),
+    ];
+    const uniquePurchaseOrderIds = [
+      ...new Set(
+        purchaseOrderIdStrings.filter((id) =>
+          mongoose.Types.ObjectId.isValid(id)
+        )
+      ),
+    ];
 
     const [suppliers, purchaseOrders] = await Promise.all([
       uniqueSupplierIds.length
-        ? Supplier.find({ _id: { $in: uniqueSupplierIds } }).select("name contactPerson").lean()
+        ? Supplier.find({ _id: { $in: uniqueSupplierIds } })
+            .select("name contactPerson")
+            .lean()
         : [],
       uniquePurchaseOrderIds.length
-        ? PurchaseOrder.find({ _id: { $in: uniquePurchaseOrderIds } }).select("poNumber totalAmount status createdAt").lean()
+        ? PurchaseOrder.find({ _id: { $in: uniquePurchaseOrderIds } })
+            .select("poNumber totalAmount status createdAt")
+            .lean()
         : [],
     ]);
 
@@ -89,16 +113,32 @@ exports.getCustomerReport = async (req, res) => {
     }, {});
 
     const report = invoices.map((invoice) => {
-      const supplierKey = invoice.supplierId ? invoice.supplierId.toString() : null;
-      const purchaseOrderKey = invoice.purchaseOrderId ? invoice.purchaseOrderId.toString() : null;
+      const supplierKey = invoice.supplierId
+        ? invoice.supplierId.toString()
+        : null;
+      const purchaseOrderKey = invoice.purchaseOrderId
+        ? invoice.purchaseOrderId.toString()
+        : null;
       const supplier = supplierKey ? supplierMap[supplierKey] : undefined;
-      const purchaseOrder = purchaseOrderKey ? purchaseOrderMap[purchaseOrderKey] : undefined;
+      const purchaseOrder = purchaseOrderKey
+        ? purchaseOrderMap[purchaseOrderKey]
+        : undefined;
 
       const totalFromInvoice = toNumber(invoice.totalAmount);
       const totalFromPurchaseOrder = toNumber(purchaseOrder?.totalAmount);
-      const totalAmount = Number.isFinite(totalFromInvoice) ? totalFromInvoice : Number.isFinite(totalFromPurchaseOrder) ? totalFromPurchaseOrder : 0;
+      const totalAmount = Number.isFinite(totalFromInvoice)
+        ? totalFromInvoice
+        : Number.isFinite(totalFromPurchaseOrder)
+        ? totalFromPurchaseOrder
+        : 0;
 
-      const balanceCandidates = [invoice.balance, invoice.amountDue, invoice.remainingBalance, invoice.totalAmount, purchaseOrder?.totalAmount];
+      const balanceCandidates = [
+        invoice.balance,
+        invoice.amountDue,
+        invoice.remainingBalance,
+        invoice.totalAmount,
+        purchaseOrder?.totalAmount,
+      ];
       let balance = 0;
       for (const candidate of balanceCandidates) {
         const numeric = toNumber(candidate);
@@ -111,7 +151,12 @@ exports.getCustomerReport = async (req, res) => {
         balance = totalAmount;
       }
 
-      const dateCandidates = [invoice.dateIssued, purchaseOrder?.createdAt, invoice.createdAt, invoice.updatedAt];
+      const dateCandidates = [
+        invoice.dateIssued,
+        purchaseOrder?.createdAt,
+        invoice.createdAt,
+        invoice.updatedAt,
+      ];
       let resolvedDate = null;
       for (const candidate of dateCandidates) {
         if (candidate) {
@@ -122,7 +167,12 @@ exports.getCustomerReport = async (req, res) => {
 
       return {
         id: invoice._id.toString(),
-        customerName: invoice.customerName || invoice.customer || supplier?.name || supplierKey || "—",
+        customerName:
+          invoice.customerName ||
+          invoice.customer ||
+          supplier?.name ||
+          supplierKey ||
+          "—",
         customerId: supplier ? { name: supplier.name } : undefined,
         invoiceNumber: invoice.invoiceNumber || purchaseOrder?.poNumber || "—",
         status: invoice.status || purchaseOrder?.status || "Pending",
@@ -156,7 +206,9 @@ exports.handleInventoryTransaction = async (req, res) => {
     const rawItemId = payload.itemId || payload.item?.id || payload.itemId?._id;
     const itemId = extractId(rawItemId);
     if (!itemId) {
-      return res.status(400).json({ error: "Missing inventory item reference" });
+      return res
+        .status(400)
+        .json({ error: "Missing inventory item reference" });
     }
 
     const quantityRaw = payload.quantity ?? payload.qty ?? payload.count;
@@ -165,7 +217,14 @@ exports.handleInventoryTransaction = async (req, res) => {
       return res.status(400).json({ error: "Invalid quantity" });
     }
 
-    let type = payload.type || payload.transactionType || payload.category || payload.movementType || payload.eventType || payload.operation || "";
+    let type =
+      payload.type ||
+      payload.transactionType ||
+      payload.category ||
+      payload.movementType ||
+      payload.eventType ||
+      payload.operation ||
+      "";
     if (!type) {
       return res.status(400).json({ error: "Missing transaction type" });
     }
@@ -174,7 +233,9 @@ exports.handleInventoryTransaction = async (req, res) => {
     let itemSku = payload.itemSku || payload.sku || "";
 
     if (!itemName || !itemSku) {
-      const inventoryItem = await Inventory.findById(itemId).select("name sku").lean();
+      const inventoryItem = await Inventory.findById(itemId)
+        .select("name sku")
+        .lean();
       if (inventoryItem) {
         if (!itemName) itemName = inventoryItem.name || "";
         if (!itemSku) itemSku = inventoryItem.sku || "";
@@ -182,17 +243,25 @@ exports.handleInventoryTransaction = async (req, res) => {
     }
 
     const record = new FinanceInventoryTransaction({
-      transactionId: payload.transactionId ? String(payload.transactionId) : null,
+      transactionId: payload.transactionId
+        ? String(payload.transactionId)
+        : null,
       itemId,
       itemSku: itemSku || "",
       item: itemName || "—",
       type,
       quantity: quantityValue,
       remarks: payload.remarks || payload.notes || "",
-      purchaseOrderId: extractId(payload.purchaseOrderId) || payload.purchaseOrderNumber || payload.poNumber || "",
+      purchaseOrderId:
+        extractId(payload.purchaseOrderId) ||
+        payload.purchaseOrderNumber ||
+        payload.poNumber ||
+        "",
       date:
         payload.date || payload.transactionDate || payload.createdAt
-          ? new Date(payload.date || payload.transactionDate || payload.createdAt)
+          ? new Date(
+              payload.date || payload.transactionDate || payload.createdAt
+            )
           : new Date(),
     });
 
@@ -205,11 +274,20 @@ exports.handleInventoryTransaction = async (req, res) => {
 
 exports.getInventoryTransactions = async (req, res) => {
   try {
-    const [transactions, inventoryItems, sourceTransactions] = await Promise.all([
-      FinanceInventoryTransaction.find().lean(),
-      Inventory.find().select("name sku").lean().catch(() => []),
-      Transaction.find().select("itemId type quantity remarks transactionDate purchaseOrderId").lean().catch(() => []),
-    ]);
+    const [transactions, inventoryItems, sourceTransactions] =
+      await Promise.all([
+        FinanceInventoryTransaction.find().lean(),
+        Inventory.find()
+          .select("name sku")
+          .lean()
+          .catch(() => []),
+        Transaction.find()
+          .select(
+            "itemId type quantity remarks transactionDate purchaseOrderId"
+          )
+          .lean()
+          .catch(() => []),
+      ]);
 
     const itemMap = Array.isArray(inventoryItems)
       ? inventoryItems.reduce((acc, item) => {
@@ -232,11 +310,16 @@ exports.getInventoryTransactions = async (req, res) => {
     const normalized = transactions.map((tx) => {
       const itemIdKey = tx.itemId ? tx.itemId.toString() : "";
       const itemSource = itemMap[itemIdKey] || {};
-      const linked = tx.transactionId ? transactionLookup[tx.transactionId] : undefined;
-      const fallback = !linked && itemIdKey ? transactionLookup[itemIdKey] : undefined;
+      const linked = tx.transactionId
+        ? transactionLookup[tx.transactionId]
+        : undefined;
+      const fallback =
+        !linked && itemIdKey ? transactionLookup[itemIdKey] : undefined;
 
       const transactionItemId = linked?.itemId || fallback?.itemId;
-      const transactionItem = transactionItemId ? itemMap[transactionItemId.toString()] : undefined;
+      const transactionItem = transactionItemId
+        ? itemMap[transactionItemId.toString()]
+        : undefined;
 
       const baseItem =
         (tx.item && tx.item !== "—" && tx.item) ||
@@ -244,7 +327,8 @@ exports.getInventoryTransactions = async (req, res) => {
         itemSource.name ||
         "—";
       const skuValue = transactionItem?.sku || itemSource.sku;
-      const itemValue = baseItem !== "—" && skuValue ? `${baseItem} (${skuValue})` : baseItem;
+      const itemValue =
+        baseItem !== "—" && skuValue ? `${baseItem} (${skuValue})` : baseItem;
 
       const typeValue =
         tx.type ||
@@ -265,14 +349,19 @@ exports.getInventoryTransactions = async (req, res) => {
                 fallback?.quantity
             ) || 0;
 
-      const remarksValue = tx.remarks || tx.notes || linked?.remarks || fallback?.remarks || "";
+      const remarksValue =
+        tx.remarks || tx.notes || linked?.remarks || fallback?.remarks || "";
 
       const purchaseOrderValue =
         tx.purchaseOrderId ||
         tx.purchaseOrder ||
         tx.reference ||
-        (linked?.purchaseOrderId ? linked.purchaseOrderId.toString() : undefined) ||
-        (fallback?.purchaseOrderId ? fallback.purchaseOrderId.toString() : undefined) ||
+        (linked?.purchaseOrderId
+          ? linked.purchaseOrderId.toString()
+          : undefined) ||
+        (fallback?.purchaseOrderId
+          ? fallback.purchaseOrderId.toString()
+          : undefined) ||
         "";
 
       const dateValue =
@@ -303,7 +392,9 @@ exports.getInventoryTransactions = async (req, res) => {
 
 exports.getPayrollReport = async (req, res) => {
   try {
-    const { data: payrolls } = await axios.get("http://localhost:8000/api/hr/payroll");
+    const { data: payrolls } = await axios.get(
+      "http://localhost:8000/api/hr/payroll"
+    );
     res.json(payrolls);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -327,10 +418,12 @@ exports.getPayrollReport = async (req, res) => {
 exports.getSupplierReport = async (req, res) => {
   try {
     // ✅ Fetch directly from procurement Purchase Orders endpoint
-    const { data: purchaseOrders } = await axios.get("http://localhost:8000/api/purchase-orders");
+    const { data: purchaseOrders } = await axios.get(
+      "http://localhost:8000/api/purchase-orders"
+    );
 
     // ✅ Format response for clarity
-    const report = purchaseOrders.map(po => ({
+    const report = purchaseOrders.map((po) => ({
       supplierName: po.supplierId?.name || "—",
       poNumber: po.poNumber,
       status: po.status || "—",
@@ -342,5 +435,72 @@ exports.getSupplierReport = async (req, res) => {
   } catch (error) {
     console.error("Supplier Report error:", error.message);
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Add this method to your finance.controller.js
+
+// 🎯 Project Finance Report for General Ledger
+exports.getProjectReport = async (req, res) => {
+  try {
+    // Fetch all projects with their budgets
+    const projects = await Project.find()
+      .populate("resourceAllocations.employee", "name")
+      .lean();
+
+    const projectBudgets = await ProjectBudget.find().lean();
+
+    // Create a map for quick budget lookup
+    const budgetMap = {};
+    projectBudgets.forEach((budget) => {
+      budgetMap[budget.project.toString()] = budget;
+    });
+
+    // Format project data for finance reporting
+    const report = projects.map((project) => {
+      const budget = budgetMap[project._id.toString()];
+      const totalBudget = project.totalBudget || 0;
+
+      // Calculate actual cost from budget data
+      let actualCost = 0;
+      if (budget && Array.isArray(budget.tasks)) {
+        actualCost = budget.tasks.reduce(
+          (sum, task) => sum + (task.actualCost || 0),
+          0
+        );
+      }
+
+      // Calculate variance
+      const variance = totalBudget - actualCost;
+
+      // Determine financial status
+      let status = project.status || "In Progress";
+      if (variance < 0) {
+        status = "Over Budget";
+      } else if (project.status === "Completed" && variance >= 0) {
+        status = "Completed";
+      }
+
+      return {
+        id: project._id.toString(),
+        projectName: project.name,
+        status: status,
+        totalBudget: totalBudget,
+        actualCost: actualCost,
+        spent: actualCost, // alias for frontend
+        variance: variance,
+        startDate: project.startDate,
+        endDate: project.endDate,
+        updatedAt: project.updatedAt,
+        createdAt: project.createdAt,
+      };
+    });
+
+    res.json(report);
+  } catch (error) {
+    console.error("Project Finance Report error:", error.message);
+    res
+      .status(500)
+      .json({ error: "Failed to generate project finance report" });
   }
 };

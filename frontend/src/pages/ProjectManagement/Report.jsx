@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 
 const API_PROJECT = "http://localhost:8000/api/project";
-const API_BUDGET = "http://localhost:8000/api/budget";
+const API_BUDGET = "http://localhost:8000/api/projectBudget";
 
 function ProgressBar({ value, colorClass = "bg-green-500" }) {
   const pct = Math.min(100, Math.max(0, Number(value || 0)));
@@ -36,14 +36,37 @@ function AlertCard({ title, description, type, timestamp }) {
       ? "bg-red-50 border-l-4 border-red-400"
       : type === "COST"
       ? "bg-yellow-50 border-l-4 border-yellow-400"
-      : "bg-blue-50 border-l-4 border-blue-400";
+      : type === "RESOURCE"
+      ? "bg-orange-50 border-l-4 border-orange-400"
+      : type === "DATA"
+      ? "bg-blue-50 border-l-4 border-blue-400"
+      : "bg-gray-50 border-l-4 border-gray-400";
 
   const typeColor =
     type === "DELAY"
       ? "bg-red-100 text-red-700"
       : type === "COST"
       ? "bg-yellow-100 text-yellow-700"
-      : "bg-blue-100 text-blue-700";
+      : type === "RESOURCE"
+      ? "bg-orange-100 text-orange-700"
+      : type === "DATA"
+      ? "bg-blue-100 text-blue-700"
+      : "bg-gray-100 text-gray-700";
+
+  const getIcon = () => {
+    switch (type) {
+      case "DELAY":
+        return "⚠️";
+      case "COST":
+        return "💸";
+      case "RESOURCE":
+        return "👤";
+      case "DATA":
+        return "📊";
+      default:
+        return "ℹ️";
+    }
+  };
 
   return (
     <div className={`p-4 rounded ${bgColor}`}>
@@ -58,9 +81,7 @@ function AlertCard({ title, description, type, timestamp }) {
             <span className="text-xs text-gray-500">{timestamp}</span>
           </div>
         </div>
-        {type === "DELAY" && <span className="text-2xl">⚠️</span>}
-        {type === "COST" && <span className="text-2xl">⚠️</span>}
-        {type === "MILESTONE" && <span className="text-2xl">⏱️</span>}
+        <span className="text-2xl">{getIcon()}</span>
       </div>
     </div>
   );
@@ -72,7 +93,7 @@ export default function Report({
 }) {
   const [project, setProject] = useState(propProject);
   const [budget, setBudget] = useState(null);
-  const [budgetTasks, setBudgetTasks] = useState([]); // Add this
+  const [budgetTasks, setBudgetTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [budgetLoading, setBudgetLoading] = useState(false);
 
@@ -127,7 +148,7 @@ export default function Report({
           console.log("Budget data received:", data);
           if (mounted) {
             setBudget(data);
-            setBudgetTasks(data.tasks || []); // Store tasks from budget
+            setBudgetTasks(data.tasks || []);
           }
         } else {
           console.warn("Budget not found or error");
@@ -173,27 +194,171 @@ export default function Report({
     }));
   }, [project]);
 
-  // Generate alerts based on task status
+  // Fix the budget display function
+  const getTaskBudget = (taskId) => {
+    if (!taskId) return "₱0";
+    const budgetTask = budgetMap[String(taskId)];
+    console.log("Looking for task budget:", taskId, budgetTask);
+
+    if (
+      budgetTask &&
+      budgetTask.budgetEst !== undefined &&
+      budgetTask.budgetEst !== null
+    ) {
+      return `₱${Number(budgetTask.budgetEst).toLocaleString()}`;
+    }
+
+    // Fallback: check if task has its own budget field
+    const task = allTasks.find((t) => (t._id || t.id) === taskId);
+    if (task && task.budget !== undefined) {
+      return `₱${Number(task.budget).toLocaleString()}`;
+    }
+
+    return "₱0";
+  };
+
+  // Fix the assignee name function
+  const getAssigneeName = (assignee) => {
+    console.log("Assignee data:", assignee);
+
+    if (!assignee) return "Unassigned";
+
+    // If assignee is an object with name property
+    if (typeof assignee === "object") {
+      return assignee.name || assignee.username || assignee.email || "Assigned";
+    }
+
+    // If assignee is a string (name or ID)
+    if (typeof assignee === "string") {
+      // If it looks like an ObjectId, return "Assigned", otherwise use the string
+      return assignee.length === 24 && /^[0-9a-fA-F]+$/.test(assignee)
+        ? "Assigned"
+        : assignee;
+    }
+
+    return "Assigned";
+  };
+
+  // Create mapping of task IDs to budget info
+  const budgetMap = useMemo(() => {
+    const map = {};
+    budgetTasks.forEach((budgetTask) => {
+      if (budgetTask.taskId) {
+        map[String(budgetTask.taskId)] = budgetTask;
+      }
+    });
+    console.log("Budget map:", map);
+    return map;
+  }, [budgetTasks]);
+
+  // Generate comprehensive alerts based on project data
   const alerts = useMemo(() => {
     const alertList = [];
+    const today = new Date();
+
+    // Check each task for issues
     allTasks.forEach((task) => {
-      if (task.status === "In Progress" && (task.progress || 0) < 50) {
+      const taskProgress = task.progress || 0;
+      const taskStatus = task.status || "Not Started";
+
+      // Alert 1: Tasks behind schedule
+      if (taskStatus === "In Progress" && taskProgress < 50 && task.endDate) {
+        const endDate = new Date(task.endDate);
+        const daysRemaining = Math.ceil(
+          (endDate - today) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysRemaining < 3) {
+          alertList.push({
+            title: `${task.name} - Critical Delay`,
+            description: `Only ${daysRemaining} days left but only ${taskProgress}% complete`,
+            type: "DELAY",
+            timestamp: new Date().toLocaleDateString(),
+          });
+        }
+      }
+
+      // Alert 2: Tasks without assignees
+      if (!task.assignee || getAssigneeName(task.assignee) === "Unassigned") {
         alertList.push({
-          title: `${task.name} Behind Schedule`,
-          description: `${task.progress || 0}% complete, days remaining: ${
-            task.endDate
-              ? Math.ceil(
-                  (new Date(task.endDate) - new Date()) / (1000 * 60 * 60 * 24)
-                )
-              : "N/A"
-          }`,
+          title: `${task.name} - No Assignee`,
+          description: "Task has not been assigned to any team member",
+          type: "RESOURCE",
+          timestamp: new Date().toLocaleDateString(),
+        });
+      }
+
+      // Alert 3: Tasks with no budget
+      const taskBudget = getTaskBudget(task._id || task.id);
+      if (taskBudget === "₱0" || taskBudget === "N/A") {
+        alertList.push({
+          title: `${task.name} - Budget Not Set`,
+          description: "Task budget has not been allocated",
+          type: "COST",
+          timestamp: new Date().toLocaleDateString(),
+        });
+      }
+
+      // Alert 4: Overdue tasks
+      if (
+        task.endDate &&
+        new Date(task.endDate) < today &&
+        taskProgress < 100
+      ) {
+        alertList.push({
+          title: `${task.name} - Overdue`,
+          description: `Task is past deadline with ${taskProgress}% completion`,
           type: "DELAY",
-          timestamp: "2h ago",
+          timestamp: new Date().toLocaleDateString(),
         });
       }
     });
-    return alertList.slice(0, 3);
-  }, [allTasks]);
+
+    // Budget-related alerts
+    if (budget) {
+      const actualCost = budget.actualCost || budget.spent || 0;
+      const allocatedBudget = budget.totalBudget || 1;
+      const budgetUsage = (actualCost / allocatedBudget) * 100;
+
+      if (budgetUsage > 90) {
+        alertList.push({
+          title: "Budget Nearly Exhausted",
+          description: `Project has used ${Math.round(
+            budgetUsage
+          )}% of allocated budget`,
+          type: "COST",
+          timestamp: new Date().toLocaleDateString(),
+        });
+      }
+
+      if (budgetUsage > 100) {
+        alertList.push({
+          title: "Budget Overrun",
+          description: `Project has exceeded budget by ${Math.round(
+            budgetUsage - 100
+          )}%`,
+          type: "COST",
+          timestamp: new Date().toLocaleDateString(),
+        });
+      }
+    }
+
+    // Data mapping alerts
+    if (budgetTasks.length === 0) {
+      alertList.push({
+        title: "Budget Data Not Loaded",
+        description: "Task budget information is not available",
+        type: "DATA",
+        timestamp: new Date().toLocaleDateString(),
+      });
+    }
+
+    // Sort alerts by priority (DELAY > COST > RESOURCE > DATA)
+    const priorityOrder = { DELAY: 1, COST: 2, RESOURCE: 3, DATA: 4 };
+    alertList.sort((a, b) => priorityOrder[a.type] - priorityOrder[b.type]);
+
+    return alertList.slice(0, 5);
+  }, [allTasks, budget, budgetTasks]);
 
   // Calculate project metrics based on actual data
   const metrics = useMemo(() => {
@@ -277,37 +442,18 @@ export default function Report({
     return d.toISOString().slice(0, 10);
   };
 
-  const getAssigneeName = (assigneeId) => {
-    if (typeof assigneeId === "object" && assigneeId?.name) {
-      return assigneeId.name;
-    }
-    return assigneeId ? "Assigned" : "Unassigned";
-  };
+  // Add debugging logs
+  console.log("Budget tasks from API:", budgetTasks);
+  console.log("Budget map:", budgetMap);
+  console.log("All tasks:", allTasks);
+  console.log("Generated alerts:", alerts);
 
-  // Create mapping of task IDs to budget info
-  const budgetMap = useMemo(() => {
-    const map = {};
-    budgetTasks.forEach((budgetTask) => {
-      if (budgetTask.taskId) {
-        map[String(budgetTask.taskId)] = budgetTask;
-      }
-    });
-    console.log("Budget map:", map);
-    return map;
-  }, [budgetTasks]);
-
-  // Helper to get task budget from budgetMap
-  const getTaskBudget = (taskId) => {
-    if (!taskId) return "N/A";
-    const budgetTask = budgetMap[String(taskId)];
-    if (budgetTask && budgetTask.budgetEst) {
-      return `₱${Number(budgetTask.budgetEst).toLocaleString()}`;
-    }
-    return "N/A";
-  };
-
-  if (loading) {
-    return <div className="p-6 text-sm text-gray-500">Loading report...</div>;
+  if (loading || budgetLoading) {
+    return (
+      <div className="p-6 text-sm text-gray-500">
+        Loading report{budgetLoading ? " and budget data" : ""}...
+      </div>
+    );
   }
 
   return (
@@ -485,8 +631,8 @@ export default function Report({
           </div>
         </div>
 
-        {/* Active Alerts */}
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        {/* Active Alerts - Now with fixed height and scroll */}
+        <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
               Active Alerts
@@ -495,14 +641,20 @@ export default function Report({
               {alerts.length}
             </span>
           </div>
-          <div className="space-y-3">
-            {alerts.length > 0 ? (
-              alerts.map((alert, idx) => <AlertCard key={idx} {...alert} />)
-            ) : (
-              <div className="text-sm text-gray-500 text-center py-6">
-                No active alerts
-              </div>
-            )}
+          <div className="flex-1 overflow-y-auto max-h-96">
+            {" "}
+            {/* Added scrollable container */}
+            <div className="space-y-3 pr-2">
+              {" "}
+              {/* Added padding for scrollbar */}
+              {alerts.length > 0 ? (
+                alerts.map((alert, idx) => <AlertCard key={idx} {...alert} />)
+              ) : (
+                <div className="text-sm text-gray-500 text-center py-6">
+                  No active alerts
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
