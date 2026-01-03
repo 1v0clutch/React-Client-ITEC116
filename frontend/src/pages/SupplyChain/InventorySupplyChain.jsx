@@ -159,7 +159,7 @@ function InventoryDistribution() {
               <td>{w.location}</td>
               <td>{w.stock}</td>
               <td>
-                {w.items.map((i) => (
+                {w.items.filter(i => i.itemId).map((i) => (
                   <div key={i._id}>
                     {(i.itemId?.name || "Unknown")} (Qty: {i.quantity})
                   </div>
@@ -224,9 +224,11 @@ function InventoryDistribution() {
           <option value="">Select Item</option>
           {warehouses
             .find((w) => w._id === transferData.from)
-            ?.items.map((i) => (
-              <option key={i._id} value={i.itemId?._id || i._id}>
-                {(i.itemId?.name || "Unknown")} (Qty: {i.quantity})
+            ?.items
+            .filter((i) => i.itemId)
+            .map((i) => (
+              <option key={i._id} value={i.itemId._id}>
+                {i.itemId.name} (Qty: {i.quantity})
               </option>
             ))}
         </select>

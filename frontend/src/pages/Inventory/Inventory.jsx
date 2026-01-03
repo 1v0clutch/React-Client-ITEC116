@@ -11,6 +11,8 @@ function LogisticsSupplyChain() {
     type: "Inbound",
     date: "",
     quantity: 0,
+    price: 0,
+    imageUrl: "",
   });
 
   const API_URL = "http://localhost:8000/api/logistics";

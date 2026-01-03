@@ -1,0 +1,114 @@
+/* Table Component Styles - Ensures proper alignment and spacing */
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.report-table {
+  width: 100%;
+  min-width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  table-layout: auto;
+}
+
+.report-table thead {
+  background-color: #f3f4f6;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.report-table thead tr th {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  vertical-align: middle;
+  min-width: 80px;
+}
+
+.report-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.report-table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+.report-table tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+.report-table tbody tr:hover {
+  background-color: #dbeafe;
+}
+
+.report-table tbody tr td {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  color: #1f2937;
+  white-space: nowrap;
+  vertical-align: middle;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+/* Column-specific widths for common columns */
+.report-table thead tr th:first-child,
+.report-table tbody tr td:first-child {
+  min-width: 60px;
+  max-width: 80px;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .report-table {
+    font-size: 0.75rem;
+  }
+  
+  .report-table thead tr th,
+  .report-table tbody tr td {
+    padding: 0.5rem 0.75rem;
+    min-width: 60px;
+  }
+}
+
+@media (max-width: 640px) {
+  .report-table {
+    font-size: 0.7rem;
+  }
+  
+  .report-table thead tr th,
+  .report-table tbody tr td {
+    padding: 0.4rem 0.5rem;
+    min-width: 50px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .report-table {
+    border: 1px solid #000;
+  }
+  
+  .report-table thead tr th {
+    background-color: #e5e7eb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .report-table tbody tr:nth-child(even) {
+    background-color: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
