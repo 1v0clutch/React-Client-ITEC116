@@ -8,7 +8,10 @@ export default function FinanceHead() {
   const toCurrency = (value) => {
     const amount = typeof value === "number" ? value : Number(value);
     if (!Number.isFinite(amount)) return null;
-    return `₱${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `₱${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   };
 
   useEffect(() => {
@@ -17,7 +20,15 @@ export default function FinanceHead() {
     const toArray = (payload) => {
       if (Array.isArray(payload)) return payload;
       if (payload && typeof payload === "object") {
-        for (const key of ["data", "items", "results", "records", "rows", "list", "content"]) {
+        for (const key of [
+          "data",
+          "items",
+          "results",
+          "records",
+          "rows",
+          "list",
+          "content",
+        ]) {
           if (Array.isArray(payload[key])) return payload[key];
         }
       }
@@ -74,7 +85,8 @@ export default function FinanceHead() {
       const balance =
         typeof item.balance === "number"
           ? item.balance
-          : Number(item.balance || item.amountDue || item.remainingBalance) || 0;
+          : Number(item.balance || item.amountDue || item.remainingBalance) ||
+            0;
       const totalAmount =
         typeof item.totalAmount === "number"
           ? item.totalAmount
@@ -143,13 +155,23 @@ export default function FinanceHead() {
     };
 
     const extractPayroll = (item, index) => {
-      const employee = item.name || item.employeeName || item.employee || item.employeeId || "—";
+      const employee =
+        item.name ||
+        item.employeeName ||
+        item.employee ||
+        item.employeeId ||
+        "—";
       const period = item.payPeriod || item.period || item.cycle || "—";
       const netPay =
         typeof item.netPay === "number"
           ? item.netPay
           : Number(item.netPay || item.totalNetPay || item.amount) || 0;
-      const dateValue = item.dateProcessed || item.processedAt || item.createdAt || item.updatedAt || null;
+      const dateValue =
+        item.dateProcessed ||
+        item.processedAt ||
+        item.createdAt ||
+        item.updatedAt ||
+        null;
       return {
         id: `payroll-${item._id || item.id || index}`,
         date: dateValue,
@@ -159,6 +181,40 @@ export default function FinanceHead() {
         value: toCurrency(netPay) || "—",
         metricValue: Number.isFinite(netPay) ? netPay : 0,
       };
+    };
+
+    // ✅ NEW: Extract project budget data
+    const extractProjectBudget = (item, index) => {
+      const projectName =
+        item.projectName || item.name || item.title || `Project ${index + 1}`;
+      const totalActualCost = item.totalActualCost || item.actualCost || 0;
+      const status = item.status || "Active";
+      const dateValue =
+        item.updatedAt || item.createdAt || new Date().toISOString();
+
+      return {
+        id: `project-${item._id || item.id || index}`,
+        date: dateValue,
+        category: "Project Cost",
+        primary: projectName,
+        secondary: status,
+        value: toCurrency(totalActualCost) || "—",
+        metricValue: Number.isFinite(totalActualCost) ? totalActualCost : 0,
+      };
+    };
+
+    // ✅ NEW: Fetch project budgets
+    const fetchProjectBudgets = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/projectBudget");
+        if (!response.ok) return [];
+        const payload = await response.json();
+        const list = toArray(payload);
+        return list.map(extractProjectBudget);
+      } catch (error) {
+        console.error("Error fetching project budgets:", error);
+        return [];
+      }
     };
 
     const loaders = [
@@ -183,22 +239,33 @@ export default function FinanceHead() {
     const load = async () => {
       try {
         setIsFetching(true);
-        const results = await Promise.allSettled(
-          loaders.map(async ({ url, extractor }) => {
+
+        // Fetch all data sources including project budgets
+        const results = await Promise.allSettled([
+          // Original loaders
+          ...loaders.map(async ({ url, extractor }) => {
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Failed to load ${url}`);
             const payload = await response.json();
             const list = toArray(payload);
             return list.map(extractor);
-          })
-        );
+          }),
+          // New project budgets loader
+          fetchProjectBudgets(),
+        ]);
+
         if (!active) return;
-        const fulfilled = results.filter((result) => result.status === "fulfilled");
-        const combined = fulfilled.flatMap((result) => result.value);
+
+        // Combine all results
+        const combined = results.flatMap((result) =>
+          result.status === "fulfilled" ? result.value : []
+        );
+
         setEntries(combined);
-        setError(fulfilled.length ? null : "Unable to fetch finance data");
+        setError(combined.length ? null : "Unable to fetch finance data");
       } catch (err) {
         if (!active) return;
+        console.error("Error loading finance data:", err);
         setEntries([]);
         setError("Unable to fetch finance data");
       } finally {
@@ -252,7 +319,9 @@ export default function FinanceHead() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `finance_summary_${new Date().toISOString().slice(0, 10)}.${extension}`;
+    anchor.download = `finance_summary_${new Date()
+      .toISOString()
+      .slice(0, 10)}.${extension}`;
     anchor.click();
     URL.revokeObjectURL(url);
   };
@@ -265,31 +334,68 @@ export default function FinanceHead() {
     });
   }, [entries]);
 
+  // ✅ UPDATED: Include project costs in metrics
   const metrics = useMemo(() => {
     if (!entries.length) {
       return [
         { label: "Records Synced", value: "0" },
         { label: "Accounts Receivable", value: "₱0.00" },
         { label: "Accounts Payable", value: "₱0.00" },
+        { label: "Project Costs", value: "₱0.00" },
         { label: "Payroll", value: "₱0.00" },
         { label: "Inventory Movements", value: "0" },
       ];
     }
+
     const receivablesTotal = entries
       .filter((entry) => entry.category === "Customer Receivable")
-      .reduce((sum, entry) => sum + (Number.isFinite(entry.metricValue) ? entry.metricValue : 0), 0);
+      .reduce(
+        (sum, entry) =>
+          sum + (Number.isFinite(entry.metricValue) ? entry.metricValue : 0),
+        0
+      );
+
     const payablesTotal = entries
       .filter((entry) => entry.category === "Supplier Purchase")
-      .reduce((sum, entry) => sum + (Number.isFinite(entry.metricValue) ? entry.metricValue : 0), 0);
+      .reduce(
+        (sum, entry) =>
+          sum + (Number.isFinite(entry.metricValue) ? entry.metricValue : 0),
+        0
+      );
+
+    const projectCostsTotal = entries
+      .filter((entry) => entry.category === "Project Cost")
+      .reduce(
+        (sum, entry) =>
+          sum + (Number.isFinite(entry.metricValue) ? entry.metricValue : 0),
+        0
+      );
+
     const payrollTotal = entries
       .filter((entry) => entry.category === "Payroll")
-      .reduce((sum, entry) => sum + (Number.isFinite(entry.metricValue) ? entry.metricValue : 0), 0);
-    const inventoryCount = entries.filter((entry) => entry.category === "Inventory Movement").length;
+      .reduce(
+        (sum, entry) =>
+          sum + (Number.isFinite(entry.metricValue) ? entry.metricValue : 0),
+        0
+      );
+
+    const inventoryCount = entries.filter(
+      (entry) => entry.category === "Inventory Movement"
+    ).length;
+    const projectCount = entries.filter(
+      (entry) => entry.category === "Project Cost"
+    ).length;
+
     const currencyOrZero = (amount) => toCurrency(amount) || "₱0.00";
+
     return [
       { label: "Records Synced", value: entries.length.toLocaleString() },
       { label: "Accounts Receivable", value: currencyOrZero(receivablesTotal) },
       { label: "Accounts Payable", value: currencyOrZero(payablesTotal) },
+      {
+        label: `Project Costs (${projectCount})`,
+        value: currencyOrZero(projectCostsTotal),
+      },
       { label: "Payroll", value: currencyOrZero(payrollTotal) },
       { label: "Inventory Movements", value: inventoryCount.toLocaleString() },
     ];
@@ -304,16 +410,21 @@ export default function FinanceHead() {
       `"${sanitize(entry.secondary)}"`,
       `"${sanitize(entry.value)}"`,
     ]);
-    const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+    const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join(
+      "\n"
+    );
     downloadFile(csv, "text/csv", "csv");
   };
 
   const getCategoryTone = (category) => {
     const normalized = (category || "—").toLowerCase();
     if (normalized.includes("supplier")) return "bg-amber-100 text-amber-700";
-    if (normalized.includes("customer")) return "bg-emerald-100 text-emerald-700";
-    if (normalized.includes("inventory")) return "bg-indigo-100 text-indigo-700";
+    if (normalized.includes("customer"))
+      return "bg-emerald-100 text-emerald-700";
+    if (normalized.includes("inventory"))
+      return "bg-indigo-100 text-indigo-700";
     if (normalized.includes("payroll")) return "bg-sky-100 text-sky-700";
+    if (normalized.includes("project")) return "bg-purple-100 text-purple-700"; // ✅ NEW: Project color
     return "bg-slate-100 text-slate-700";
   };
 
@@ -323,25 +434,36 @@ export default function FinanceHead() {
     if (normalized.includes("supplier")) return "text-amber-700";
     if (normalized.includes("payroll")) return "text-sky-700";
     if (normalized.includes("inventory")) return "text-indigo-700";
+    if (normalized.includes("project")) return "text-purple-700"; // ✅ NEW: Project color
     return "text-slate-700";
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-blue-700 mb-2">General Ledger</h1>
-        <p className="text-lg text-slate-600">Overview of financial statements and ledger entries</p>
+        <h1 className="text-4xl font-bold text-blue-700 mb-2">
+          General Ledger
+        </h1>
+        <p className="text-lg text-slate-600">
+          Overview of financial statements and ledger entries
+        </p>
       </div>
       <div className="bg-white shadow-lg rounded-xl p-6 overflow-x-auto">
         <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+            {" "}
+            {/* ✅ Changed to 6 columns */}
             {metrics.map((metric) => (
               <div
                 key={metric.label}
                 className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 shadow-sm"
               >
-                <p className="text-xs uppercase tracking-wide text-blue-600">{metric.label}</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900">{metric.value}</p>
+                <p className="text-xs uppercase tracking-wide text-blue-600">
+                  {metric.label}
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">
+                  {metric.value}
+                </p>
               </div>
             ))}
           </div>
@@ -366,18 +488,33 @@ export default function FinanceHead() {
               <table className="min-w-full divide-y divide-slate-200 text-sm text-slate-700">
                 <thead className="bg-blue-100 text-blue-900">
                   <tr>
-                    <th className="px-4 py-3 text-center font-semibold">Date</th>
-                    <th className="px-4 py-3 text-left font-semibold">Category</th>
-                    <th className="px-4 py-3 text-left font-semibold">Primary</th>
-                    <th className="px-4 py-3 text-left font-semibold">Secondary</th>
-                    <th className="px-4 py-3 text-right font-semibold">Value</th>
+                    <th className="px-4 py-3 text-center font-semibold">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Category
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Primary
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Secondary
+                    </th>
+                    <th className="px-4 py-3 text-right font-semibold">
+                      Value
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white">
                   {sortedEntries.length ? (
                     sortedEntries.map((entry) => (
-                      <tr key={entry.id} className="transition hover:bg-blue-50/60">
-                        <td className="px-4 py-3 text-center text-slate-500">{formatDate(entry.date)}</td>
+                      <tr
+                        key={entry.id}
+                        className="transition hover:bg-blue-50/60"
+                      >
+                        <td className="px-4 py-3 text-center text-slate-500">
+                          {formatDate(entry.date)}
+                        </td>
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${getCategoryTone(
@@ -387,17 +524,30 @@ export default function FinanceHead() {
                             {entry.category}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-900">{entry.primary}</td>
-                        <td className="px-4 py-3 text-slate-600">{entry.secondary}</td>
-                        <td className={`px-4 py-3 text-right font-semibold ${getValueTone(entry.category)}`}>
+                        <td className="px-4 py-3 font-medium text-slate-900">
+                          {entry.primary}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {entry.secondary}
+                        </td>
+                        <td
+                          className={`px-4 py-3 text-right font-semibold ${getValueTone(
+                            entry.category
+                          )}`}
+                        >
                           {entry.value}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="px-4 py-6 text-center text-sm text-slate-500" colSpan={5}>
-                        {isFetching ? "Loading finance data..." : "No finance data available"}
+                      <td
+                        className="px-4 py-6 text-center text-sm text-slate-500"
+                        colSpan={5}
+                      >
+                        {isFetching
+                          ? "Loading finance data..."
+                          : "No finance data available"}
                       </td>
                     </tr>
                   )}

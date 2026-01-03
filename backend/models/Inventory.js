@@ -7,6 +7,8 @@ const InventorySchema = new mongoose.Schema({
   category: String,
   quantity: { type: Number, default: 0 },
   unit: { type: String, default: "pcs" }, // type of unit (pcs)
+  price: { type: Number, default: 0 },    // product price
+  imageUrl: { type: String, default: "" }, // product image URL
   updatedAt: { type: Date, default: Date.now },
 });
 

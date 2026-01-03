@@ -8,10 +8,12 @@ const Joi = require("joi");
 const validateInventoryItem = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
-    sku: Joi.string().alphanum().min(3).max(20).required(),
+    sku: Joi.string().pattern(/^[A-Za-z0-9-_]+$/).min(3).max(20).required(), // Allow hyphens and underscores
     description: Joi.string().allow("", null),
     category: Joi.string().required(),
     quantity: Joi.number().integer().min(0).required(),
+    price: Joi.number().min(0).optional(), // Optional price field
+    imageUrl: Joi.string().uri().allow("", null).optional(), // Optional image URL
   });
   return schema.validate(data);
 };
