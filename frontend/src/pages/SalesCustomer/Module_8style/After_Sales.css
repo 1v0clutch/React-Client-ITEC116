@@ -1,17 +1,17 @@
 .aftersales-container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  background: #fff;
-  color: #232526;
-  padding: 40px 20px;
-  border-radius: 16px;
+  width: 100vw;
+  min-width: 100vw;
+  max-width: 100vw;
+  background: linear-gradient(90deg, #232526 0%, #414345 100%);
+  color: #f5f5f5;
+  padding: 30px 0;
+  border-radius: 0;
   font-family: "Poppins", "Segoe UI", Arial, sans-serif;
-  box-shadow: 0 8px 32px rgba(34, 34, 34, 0.1);
+  box-shadow: 0 4px 24px rgba(34, 34, 34, 0.15);
+  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
 }
 
 h2, h3 {
@@ -25,22 +25,15 @@ h2, h3 {
 .form-card {
   background: #fff;
   color: #232526;
-  padding: 32px 40px;
-  border-radius: 16px;
-  margin-bottom: 30px;
-  box-shadow: 0 6px 24px rgba(34, 34, 34, 0.08);
+  padding: 24px 32px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
-  max-width: 800px;
-  border: 1px solid #e5e7eb;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(34, 34, 34, 0.12);
+  max-width: 700px;
 }
 
 label {
@@ -87,20 +80,19 @@ button:hover {
 .case-card {
   background: #fff;
   color: #232526;
-  padding: 32px 40px;
-  margin: 24px 0;
-  border-radius: 16px;
-  transition: all 0.3s ease;
+  padding: 24px 32px;
+  margin: 20px 0;
+  border-radius: 12px;
+  transition: 0.3s;
   border-left: 5px solid #ee7829;
-  font-size: 1.1rem;
-  box-shadow: 0 6px 24px rgba(34, 34, 34, 0.08);
+  font-size: 1.15rem;
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
   word-break: break-word;
-  border: 1px solid #e5e7eb;
 }
 
 .case-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(34, 34, 34, 0.12);
+  box-shadow: 0 4px 16px rgba(238, 120, 41, 0.15);
 }
 
 select {
@@ -156,37 +148,34 @@ select {
   border-collapse: collapse;
   background: #fff;
   color: #232526;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
 }
 
 .cases-table thead {
-  background: linear-gradient(135deg, #ee7829 0%, #ff924d 100%);
+  background: #ee7829;
   color: #fff;
 }
 
 .cases-table th {
-  padding: 18px 16px;
+  padding: 14px 12px;
   text-align: left;
-  font-weight: 700;
-  border-bottom: 2px solid #e5e7eb;
-  font-size: 0.95rem;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 0.9rem;
   white-space: nowrap;
 }
 
 .cases-table tbody tr {
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
 }
 
 .cases-table tbody tr:hover {
-  background-color: #f9fafb;
+  background-color: #f7f7f7;
 }
 
 .cases-table td {
-  padding: 16px;
-  font-size: 0.95rem;
+  padding: 12px;
+  font-size: 0.9rem;
 }
 
 .table-select {

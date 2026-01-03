@@ -44,11 +44,7 @@ function SalesOrderManagement() {
       .then((res) => res.json())
       .then((data) => {
         console.log("Fetched quotations:", data);
-        // Sort quotations by creation date - newest first
-        const sortedQuotations = Array.isArray(data)
-          ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          : data;
-        setQuotations(sortedQuotations);
+        setQuotations(data);
       })
       .catch((err) => console.error("Error fetching quotations:", err));
 
@@ -56,11 +52,7 @@ function SalesOrderManagement() {
       .then((res) => res.json())
       .then((data) => {
         console.log("Fetched orders:", data);
-        // Sort orders by creation date - newest first
-        const sortedOrders = Array.isArray(data)
-          ? data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          : data;
-        setOrders(sortedOrders);
+        setOrders(data);
       })
       .catch((err) => console.error("Error fetching orders:", err));
   }, []);
@@ -112,8 +104,7 @@ function SalesOrderManagement() {
         body: JSON.stringify(quotationData),
       });
       const createdQuotation = await response.json();
-      // Add new quotation at the beginning (top) of the list
-      setQuotations([createdQuotation.quotation, ...quotations]);
+      setQuotations([...quotations, createdQuotation.quotation]);
       setNewQuotation({
         customerId: "",
         productId: "",
@@ -172,8 +163,7 @@ function SalesOrderManagement() {
         body: JSON.stringify(newOrderData),
       });
       const createdOrder = await response.json();
-      // Add new order at the beginning (top) of the list
-      setOrders([createdOrder.order, ...orders]);
+      setOrders([...orders, createdOrder.order]);
       setNewOrder({
         customerId: "",
         productId: "",
@@ -200,8 +190,7 @@ function SalesOrderManagement() {
       const { order, quotation } = await response.json();
       
       setQuotations(quotations.map((q) => (q._id === quotationId ? quotation : q)));
-      // Add new order at the beginning (top) of the list
-      setOrders([order, ...orders]);
+      setOrders([...orders, order]);
       alert("Quotation converted to Order successfully!");
     } catch (error) {
       console.error("Error converting quotation:", error);
@@ -524,12 +513,6 @@ function SalesOrderManagement() {
         <>
           <h3>Orders</h3>
           {orders.length === 0 && <p>No orders yet.</p>}
-          
-          {orders.length > 0 && (
-            <div style={{ marginBottom: "10px", padding: "10px", backgroundColor: "#e3f2fd", borderRadius: "5px", border: "1px solid #2196f3" }}>
-              <strong>ℹ️ Note:</strong> Orders from E-Commerce customers (Module 6) are marked in blue and integrated automatically.
-            </div>
-          )}
 
           {orders.length > 0 && (
             <table className="orders-table">
@@ -551,12 +534,7 @@ function SalesOrderManagement() {
                 {orders.map((o) => (
                   <tr key={o._id}>
                     <td>{o._id}</td>
-                    <td>
-                      {customers.find((c) => c.id === o.customerId)?.name || 
-                       <span className="text-blue-600" title="E-Commerce Customer">
-                         E-Commerce Customer (ID: {o.customerId})
-                       </span>}
-                    </td>
+                    <td>{customers.find((c) => c.id === o.customerId)?.name}</td>
                     <td>{products.find((p) => p._id === o.productId)?.name || products.find((p) => p._id === o.productId?._id)?.name}</td>
                     <td>{o.quantity}</td>
                     <td>{o.discount}%</td>
@@ -579,9 +557,7 @@ function SalesOrderManagement() {
                     </td>
                     <td className="actions-cell">
                       <button onClick={() => generateInvoice(o)} className="btn-action">Invoice</button>
-                      {customers.find((c) => c.id === o.customerId) && (
-                        <button onClick={() => checkCustomerCredit(o.customerId)} className="btn-action">Credit</button>
-                      )}
+                      <button onClick={() => checkCustomerCredit(o.customerId)} className="btn-action">Credit</button>
                       <button onClick={() => deleteOrder(o._id)} className="btn-delete">Delete</button>
                     </td>
                   </tr>

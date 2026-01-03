@@ -24,7 +24,6 @@ import EmployeePayrollReport from "./pages/Finance/EmployeePayrollReport";
 import FinanceApprovalsOverview from "./pages/Finance/FinanceApprovalsOverview";
 import FinancePendingApprovals from "./pages/Finance/FinancePendingApprovals";
 import FinanceApprovalHistory from "./pages/Finance/FinanceApprovalHistory";
-import ProjectFinanceReport from "./pages/Finance/ProjectFinanceReport";
 
 // HR //
 import Attendance from "./pages/HR/Attendance";
@@ -42,7 +41,6 @@ import AfterSales from "./pages/SalesCustomer/AfterSales";
 import CMmanagement from "./pages/SalesCustomer/CMmanagement";
 import SalesOrder from "./pages/SalesCustomer/Salesorder";
 import SalesReport from "./pages/SalesCustomer/salerep";
-import ReportPage from "./pages/Report/ReportPage";
 
 // SupplyChain
 import DemandForecast from "./pages/SupplyChain/DemandForecast";
@@ -145,10 +143,6 @@ function App() {
               element={<EmployeePayrollReport />}
             />
             <Route
-              path="/finance/project-report"
-              element={<ProjectFinanceReport />}
-            />
-            <Route
               path="/finance/approvals/overview"
               element={<FinanceApprovalsOverview />}
             />
@@ -198,9 +192,6 @@ function App() {
             <Route path="/sales/after-sales" element={<AfterSales />} />
             <Route path="/sales/sales-order" element={<SalesOrder />} />
             <Route path="/sales/sales-report" element={<SalesReport />} />
-          
-           {/* Report */}  
-             <Route path="/report" element={<ReportPage />} />
 
             {/* SupplyChain */}
             <Route

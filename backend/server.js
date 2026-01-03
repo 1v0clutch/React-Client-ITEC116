@@ -20,9 +20,6 @@ const financeRoutes = require("./routes/finance.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
-const biRoutes = require("./routes/bi.routes");
-
-
 const demandForecastRoutes = require("./routes/demandForecast.routes");
 const logisticsRoutes = require("./routes/logistics.routes");
 const procurementRoutes = require("./routes/procurement.routes");
@@ -31,22 +28,17 @@ const employeeRoutes = require("./routes/employee.routes"); //
 const projectBudgetRoutes = require("./routes/projectBudget.routes");
 const salesOrderRoutes = require("./routes/salesOrder.routes");
 const quotationRoutes = require("./routes/quotation.routes");
-const ecommerceRoutes = require("./routes/ecommerce.routes"); // Module 6 - Separate customer portal
-const uploadRoutes = require("./routes/upload.routes");
 
 //Middleware
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 app.use(express.json());
-
-// Serve static files (uploaded images)
-app.use("/uploads", express.static("uploads"));
 
 // =============================
 // CONNECT TO DATABASE
@@ -82,7 +74,6 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/hr", hrRoutes);
-app.use("/api/bi", biRoutes); // Business Intelligence Module 7
 app.use("/api/demandForecast", demandForecastRoutes);
 app.use("/api/logistics", logisticsRoutes);
 app.use("/api/procurement", require("./routes/procurement.routes"));
@@ -91,12 +82,6 @@ app.use("/api/employee", employeeRoutes);
 app.use("/api/projectBudget", projectBudgetRoutes);
 app.use("/api/sales-orders", salesOrderRoutes);
 app.use("/api/quotations", quotationRoutes);
-
-// ✅ E-Commerce (Module 6) - Separate customer-facing portal
-app.use("/api/ecommerce", ecommerceRoutes);
-
-// ✅ File Upload
-app.use("/api/upload", uploadRoutes);
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);
@@ -111,5 +96,5 @@ app.get("/", (req, res) => {
 // =============================
 // START SERVER
 // =============================
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

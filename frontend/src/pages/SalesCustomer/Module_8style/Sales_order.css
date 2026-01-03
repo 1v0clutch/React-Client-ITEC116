@@ -1,18 +1,21 @@
+body{
+  background: #ccc;
+}
 
 .container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  background: #fff;
-  color: #232526;
-  padding: 40px 20px;
-  border-radius: 16px;
+  width: 100vw;
+  min-width: 100vw;
+  max-width: 100vw;
+  background: linear-gradient(90deg, #232526 0%, #414345 100%);
+  color: #f5f5f5;
+  padding: 30px 0;
+  border-radius: 0;
   font-family: "Poppins", "Segoe UI", Arial, sans-serif;
-  box-shadow: 0 8px 32px rgba(34, 34, 34, 0.1);
+  box-shadow: 0 4px 24px rgba(34, 34, 34, 0.15);
+  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
 }
 
 h2, h3 {
@@ -26,22 +29,15 @@ h2, h3 {
 .form-card, .order-card {
   background: #fff;
   color: #232526;
-  padding: 32px 40px;
-  border-radius: 16px;
-  margin-bottom: 30px;
-  box-shadow: 0 6px 24px rgba(34, 34, 34, 0.08);
+  padding: 24px 32px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
-  max-width: 800px;
-  border: 1px solid #e5e7eb;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-card:hover, .order-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(34, 34, 34, 0.12);
+  max-width: 700px;
 }
 
 label {
@@ -53,38 +49,28 @@ label {
 
 input, select {
   width: 100%;
-  padding: 12px 16px;
-  margin-top: 8px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  background: #f9fafb;
+  padding: 10px 12px;
+  margin-top: 5px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #f7f7f7;
   color: #232526;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s;
 }
 input:focus, select:focus {
   border-color: #ee7829;
-  outline: none;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(238, 120, 41, 0.1);
 }
 .btn-primary {
-  background: linear-gradient(135deg, #ee7829 0%, #ff924d 100%);
+  background: #ee7829;
   color: #fff;
-  padding: 12px 24px;
-  margin-top: 20px;
+  padding: 10px 20px;
+  margin-top: 15px;
   border: none;
-  border-radius: 12px;
-  font-weight: 600;
+  border-radius: 8px;
+  font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(238, 120, 41, 0.3);
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #d66d21 0%, #ee7829 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(238, 120, 41, 0.4);
+  transition: 0.3s;
 }
 
 .btn-secondary {
@@ -139,33 +125,31 @@ input:focus, select:focus {
   border-collapse: collapse;
   background: #fff;
   color: #232526;
-  box-shadow: 0 6px 24px rgba(34, 34, 34, 0.08);
-  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 30px;
-  border: 1px solid #e5e7eb;
+  margin-bottom: 25px;
 }
 
 .orders-table thead {
-  background: linear-gradient(135deg, #ee7829 0%, #ff924d 100%);
+  background: #ee7829;
   color: #fff;
 }
 
 .orders-table th {
-  padding: 18px 16px;
+  padding: 16px;
   text-align: left;
-  font-weight: 700;
-  border-bottom: 2px solid #e5e7eb;
-  font-size: 0.95rem;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .orders-table tbody tr {
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
 }
 
 .orders-table tbody tr:hover {
-  background-color: #f9fafb;
+  background-color: #f7f7f7;
 }
 
 .orders-table td {
@@ -195,36 +179,31 @@ input:focus, select:focus {
 }
 
 .btn-action, .btn-delete {
-  padding: 10px 16px;
+  padding: 8px 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 0.85rem;
+  transition: 0.3s;
 }
 
 .btn-action {
-  background: linear-gradient(135deg, #ee7829 0%, #ff924d 100%);
+  background: #ee7829;
   color: #fff;
 }
 
 .btn-action:hover {
-  background: linear-gradient(135deg, #d66d21 0%, #ee7829 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(238, 120, 41, 0.3);
+  background: #d66d21;
 }
 
 .btn-delete {
-  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  background: #dc2626;
   color: #fff;
 }
 
 .btn-delete:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  background: #b91c1c;
 }
 
 .btn-action:disabled, .btn-delete:disabled {
