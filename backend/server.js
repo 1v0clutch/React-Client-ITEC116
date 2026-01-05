@@ -35,6 +35,7 @@ const salesOrderRoutes = require("./routes/salesOrder.routes");
 const quotationRoutes = require("./routes/quotation.routes");
 const ecommerceRoutes = require("./routes/ecommerce.routes"); // Module 6 - Separate customer portal
 const uploadRoutes = require("./routes/upload.routes");
+const taxSummaryRoutes = require("./routes/taxSummary.routes");
 
 //Middleware
 app.use(
@@ -96,6 +97,7 @@ app.use("/api/quotations", quotationRoutes);
 app.use("/api/ecommerce", ecommerceRoutes); // Add e-commerce routes
 app.use("/api/bi", biRoutes); // Add BI routes
 app.use("/api/upload", uploadRoutes); // Add upload routes
+app.use("/api/reports/tax-summary", taxSummaryRoutes);
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);
