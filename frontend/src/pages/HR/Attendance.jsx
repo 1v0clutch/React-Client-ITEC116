@@ -436,10 +436,10 @@ export default function LeaveAttendance({ data = {} }) {
                     }
                     className="border p-2 rounded"
                   >
-                    <option value="">Select Leave Type</option>
-                    <option value="Sick Leave">Sick Leave</option>
-                    <option value="Vacation Leave">Vacation Leave</option>
-                    <option value="Emergency Leave">Emergency Leave</option>
+                    <option key="select-leave" value="">Select Leave Type</option>
+                    <option key="sick" value="Sick Leave">Sick Leave</option>
+                    <option key="vacation" value="Vacation Leave">Vacation Leave</option>
+                    <option key="emergency" value="Emergency Leave">Emergency Leave</option>
                   </select>
 
                   <input

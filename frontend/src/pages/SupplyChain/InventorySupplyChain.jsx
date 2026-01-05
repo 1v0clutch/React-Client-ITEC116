@@ -112,7 +112,7 @@ function InventoryDistribution() {
               <td>
                 {w.items.map((i) => (
                   <div key={i._id}>
-                    {i.itemId.name} (Qty: {i.quantity})
+                    {i.itemId?.name || 'Unknown Item'} (Qty: {i.quantity})
                   </div>
                 ))}
               </td>

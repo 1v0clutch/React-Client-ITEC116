@@ -143,7 +143,7 @@ export default function Employees({ data = {}, setData }) {
           value={emp.department}
           onChange={(e) => setEmp({ ...emp, department: e.target.value })}
         >
-          <option value="">Select Department</option>
+          <option key="select-dept" value="">Select Department</option>
           {departments.length > 0 ? (
             departments.map((dept) => (
               <option key={dept.id} value={dept.name}>
@@ -151,7 +151,7 @@ export default function Employees({ data = {}, setData }) {
               </option>
             ))
           ) : (
-            <option disabled>No departments available</option>
+            <option key="no-dept" disabled>No departments available</option>
           )}
         </select>
 
@@ -161,10 +161,10 @@ export default function Employees({ data = {}, setData }) {
           value={emp.employmentType}
           onChange={(e) => setEmp({ ...emp, employmentType: e.target.value })}
         >
-          <option value="">Select Employment Type</option>
-          <option value="Full Time">Full Time</option>
-          <option value="Part Time">Part Time</option>
-          <option value="Contract">On Contract</option>
+          <option key="select-employment" value="">Select Employment Type</option>
+          <option key="full-time" value="Full Time">Full Time</option>
+          <option key="part-time" value="Part Time">Part Time</option>
+          <option key="contract" value="Contract">On Contract</option>
         </select>
 
         {/* Hire Date */}
@@ -181,10 +181,10 @@ export default function Employees({ data = {}, setData }) {
           value={emp.status}
           onChange={(e) => setEmp({ ...emp, status: e.target.value })}
         >
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="Terminated">Terminated</option>
-          <option value="Resigned">Resigned</option>
+          <option key="active" value="Active">Active</option>
+          <option key="inactive" value="Inactive">Inactive</option>
+          <option key="terminated" value="Terminated">Terminated</option>
+          <option key="resigned" value="Resigned">Resigned</option>
         </select>
       </div>
 

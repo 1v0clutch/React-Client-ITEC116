@@ -24,7 +24,6 @@ h2, h3 {
 
 .form-card {
   background: #fff;
-  color: #232526;
   padding: 24px 32px;
   border-radius: 12px;
   margin-bottom: 25px;
@@ -79,7 +78,7 @@ button:hover {
 
 .case-card {
   background: #fff;
-  color: #232526;
+
   padding: 24px 32px;
   margin: 20px 0;
   border-radius: 12px;
@@ -97,7 +96,6 @@ button:hover {
 
 select {
   background: #f7f7f7;
-  color: #232526;
   border: 1px solid #d1d5db;
   padding: 10px 12px;
   border-radius: 8px;
@@ -147,7 +145,6 @@ select {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
-  color: #232526;
 }
 
 .cases-table thead {
@@ -184,7 +181,6 @@ select {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   background: #f7f7f7;
-  color: #232526;
   font-size: 0.85rem;
   cursor: pointer;
 }
@@ -200,7 +196,6 @@ select {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   background: #f7f7f7;
-  color: #232526;
   font-size: 0.85rem;
   text-align: center;
 }

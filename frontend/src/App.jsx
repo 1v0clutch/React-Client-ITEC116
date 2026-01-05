@@ -60,7 +60,7 @@ import DependencySetup from "./pages/ProjectManagement/DependencySetup";
 import Employee from "./pages/ProjectManagement/Employee";
 import ProjectList from "./pages/ProjectManagement/ProjectList";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://localhost:8000/api";
 
 function App() {
   const [data, setData] = useState({

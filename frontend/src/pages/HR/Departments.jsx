@@ -80,8 +80,8 @@ export default function Departments({ data = {}, setData }) {
           onChange={(e) => setSortBy(e.target.value)}
           className="border p-2 rounded"
         >
-          <option value="date">Newest</option>
-          <option value="name">A-Z</option>
+          <option key="date" value="date">Newest</option>
+          <option key="name" value="name">A-Z</option>
         </select>
       </div>
 
@@ -161,7 +161,7 @@ export default function Departments({ data = {}, setData }) {
                 </tr>
               ))
             ) : (
-              <tr>
+              <tr key="no-departments">
                 <td
                   colSpan="4"
                   className="text-center py-4 text-gray-500 italic"
@@ -220,7 +220,7 @@ export default function Departments({ data = {}, setData }) {
                       </tr>
                     ))
                   ) : (
-                    <tr>
+                    <tr key="no-employees">
                       <td
                         colSpan="3"
                         className="text-center py-3 text-gray-500 italic"
