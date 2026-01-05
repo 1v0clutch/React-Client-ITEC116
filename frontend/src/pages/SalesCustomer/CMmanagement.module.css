@@ -1,25 +1,35 @@
-.container, .crm-container, .aftersales-container, .report-container {
+/* CRM Management Component Scoped Styles */
+.crmContainer {
   width: 100vw;
   min-width: 100vw;
   max-width: 100vw;
-  background: linear-gradient(90deg, #f7f3f0 0%, #faf6f2 100%);
-  color: #5d4e37;
+  background: linear-gradient(90deg, #232526 0%, #414345 100%);
+  color: #f5f5f5;
   padding: 30px 0;
   border-radius: 0;
   font-family: "Poppins", "Segoe UI", Arial, sans-serif;
-  box-shadow: 0 4px 24px rgba(210, 180, 140, 0.15);
+  box-shadow: 0 4px 24px rgba(34, 34, 34, 0.15);
   margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.form-card, .order-card, .crm-card, .case-card {
+.crmContainer h2,
+.crmContainer h3 {
+  text-align: center;
+  color: #ee7829;
+  margin-bottom: 20px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.formCard {
   background: #fff;
   padding: 24px 32px;
   border-radius: 12px;
   margin-bottom: 25px;
-  box-shadow: 0 2px 12px rgba(210, 180, 140, 0.08);
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -27,8 +37,8 @@
   max-width: 700px;
 }
 
-button {
-  background: #cd853f;
+.formCard button {
+  background: #ee7829;
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -39,65 +49,68 @@ button {
   transition: 0.3s;
 }
 
-button:hover {
-  background: #daa520;
-  color: #fff;
+.formCard button:hover {
+  background: #ff924d;
+  color: #232526;
 }
 
-select, input {
+.formCard select,
+.formCard input {
   width: 100%;
   padding: 10px 12px;
   margin-bottom: 10px;
-  border: 1px solid #deb887;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  background: #fefcfa;
-  color: #5d4e37;
+  background: #f7f7f7;
+  color: #232526;
   font-size: 1rem;
   transition: border-color 0.2s;
 }
-input:focus, select:focus {
-  border-color: #cd853f;
+
+.formCard input:focus,
+.formCard select:focus {
+  border-color: #ee7829;
 }
 
-.crm-table {
+.crmTable {
   width: 100%;
   max-width: 1200px;
   border-collapse: collapse;
   background: #fff;
-  color: #5d4e37;
-  box-shadow: 0 2px 12px rgba(210, 180, 140, 0.08);
+  color: #232526;
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 25px;
 }
 
-.crm-table thead {
-  background: #cd853f;
+.crmTable thead {
+  background: #ee7829;
   color: #fff;
 }
 
-.crm-table th {
+.crmTable th {
   padding: 16px;
   text-align: left;
   font-weight: 600;
-  border-bottom: 2px solid #deb887;
+  border-bottom: 2px solid #e0e0e0;
 }
 
-.crm-table tbody tr {
-  border-bottom: 1px solid #deb887;
+.crmTable tbody tr {
+  border-bottom: 1px solid #e0e0e0;
   transition: background-color 0.2s;
 }
 
-.crm-table tbody tr:hover {
-  background-color: #fef9f5;
+.crmTable tbody tr:hover {
+  background-color: #f7f7f7;
 }
 
-.crm-table td {
+.crmTable td {
   padding: 14px 16px;
   font-size: 0.95rem;
 }
 
-.segment-badge {
+.segmentBadge {
   display: inline-block;
   padding: 6px 12px;
   border-radius: 20px;
@@ -105,40 +118,40 @@ input:focus, select:focus {
   font-size: 0.85rem;
 }
 
-.segment-badge.vip {
-  background: #daa520;
-  color: #8b4513;
+.segmentBadge.vip {
+  background: #fbbf24;
+  color: #78350f;
 }
 
-.segment-badge.regular {
-  background: #deb887;
-  color: #5d4e37;
+.segmentBadge.regular {
+  background: #d1d5db;
+  color: #374151;
 }
 
-.logs-list {
+.logsList {
   list-style: none;
   padding: 0;
   margin: 0;
   font-size: 0.85rem;
 }
 
-.logs-list li {
+.logsList li {
   padding: 4px 0;
-  color: #5d4e37;
+  color: #232526;
 }
 
-.logs-list .no-logs {
-  color: #bc9a6a;
+.logsList .noLogs {
+  color: #999;
   font-style: italic;
 }
 
-.crm-table-container {
+.crmTableContainer {
   width: 100%;
   max-width: 1200px;
 }
 
-.btn-manage {
-  background: #cd853f;
+.btnManage {
+  background: #ee7829;
   color: #fff;
   border: none;
   padding: 8px 12px;
@@ -149,40 +162,40 @@ input:focus, select:focus {
   transition: background-color 0.3s;
 }
 
-.btn-manage:hover {
-  background: #b8860b;
+.btnManage:hover {
+  background: #d66d21;
 }
 
-.expanded-row {
-  background: #fef9f5 !important;
+.expandedRow {
+  background: #f5f5f5 !important;
 }
 
-.expanded-row td {
+.expandedRow td {
   padding: 20px !important;
-  border-top: 2px solid #deb887;
+  border-top: 2px solid #ddd;
 }
 
-.log-management h4 {
+.logManagement h4 {
   margin: 0 0 15px 0;
-  color: #5d4e37;
+  color: #232526;
   font-size: 1rem;
 }
 
-.logs-section {
+.logsSection {
   margin-bottom: 20px;
   background: #fff;
   padding: 15px;
   border-radius: 8px;
-  border: 1px solid #deb887;
+  border: 1px solid #ddd;
 }
 
-.logs-list-edit {
+.logsListEdit {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.log-item {
+.logItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -194,11 +207,11 @@ input:focus, select:focus {
   transition: background-color 0.2s;
 }
 
-.log-item:hover {
+.logItem:hover {
   background: #f0f0f0;
 }
 
-.log-display {
+.logDisplay {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -206,36 +219,40 @@ input:focus, select:focus {
   width: 100%;
 }
 
-.log-display span {
+.logDisplay span {
   flex: 1;
-  color: #5d4e37;
+  color: #232526;
   font-size: 0.95rem;
 }
 
-.log-edit {
+.logEdit {
   display: flex;
   gap: 8px;
   align-items: center;
   width: 100%;
 }
 
-.log-input {
+.logInput {
   flex: 1;
   padding: 8px 10px;
-  border: 1px solid #deb887;
+  border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 0.9rem;
-  color: #5d4e37;
-  background: #fefcfa;
+  color: #232526;
+  background: #fff;
 }
 
-.log-input:focus {
-  border-color: #cd853f;
+.logInput:focus {
+  border-color: #ee7829;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(205, 133, 63, 0.1);
+  box-shadow: 0 0 0 3px rgba(238, 120, 41, 0.1);
 }
 
-.btn-edit, .btn-save, .btn-cancel, .btn-delete-log, .btn-add-log {
+.btnEdit,
+.btnSave,
+.btnCancel,
+.btnDeleteLog,
+.btnAddLog {
   padding: 6px 10px;
   border: none;
   border-radius: 6px;
@@ -246,43 +263,43 @@ input:focus, select:focus {
   white-space: nowrap;
 }
 
-.btn-edit {
+.btnEdit {
   background: #3b82f6;
   color: #fff;
 }
 
-.btn-edit:hover {
+.btnEdit:hover {
   background: #2563eb;
 }
 
-.btn-save {
+.btnSave {
   background: #10b981;
   color: #fff;
 }
 
-.btn-save:hover {
+.btnSave:hover {
   background: #059669;
 }
 
-.btn-cancel {
+.btnCancel {
   background: #6b7280;
   color: #fff;
 }
 
-.btn-cancel:hover {
+.btnCancel:hover {
   background: #4b5563;
 }
 
-.btn-delete-log {
+.btnDeleteLog {
   background: #ef4444;
   color: #fff;
 }
 
-.btn-delete-log:hover {
+.btnDeleteLog:hover {
   background: #dc2626;
 }
 
-.add-log-section {
+.addLogSection {
   display: flex;
   gap: 10px;
   margin-top: 15px;
@@ -290,21 +307,21 @@ input:focus, select:focus {
   border-top: 1px solid #ddd;
 }
 
-.add-log-section .log-input {
+.addLogSection .logInput {
   flex: 1;
 }
 
-.btn-add-log {
-  background: #cd853f;
+.btnAddLog {
+  background: #ee7829;
   color: #fff;
   padding: 8px 16px;
 }
 
-.btn-add-log:hover {
-  background: #daa520;
+.btnAddLog:hover {
+  background: #d66d21;
 }
 
-.no-logs {
+.noLogs {
   color: #999;
   font-style: italic;
   padding: 10px;
