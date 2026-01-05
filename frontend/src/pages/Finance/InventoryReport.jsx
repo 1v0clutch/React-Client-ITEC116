@@ -69,24 +69,119 @@ export default function InventoryReport() {
     const load = async () => {
       try {
         setIsFetching(true);
-        const res = await fetch("http://localhost:8000/api/finance/inventory-transactions");
-        if (!res.ok) throw new Error("Failed to load inventory transactions");
-        const payload = await res.json();
-        if (!active) return;
-        const list = toArray(payload).map(normalize);
-        setData(list);
         setError(null);
+
+        // Fetch from multiple Inventory endpoints for comprehensive data
+        const [inventoryRes, transactionsRes, warehousesRes, financeInventoryRes] = await Promise.allSettled([
+          fetch("http://localhost:8000/api/inventory/getItems"),
+          fetch("http://localhost:8000/api/transactions"),
+          fetch("http://localhost:8000/api/warehouses/getAllWarehouse"),
+          fetch("http://localhost:8000/api/finance/inventory-transactions") // Fallback
+        ]);
+
+        if (!active) return;
+
+        let inventoryItems = [];
+        let transactions = [];
+        let warehouses = [];
+
+        // Process inventory items
+        if (inventoryRes.status === "fulfilled" && inventoryRes.value.ok) {
+          const payload = await inventoryRes.value.json();
+          inventoryItems = toArray(payload);
+        }
+
+        // Process transactions (primary source for movements)
+        if (transactionsRes.status === "fulfilled" && transactionsRes.value.ok) {
+          const payload = await transactionsRes.value.json();
+          transactions = toArray(payload);
+        }
+
+        // Process warehouses
+        if (warehousesRes.status === "fulfilled" && warehousesRes.value.ok) {
+          const payload = await warehousesRes.value.json();
+          warehouses = toArray(payload);
+        }
+
+        // If no data from direct endpoints, try fallback
+        if (inventoryItems.length === 0 && transactions.length === 0) {
+          if (financeInventoryRes.status === "fulfilled" && financeInventoryRes.value.ok) {
+            const payload = await financeInventoryRes.value.json();
+            const fallbackData = toArray(payload).map(normalize);
+            setData(fallbackData);
+            setError(fallbackData.length === 0 ? "No inventory data available from Inventory or Finance modules" : null);
+            return;
+          }
+        }
+
+        // Combine transaction data with inventory and warehouse information
+        const enhancedTransactions = transactions.map((transaction, index) => {
+          // Find related inventory item
+          const inventoryItem = inventoryItems.find(item => 
+            item._id === transaction.itemId || 
+            item.name === transaction.item || 
+            item.itemName === transaction.item
+          );
+
+          // Find related warehouse
+          const warehouse = warehouses.find(wh => 
+            wh._id === transaction.warehouseId || 
+            wh.name === transaction.warehouse
+          );
+
+          return {
+            ...normalize(transaction, index),
+            item: inventoryItem ? (inventoryItem.name || inventoryItem.itemName) : transaction.item || "—",
+            itemCategory: inventoryItem ? inventoryItem.category : "—",
+            itemUnit: inventoryItem ? inventoryItem.unit : "—",
+            warehouse: warehouse ? warehouse.name : transaction.warehouse || "—",
+            warehouseLocation: warehouse ? warehouse.location : "—",
+            currentStock: inventoryItem ? inventoryItem.quantity : "—",
+            source: "Inventory Module"
+          };
+        });
+
+        // Add inventory items without recent transactions for completeness
+        inventoryItems.forEach((item, index) => {
+          const hasRecentTransaction = transactions.some(t => 
+            t.itemId === item._id || 
+            t.item === item.name || 
+            t.item === item.itemName
+          );
+          
+          if (!hasRecentTransaction) {
+            enhancedTransactions.push({
+              id: item._id || `item-${index}`,
+              item: item.name || item.itemName || "—",
+              type: "Stock Status",
+              quantity: item.quantity || 0,
+              remarks: `Current stock: ${item.quantity || 0} ${item.unit || 'units'}`,
+              purchaseOrderId: "—",
+              date: item.updatedAt || item.createdAt || null,
+              itemCategory: item.category || "—",
+              itemUnit: item.unit || "—",
+              warehouse: "—",
+              warehouseLocation: "—",
+              currentStock: item.quantity || 0,
+              source: "Inventory Module"
+            });
+          }
+        });
+
+        setData(enhancedTransactions);
+        setError(enhancedTransactions.length === 0 ? "No inventory data available from Inventory modules" : null);
       } catch (err) {
         if (!active) return;
-        setError("Unable to fetch inventory data");
+        setError("Unable to fetch inventory data from Inventory modules");
         setData([]);
+        console.error("Inventory data loading error:", err);
       } finally {
         if (active) setIsFetching(false);
       }
     };
 
     load();
-    const interval = setInterval(load, 5000);
+    const interval = setInterval(load, 8000); // Real-time updates every 8 seconds
     return () => {
       active = false;
       clearInterval(interval);
@@ -168,7 +263,21 @@ export default function InventoryReport() {
   }, [data]);
 
   const metrics = useMemo(() => {
+    if (!sortedData.length) {
+      return [
+        { label: "Total Items", value: "0", color: "indigo" },
+        { label: "Total Movements", value: "0", color: "blue" },
+        { label: "Net Quantity", value: "0", color: "purple" },
+        { label: "Inbound", value: "0", color: "green" },
+        { label: "Outbound", value: "0", color: "red" },
+        { label: "Warehouses", value: "0", color: "cyan" },
+        { label: "Last Updated", value: "Never", color: "gray" }
+      ];
+    }
+    
     const totalMovements = sortedData.length;
+    const uniqueItems = new Set(sortedData.map(entry => entry.item || "")).size;
+    const uniqueWarehouses = new Set(sortedData.map(entry => entry.warehouse || "").filter(w => w !== "—")).size;
     const netQuantity = sortedData.reduce((sum, entry) => {
       return sum + (Number.isFinite(entry.quantity) ? entry.quantity : 0);
     }, 0);
@@ -192,23 +301,31 @@ export default function InventoryReport() {
         type.includes("sale")
       );
     }).length;
+    
     return [
-      { label: "Total Movements", value: totalMovements.toLocaleString() },
-      { label: "Net Quantity", value: netQuantity.toLocaleString() },
-      { label: "Inbound", value: inbound.toLocaleString() },
-      { label: "Outbound", value: outbound.toLocaleString() },
+      { label: "Total Items", value: uniqueItems.toLocaleString(), color: "indigo" },
+      { label: "Total Movements", value: totalMovements.toLocaleString(), color: "blue" },
+      { label: "Net Quantity", value: netQuantity.toLocaleString(), color: "purple" },
+      { label: "Inbound", value: inbound.toLocaleString(), color: "green" },
+      { label: "Outbound", value: outbound.toLocaleString(), color: "red" },
+      { label: "Warehouses", value: uniqueWarehouses.toLocaleString(), color: "cyan" },
+      { label: "Last Updated", value: new Date().toLocaleTimeString(), color: "gray" }
     ];
   }, [sortedData]);
 
   const exportCsv = () => {
-    const headers = ["Item", "Type", "Quantity", "Remarks", "Purchase Order", "Date"];
+    const headers = ["Item", "Category", "Type", "Quantity", "Unit", "Warehouse", "Location", "Remarks", "Date", "Source"];
     const rows = sortedData.map((entry) => [
       `"${sanitize(entry.item)}"`,
+      `"${sanitize(entry.itemCategory || "—")}"`,
       `"${sanitize(entry.type)}"`,
       entry.quantity,
+      `"${sanitize(entry.itemUnit || "—")}"`,
+      `"${sanitize(entry.warehouse)}"`,
+      `"${sanitize(entry.warehouseLocation || "—")}"`,
       `"${sanitize(entry.remarks)}"`,
-      `"${sanitize(entry.purchaseOrderId)}"`,
       `"${sanitize(formatDate(entry.date))}"`,
+      `"${sanitize(entry.source || "Unknown")}"`
     ]);
     const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
     downloadFile(csv, "text/csv", "csv");
@@ -225,8 +342,8 @@ export default function InventoryReport() {
             </svg>
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">Inventory Report</h2>
-            <p className="text-white/80 text-sm">Track inventory movements and transactions</p>
+            <h2 className="text-3xl font-bold text-white tracking-tight">Comprehensive Inventory Report</h2>
+            <p className="text-white/80 text-sm">Integrated inventory, transaction, and warehouse analytics</p>
           </div>
         </div>
       </div>
@@ -248,21 +365,61 @@ export default function InventoryReport() {
 
         <div className="p-6">
           <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {metrics.map((metric) => (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+              {metrics.map((metric, index) => (
                 <div
                   key={metric.label}
-                  className="rounded-2xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-indigo-200"
+                  className={`rounded-2xl border-2 p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ${
+                    metric.color === 'indigo' ? 'border-indigo-200 bg-gradient-to-br from-indigo-50 to-indigo-100' :
+                    metric.color === 'blue' ? 'border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100' :
+                    metric.color === 'purple' ? 'border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100' :
+                    metric.color === 'green' ? 'border-green-200 bg-gradient-to-br from-green-50 to-green-100' :
+                    metric.color === 'red' ? 'border-red-200 bg-gradient-to-br from-red-50 to-red-100' :
+                    metric.color === 'cyan' ? 'border-cyan-200 bg-gradient-to-br from-cyan-50 to-cyan-100' :
+                    'border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100'
+                  }`}
                 >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-2 shadow-md">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`rounded-xl p-2 ${
+                      metric.color === 'indigo' ? 'bg-indigo-500' :
+                      metric.color === 'blue' ? 'bg-blue-500' :
+                      metric.color === 'purple' ? 'bg-purple-500' :
+                      metric.color === 'green' ? 'bg-green-500' :
+                      metric.color === 'red' ? 'bg-red-500' :
+                      metric.color === 'cyan' ? 'bg-cyan-500' :
+                      'bg-gray-500'
+                    }`}>
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        {index === 0 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        ) : index === 1 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        ) : index === 3 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                        ) : index === 4 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        ) : index === 5 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        ) : index === 6 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        )}
                       </svg>
                     </div>
-                    <p className="text-sm font-bold text-indigo-700 uppercase tracking-wide">{metric.label}</p>
+                    <p className={`text-sm font-semibold uppercase tracking-wide ${
+                      metric.color === 'indigo' ? 'text-indigo-700' :
+                      metric.color === 'blue' ? 'text-blue-700' :
+                      metric.color === 'purple' ? 'text-purple-700' :
+                      metric.color === 'green' ? 'text-green-700' :
+                      metric.color === 'red' ? 'text-red-700' :
+                      metric.color === 'cyan' ? 'text-cyan-700' :
+                      'text-gray-700'
+                    }`}>
+                      {metric.label}
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold text-gray-800">{metric.value}</p>
+                  <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
                 </div>
               ))}
             </div>
@@ -294,19 +451,78 @@ export default function InventoryReport() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gradient-to-r from-gray-50 to-indigo-50 border-b-2 border-indigo-200">
-                      <th className="text-left py-4 px-4 font-bold text-gray-700">Item</th>
-                      <th className="text-center py-4 px-4 font-bold text-gray-700">Type</th>
-                      <th className="text-right py-4 px-4 font-bold text-gray-700">Quantity</th>
-                      <th className="text-left py-4 px-4 font-bold text-gray-700">Remarks</th>
-                      <th className="text-left py-4 px-4 font-bold text-gray-700">Purchase Order</th>
-                      <th className="text-center py-4 px-4 font-bold text-gray-700">Date</th>
+                      <th className="text-left py-4 px-4 font-bold text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
+                          Item
+                        </div>
+                      </th>
+                      <th className="text-center py-4 px-4 font-bold text-gray-700">
+                        <div className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          Type
+                        </div>
+                      </th>
+                      <th className="text-right py-4 px-4 font-bold text-gray-700">
+                        <div className="flex items-center justify-end gap-2">
+                          <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          Quantity
+                        </div>
+                      </th>
+                      <th className="text-left py-4 px-4 font-bold text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          Warehouse
+                        </div>
+                      </th>
+                      <th className="text-left py-4 px-4 font-bold text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Remarks
+                        </div>
+                      </th>
+                      <th className="text-center py-4 px-4 font-bold text-gray-700">
+                        <div className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Date
+                        </div>
+                      </th>
+                      <th className="text-center py-4 px-4 font-bold text-gray-700">
+                        <div className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Source
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {sortedData.length ? (
                       sortedData.map((entry) => (
                         <tr key={entry.id} className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200">
-                          <td className="py-4 px-4 font-semibold text-gray-800">{entry.item}</td>
+                          <td className="py-4 px-4">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-800">{entry.item}</span>
+                              {entry.itemCategory && entry.itemCategory !== "—" && (
+                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full mt-1 inline-block w-fit">
+                                  {entry.itemCategory}
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="py-4 px-4 text-center">
                             <span
                               className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-bold shadow-sm ${getTypeTone(
@@ -323,16 +539,35 @@ export default function InventoryReport() {
                                 : "text-emerald-700"
                             }`}
                           >
-                            {Number.isFinite(entry.quantity) ? entry.quantity.toLocaleString() : "—"}
+                            <div className="flex flex-col items-end">
+                              <span>{Number.isFinite(entry.quantity) ? entry.quantity.toLocaleString() : "—"}</span>
+                              {entry.itemUnit && entry.itemUnit !== "—" && (
+                                <span className="text-xs text-gray-500">{entry.itemUnit}</span>
+                              )}
+                            </div>
                           </td>
-                          <td className="py-4 px-4 text-gray-600">{entry.remarks}</td>
-                          <td className="py-4 px-4 text-gray-600">{entry.purchaseOrderId}</td>
+                          <td className="py-4 px-4">
+                            <div className="flex flex-col">
+                              <span className="text-gray-800">{entry.warehouse}</span>
+                              {entry.warehouseLocation && entry.warehouseLocation !== "—" && (
+                                <span className="text-xs text-gray-500">{entry.warehouseLocation}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-4 px-4 text-gray-600 max-w-xs truncate" title={entry.remarks}>
+                            {entry.remarks}
+                          </td>
                           <td className="py-4 px-4 text-center text-gray-600">{formatDate(entry.date)}</td>
+                          <td className="py-4 px-4 text-center">
+                            <span className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                              {entry.source || "Unknown"}
+                            </span>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td className="py-12 text-center text-gray-500" colSpan={6}>
+                        <td className="py-12 text-center text-gray-500" colSpan={7}>
                           <div className="flex flex-col items-center">
                             <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />

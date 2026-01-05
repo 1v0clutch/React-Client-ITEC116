@@ -50,24 +50,100 @@ export default function SupplierReport() {
     const load = async () => {
       try {
         setIsFetching(true);
-        const res = await fetch("http://localhost:8000/api/finance/supplier-report");
-        if (!res.ok) throw new Error("Failed to load supplier report");
-        const payload = await res.json();
-        if (!active) return;
-        const list = toArray(payload).map(normalize);
-        setData(list);
         setError(null);
+
+        // Fetch from multiple Procurement endpoints for comprehensive supplier data
+        const [suppliersRes, purchaseOrdersRes, financeSupplierRes] = await Promise.allSettled([
+          fetch("http://localhost:8000/api/suppliers"),
+          fetch("http://localhost:8000/api/purchase-orders"),
+          fetch("http://localhost:8000/api/finance/supplier-report") // Fallback
+        ]);
+
+        if (!active) return;
+
+        let supplierData = [];
+        let purchaseOrders = [];
+
+        // Process suppliers data
+        if (suppliersRes.status === "fulfilled" && suppliersRes.value.ok) {
+          const payload = await suppliersRes.value.json();
+          supplierData = toArray(payload);
+        }
+
+        // Process purchase orders data
+        if (purchaseOrdersRes.status === "fulfilled" && purchaseOrdersRes.value.ok) {
+          const payload = await purchaseOrdersRes.value.json();
+          purchaseOrders = toArray(payload);
+        }
+
+        // If no data from direct endpoints, try fallback
+        if (supplierData.length === 0 && purchaseOrders.length === 0) {
+          if (financeSupplierRes.status === "fulfilled" && financeSupplierRes.value.ok) {
+            const payload = await financeSupplierRes.value.json();
+            const fallbackData = toArray(payload).map(normalize);
+            setData(fallbackData);
+            setError(fallbackData.length === 0 ? "No supplier data available from Procurement or Finance modules" : null);
+            return;
+          }
+        }
+
+        // Combine supplier and purchase order data for comprehensive reporting
+        const combinedData = [];
+
+        // Add purchase orders with supplier information
+        purchaseOrders.forEach((po, index) => {
+          const supplier = supplierData.find(s => 
+            s._id === po.supplierId || 
+            s.name === po.supplierName || 
+            s.supplierName === po.supplierName
+          );
+          
+          combinedData.push({
+            ...normalize(po, index),
+            supplier: supplier ? (supplier.name || supplier.supplierName || supplier.companyName) : po.supplierName || po.supplier || "—",
+            supplierContact: supplier ? supplier.contactInfo : "—",
+            supplierEmail: supplier ? supplier.email : "—",
+            source: "Procurement Module"
+          });
+        });
+
+        // Add standalone suppliers without purchase orders
+        supplierData.forEach((supplier, index) => {
+          const hasOrders = purchaseOrders.some(po => 
+            po.supplierId === supplier._id || 
+            po.supplierName === supplier.name || 
+            po.supplierName === supplier.supplierName
+          );
+          
+          if (!hasOrders) {
+            combinedData.push({
+              id: supplier._id || supplier.id || `supplier-${index}`,
+              supplier: supplier.name || supplier.supplierName || supplier.companyName || "—",
+              poNumber: "No Orders",
+              status: "Active",
+              total: 0,
+              date: supplier.createdAt || supplier.updatedAt || null,
+              supplierContact: supplier.contactInfo || "—",
+              supplierEmail: supplier.email || "—",
+              source: "Procurement Module"
+            });
+          }
+        });
+
+        setData(combinedData);
+        setError(combinedData.length === 0 ? "No supplier data available from Procurement modules" : null);
       } catch (err) {
         if (!active) return;
-        setError("Unable to fetch supplier data");
+        setError("Unable to fetch supplier data from Procurement modules");
         setData([]);
+        console.error("Supplier data loading error:", err);
       } finally {
         if (active) setIsFetching(false);
       }
     };
 
     load();
-    const interval = setInterval(load, 5000);
+    const interval = setInterval(load, 8000); // Real-time updates every 8 seconds
 
     return () => {
       active = false;
@@ -149,13 +225,17 @@ export default function SupplierReport() {
   const metrics = useMemo(() => {
     if (!sortedData.length) {
       return [
-        { label: "Vendors", value: "0" },
-        { label: "Open Orders", value: "0" },
-        { label: "Total Payables", value: formatCurrency(0) },
-        { label: "Overdue Orders", value: "0" },
+        { label: "Active Suppliers", value: "0", color: "amber" },
+        { label: "Purchase Orders", value: "0", color: "blue" },
+        { label: "Total Payables", value: formatCurrency(0), color: "purple" },
+        { label: "Overdue Orders", value: "0", color: "red" },
+        { label: "Avg Order Value", value: formatCurrency(0), color: "green" },
+        { label: "Last Updated", value: "Never", color: "gray" }
       ];
     }
-    const uniqueVendors = new Set(sortedData.map((entry) => entry.supplier || ""));
+    
+    const uniqueSuppliers = new Set(sortedData.map((entry) => entry.supplier || ""));
+    const purchaseOrders = sortedData.filter(entry => entry.poNumber !== "No Orders").length;
     const totalPayables = sortedData.reduce((sum, entry) => {
       return sum + (Number.isFinite(entry.total) ? entry.total : 0);
     }, 0);
@@ -169,11 +249,15 @@ export default function SupplierReport() {
       const isPast = date ? date.getTime() < Date.now() : false;
       return status.includes("overdue") || status.includes("late") || (isPast && !status.includes("paid"));
     }).length;
+    const avgOrderValue = purchaseOrders > 0 ? totalPayables / purchaseOrders : 0;
+    
     return [
-      { label: "Vendors", value: uniqueVendors.size.toLocaleString() },
-      { label: "Open Orders", value: openOrders.toLocaleString() },
-      { label: "Total Payables", value: formatCurrency(totalPayables) },
-      { label: "Overdue Orders", value: overdueOrders.toLocaleString() },
+      { label: "Active Suppliers", value: uniqueSuppliers.size.toLocaleString(), color: "amber" },
+      { label: "Purchase Orders", value: purchaseOrders.toLocaleString(), color: "blue" },
+      { label: "Total Payables", value: formatCurrency(totalPayables), color: "purple" },
+      { label: "Overdue Orders", value: overdueOrders.toLocaleString(), color: "red" },
+      { label: "Avg Order Value", value: formatCurrency(avgOrderValue), color: "green" },
+      { label: "Last Updated", value: new Date().toLocaleTimeString(), color: "gray" }
     ];
   }, [sortedData]);
 
@@ -201,9 +285,16 @@ export default function SupplierReport() {
             </svg>
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">Accounts Payable (Supplier)</h2>
-            <p className="text-white/80 text-sm">Manage supplier accounts and payables</p>
+            <h2 className="text-3xl font-bold text-white tracking-tight">Comprehensive Supplier Report</h2>
+            <p className="text-white/80 text-sm">Integrated procurement supplier and purchase order analytics</p>
           </div>
+          {isFetching && (
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+              <svg className="w-6 h-6 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+          )}
         </div>
       </div>
 
@@ -224,21 +315,54 @@ export default function SupplierReport() {
 
         <div className="p-6">
           <div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {metrics.map((metric) => (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+              {metrics.map((metric, index) => (
                 <div
                   key={metric.label}
-                  className="rounded-2xl border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50 p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-amber-200"
+                  className={`rounded-2xl border-2 p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ${
+                    metric.color === 'amber' ? 'border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100' :
+                    metric.color === 'blue' ? 'border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100' :
+                    metric.color === 'purple' ? 'border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100' :
+                    metric.color === 'red' ? 'border-red-200 bg-gradient-to-br from-red-50 to-red-100' :
+                    metric.color === 'green' ? 'border-green-200 bg-gradient-to-br from-green-50 to-green-100' :
+                    'border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100'
+                  }`}
                 >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl p-2 shadow-md">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className={`rounded-xl p-2 ${
+                      metric.color === 'amber' ? 'bg-amber-500' :
+                      metric.color === 'blue' ? 'bg-blue-500' :
+                      metric.color === 'purple' ? 'bg-purple-500' :
+                      metric.color === 'red' ? 'bg-red-500' :
+                      metric.color === 'green' ? 'bg-green-500' :
+                      'bg-gray-500'
+                    }`}>
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                        {index === 0 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        ) : index === 1 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        ) : index === 4 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        ) : index === 5 ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        )}
                       </svg>
                     </div>
-                    <p className="text-sm font-bold text-amber-700 uppercase tracking-wide">{metric.label}</p>
+                    <p className={`text-sm font-semibold uppercase tracking-wide ${
+                      metric.color === 'amber' ? 'text-amber-700' :
+                      metric.color === 'blue' ? 'text-blue-700' :
+                      metric.color === 'purple' ? 'text-purple-700' :
+                      metric.color === 'red' ? 'text-red-700' :
+                      metric.color === 'green' ? 'text-green-700' :
+                      'text-gray-700'
+                    }`}>
+                      {metric.label}
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold text-gray-800">{metric.value}</p>
+                  <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
                 </div>
               ))}
             </div>

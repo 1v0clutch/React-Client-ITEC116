@@ -65,24 +65,65 @@ export default function CustomerReport() {
     const load = async () => {
       try {
         setIsFetching(true);
-        const res = await fetch("http://localhost:8000/api/finance/customer-report");
-        if (!res.ok) throw new Error("Failed to load customer report");
-        const payload = await res.json();
-        if (!active) return;
-        const list = toArray(payload).map(normalize);
-        setData(list);
         setError(null);
+
+        // Fetch from multiple Sales endpoints for comprehensive customer data
+        const [salesOrdersRes, financeCustomerRes] = await Promise.allSettled([
+          fetch("http://localhost:8000/api/sales-orders/all"),
+          fetch("http://localhost:8000/api/finance/customer-report") // Fallback
+        ]);
+
+        if (!active) return;
+
+        let salesOrders = [];
+
+        // Process sales orders data (primary source)
+        if (salesOrdersRes.status === "fulfilled" && salesOrdersRes.value.ok) {
+          const payload = await salesOrdersRes.value.json();
+          salesOrders = toArray(payload);
+        } else if (financeCustomerRes.status === "fulfilled" && financeCustomerRes.value.ok) {
+          // Fallback to finance endpoint
+          const payload = await financeCustomerRes.value.json();
+          const fallbackData = toArray(payload).map(normalize);
+          setData(fallbackData);
+          setError(fallbackData.length === 0 ? "No customer data available from Sales or Finance modules" : null);
+          return;
+        }
+
+        // Transform sales orders into customer receivables data
+        const customerData = salesOrders.map((order, index) => {
+          const totalAmount = Number(order.totalAmount || order.total || order.grandTotal) || 0;
+          const paidAmount = Number(order.paidAmount || order.amountPaid) || 0;
+          const balance = totalAmount - paidAmount;
+          
+          return {
+            ...normalize(order, index),
+            customer: order.customerName || order.customer || order.clientName || order.customerId?.name || "—",
+            reference: order.orderNumber || order.invoiceNumber || order.referenceNumber || "—",
+            status: order.invoiceStatus || order.paymentStatus || order.status || "—",
+            total: totalAmount,
+            balance: balance,
+            date: order.orderDate || order.invoiceDate || order.createdAt || null,
+            customerEmail: order.customerEmail || order.customerId?.email || "—",
+            customerPhone: order.customerPhone || order.customerId?.phone || "—",
+            source: "Sales Module"
+          };
+        });
+
+        setData(customerData);
+        setError(customerData.length === 0 ? "No customer data available from Sales modules" : null);
       } catch (err) {
         if (!active) return;
-        setError("Unable to fetch customer data");
+        setError("Unable to fetch customer data from Sales modules");
         setData([]);
+        console.error("Customer data loading error:", err);
       } finally {
         if (active) setIsFetching(false);
       }
     };
 
     load();
-    const interval = setInterval(load, 5000);
+    const interval = setInterval(load, 8000); // Real-time updates every 8 seconds
     return () => {
       active = false;
       clearInterval(interval);
@@ -209,8 +250,8 @@ export default function CustomerReport() {
             </svg>
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">Accounts Receivable (Customer)</h2>
-            <p className="text-white/80 text-sm">Manage and track customer accounts and receivables</p>
+            <h2 className="text-3xl font-bold text-white tracking-tight">Comprehensive Customer Report</h2>
+            <p className="text-white/80 text-sm">Integrated sales customer and receivables analytics</p>
           </div>
         </div>
       </div>
