@@ -20,6 +20,7 @@ const ProjectForm = () => {
   const [projectEnd, setProjectEnd] = useState("");
   const [phases, setPhases] = useState([emptyPhase()]);
   const [message, setMessage] = useState("");
+  const [estimatedMaterialCost, setEstimatedMaterialCost] = useState(0);
 
   // Phase & Task handlers
   const updatePhaseField = (pIndex, field, value) =>
@@ -67,6 +68,7 @@ const ProjectForm = () => {
     setProjectStart("");
     setProjectEnd("");
     setPhases([emptyPhase()]);
+    setEstimatedMaterialCost(0);
   };
 
   // Proceed to dependency setup page
@@ -79,6 +81,7 @@ const ProjectForm = () => {
       startDate: projectStart,
       endDate: projectEnd,
       phases,
+      estimatedMaterialCost, // This will be 0 as materials are not added here
     };
 
     // Save temporarily to localStorage for next step
@@ -160,6 +163,19 @@ const ProjectForm = () => {
                 className="w-full px-2 py-1 border rounded-sm text-sm"
               />
             </div>
+          </div>
+
+          {/* Material cost notice */}
+          <div className="bg-blue-50 p-3 rounded border border-blue-200">
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-blue-700">
+                📋 Material Planning
+              </span>
+            </div>
+            <p className="text-xs text-blue-600 mt-1">
+              Material requirements will be added in the next step after setting
+              up task dependencies.
+            </p>
           </div>
 
           {/* Phases */}
