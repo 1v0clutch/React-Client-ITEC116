@@ -88,88 +88,185 @@ function InventoryDistribution() {
   };
 
   return (
-    <div>
-      <h2>🏬 Inventory Distribution & Warehouse Coordination</h2>
+    <div className="w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h2 className="text-4xl font-bold text-indigo-800 mb-2">🏬 Inventory Distribution & Warehouse Coordination</h2>
+          <p className="text-indigo-600">Manage warehouse inventory and coordinate stock transfers</p>
+        </div>
 
-      <h3>📦 Warehouses</h3>
-      <table border="1" cellPadding="5">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Location</th>
-            <th>Stock</th>
-            <th>Items</th>
-          </tr>
-        </thead>
-        <tbody>
-          {warehouses.map((w) => (
-            <tr key={w._id}>
-              <td>{w.id}</td>
-              <td>{w.name}</td>
-              <td>{w.location}</td>
-              <td>{w.stock}</td>
-              <td>
-                {w.items.map((i) => (
-                  <div key={i._id}>
-                    {i.itemId?.name || 'Unknown Item'} (Qty: {i.quantity})
-                  </div>
+        {/* Warehouses Table */}
+        <div className="bg-white rounded-xl shadow-lg p-8 mb-8 border border-indigo-200">
+          <h3 className="text-2xl font-semibold text-indigo-700 mb-6">📦 Warehouses</h3>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-sm">
+              <thead>
+                <tr className="bg-indigo-600 text-white">
+                  <th className="px-6 py-4 text-left font-semibold">ID</th>
+                  <th className="px-6 py-4 text-left font-semibold">Name</th>
+                  <th className="px-6 py-4 text-left font-semibold">Location</th>
+                  <th className="px-6 py-4 text-left font-semibold">Total Stock</th>
+                  <th className="px-6 py-4 text-left font-semibold">Items</th>
+                </tr>
+              </thead>
+              <tbody>
+                {warehouses.map((w) => (
+                  <tr key={w._id} className="border-b border-indigo-200 hover:bg-indigo-50 transition-colors duration-150">
+                    <td className="px-6 py-4 text-gray-900 font-medium">{w.id}</td>
+                    <td className="px-6 py-4 text-gray-700 font-medium">{w.name}</td>
+                    <td className="px-6 py-4 text-gray-700">{w.location}</td>
+                    <td className="px-6 py-4 text-gray-900 font-semibold">{w.stock}</td>
+                    <td className="px-6 py-4">
+                      <div className="space-y-1">
+                        {w.items.map((i) => (
+                          <div key={i._id} className="text-sm bg-gray-100 px-2 py-1 rounded">
+                            <span className="font-medium">{i.itemId?.name || 'Unknown Item'}</span>
+                            <span className="text-gray-600 ml-2">(Qty: {i.quantity})</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
                 ))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-      <h3>➕ Add Warehouse</h3>
-      <input
-        placeholder="Name"
-        value={newWarehouse.name}
-        onChange={(e) => setNewWarehouse({ ...newWarehouse, name: e.target.value })}
-      />
-      <input
-        placeholder="Location"
-        value={newWarehouse.location}
-        onChange={(e) => setNewWarehouse({ ...newWarehouse, location: e.target.value })}
-      />
-      <button onClick={addWarehouse}>Add</button>
+        {/* Add Warehouse Form */}
+        <div className="bg-white rounded-xl shadow-lg p-8 mb-8 border border-indigo-200">
+          <h3 className="text-2xl font-semibold text-indigo-700 mb-6">➕ Add Warehouse</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Warehouse Name</label>
+              <input
+                className="w-full px-4 py-3 border-2 border-gray-800 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-600 focus:border-indigo-500 focus:bg-white transition-all duration-200"
+                placeholder="Enter warehouse name"
+                value={newWarehouse.name}
+                onChange={(e) => setNewWarehouse({ ...newWarehouse, name: e.target.value })}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <input
+                className="w-full px-4 py-3 border-2 border-gray-800 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-600 focus:border-indigo-500 focus:bg-white transition-all duration-200"
+                placeholder="Enter warehouse location"
+                value={newWarehouse.location}
+                onChange={(e) => setNewWarehouse({ ...newWarehouse, location: e.target.value })}
+              />
+            </div>
+          </div>
+          
+          <button 
+            onClick={addWarehouse}
+            className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+          >
+            Add Warehouse
+          </button>
+        </div>
 
-      <h3>🚚 Transfer Stock</h3>
-      <select value={transferData.from} onChange={(e) => setTransferData({ ...transferData, from: e.target.value })}>
-        <option value="">From Warehouse</option>
-        {warehouses.map((w) => (
-          <option key={w._id} value={w._id}>{w.name}</option>
-        ))}
-      </select>
-      <select value={transferData.to} onChange={(e) => setTransferData({ ...transferData, to: e.target.value })}>
-        <option value="">To Warehouse</option>
-        {warehouses.map((w) => (
-          <option key={w._id} value={w._id}>{w.name}</option>
-        ))}
-      </select>
-      {transferData.from && (
-        <select value={transferData.itemId} onChange={(e) => setTransferData({ ...transferData, itemId: e.target.value })}>
-          <option value="">Select Item</option>
-          {warehouses.find(w => w._id === transferData.from)?.items.map(i => (
-            <option key={i._id} value={i.itemId._id}>{i.itemId.name} (Qty: {i.quantity})</option>
-          ))}
-        </select>
-      )}
-      <input
-        type="number"
-        placeholder="Quantity"
-        value={transferData.quantity}
-        onChange={(e) => setTransferData({ ...transferData, quantity: e.target.value })}
-      />
-      <button onClick={transferStock}>Transfer</button>
+        {/* Transfer Stock Form */}
+        <div className="bg-white rounded-xl shadow-lg p-8 mb-8 border border-indigo-200">
+          <h3 className="text-2xl font-semibold text-indigo-700 mb-6">🚚 Transfer Stock</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">From Warehouse</label>
+              <select 
+                className="w-full px-4 py-3 border-2 border-gray-800 rounded-lg bg-gray-50 text-gray-900 focus:border-indigo-500 focus:bg-white transition-all duration-200"
+                value={transferData.from} 
+                onChange={(e) => setTransferData({ ...transferData, from: e.target.value })}
+              >
+                <option value="">Select source warehouse</option>
+                {warehouses.map((w) => (
+                  <option key={w._id} value={w._id}>{w.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">To Warehouse</label>
+              <select 
+                className="w-full px-4 py-3 border-2 border-gray-800 rounded-lg bg-gray-50 text-gray-900 focus:border-indigo-500 focus:bg-white transition-all duration-200"
+                value={transferData.to} 
+                onChange={(e) => setTransferData({ ...transferData, to: e.target.value })}
+              >
+                <option value="">Select destination warehouse</option>
+                {warehouses.map((w) => (
+                  <option key={w._id} value={w._id}>{w.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            {transferData.from && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Item</label>
+                <select 
+                  className="w-full px-4 py-3 border-2 border-gray-800 rounded-lg bg-gray-50 text-gray-900 focus:border-indigo-500 focus:bg-white transition-all duration-200"
+                  value={transferData.itemId} 
+                  onChange={(e) => setTransferData({ ...transferData, itemId: e.target.value })}
+                >
+                  <option value="">Choose item to transfer</option>
+                  {warehouses.find(w => w._id === transferData.from)?.items.map(i => (
+                    <option key={i._id} value={i.itemId._id}>
+                      {i.itemId.name} (Available: {i.quantity})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+              <input
+                type="number"
+                className="w-full px-4 py-3 border-2 border-gray-800 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-600 focus:border-indigo-500 focus:bg-white transition-all duration-200"
+                placeholder="Enter quantity"
+                value={transferData.quantity}
+                onChange={(e) => setTransferData({ ...transferData, quantity: e.target.value })}
+              />
+            </div>
+          </div>
+          
+          <button 
+            onClick={transferStock}
+            className="mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+          >
+            Transfer Stock
+          </button>
+        </div>
 
-      <h3>📊 Cost Overview</h3>
-      <p>Transportation + Holding Cost: <strong>₱{totalCost().toFixed(2)}</strong></p>
+        {/* Cost Overview and Allocation */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Cost Overview */}
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-indigo-200">
+            <h3 className="text-2xl font-semibold text-indigo-700 mb-6">📊 Cost Overview</h3>
+            <div className="bg-gradient-to-r from-green-100 to-blue-100 p-6 rounded-lg">
+              <p className="text-lg text-gray-700">Transportation + Holding Cost:</p>
+              <p className="text-3xl font-bold text-green-700">₱{totalCost().toFixed(2)}</p>
+            </div>
+          </div>
 
-      <h3>📈 Allocate Inventory to Demand</h3>
-      <button onClick={allocateInventory}>Allocate</button>
+          {/* Allocate Inventory */}
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-indigo-200">
+            <h3 className="text-2xl font-semibold text-indigo-700 mb-6">📈 Allocate Inventory to Demand</h3>
+            <p className="text-gray-600 mb-4">Automatically distribute inventory based on demand patterns</p>
+            <button 
+              onClick={allocateInventory}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
+            >
+              Allocate Inventory
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
 
 export default InventoryDistribution;

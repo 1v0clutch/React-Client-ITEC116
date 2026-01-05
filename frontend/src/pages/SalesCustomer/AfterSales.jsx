@@ -45,12 +45,12 @@ function AfterSalesSupport() {
           </div>
           <div>
             <h2 className="text-3xl font-bold text-white tracking-tight">After-Sales Support</h2>
-            <p className="text-white/80 text-sm">Case Management & Customer Support</p>
+            <p className="text-white/80 text-sm">Manage Customer Support Cases & Satisfaction</p>
           </div>
         </div>
       </div>
 
-      {/* Enhanced Form Card */}
+      {/* Enhanced Add Case Form */}
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-2 border-gray-100 hover:border-indigo-200 transition-all duration-300">
         <div className="flex items-center gap-3 mb-6">
           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-2 shadow-lg">
@@ -61,7 +61,7 @@ function AfterSalesSupport() {
           <h3 className="text-xl font-bold text-gray-800">Create New Support Case</h3>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col group">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
               <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@ function AfterSalesSupport() {
           <div className="flex flex-col group">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
               <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Issue Description
             </label>
@@ -141,13 +141,13 @@ function AfterSalesSupport() {
         </div>
       </div>
 
-      {/* Enhanced Cases Section */}
+      {/* Enhanced Cases List */}
       <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 hover:border-blue-200 transition-all duration-300 overflow-hidden">
         <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-6">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
             <div>
@@ -161,7 +161,7 @@ function AfterSalesSupport() {
           {cases.length === 0 ? (
             <div className="text-center py-12">
               <svg className="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
               <p className="text-xl font-semibold text-gray-500">No support cases yet</p>
               <p className="text-gray-400 mt-2">Create your first support case above</p>
@@ -192,9 +192,9 @@ function AfterSalesSupport() {
                       <td className="py-4 px-4 text-gray-600">{c.issue}</td>
                       <td className="py-4 px-4">
                         <select 
+                          className="border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
                           value={c.status} 
-                          onChange={e => updateStatus(c.id, e.target.value)} 
-                          className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          onChange={e => updateStatus(c.id, e.target.value)}
                         >
                           <option key="open" value="open">Open</option>
                           <option key="in-progress" value="in progress">In Progress</option>
@@ -203,9 +203,9 @@ function AfterSalesSupport() {
                       </td>
                       <td className="py-4 px-4">
                         <select 
+                          className="border-2 border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-gray-50 focus:bg-white text-sm"
                           value={c.assignedTo} 
-                          onChange={e => updateAssignment(c.id, e.target.value)} 
-                          className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                          onChange={e => updateAssignment(c.id, e.target.value)}
                         >
                           <option key="team-a-table" value="Team A">Team A</option>
                           <option key="team-b-table" value="Team B">Team B</option>
@@ -216,19 +216,16 @@ function AfterSalesSupport() {
                           type="number" 
                           min={1} 
                           max={5} 
+                          className="w-16 border-2 border-gray-200 rounded-lg px-2 py-2 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200 bg-gray-50 focus:bg-white text-sm text-center"
                           value={c.satisfaction} 
                           onChange={e => updateSatisfaction(c.id, parseInt(e.target.value))} 
-                          className="border-2 border-gray-200 rounded-lg px-3 py-2 w-20 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200"
                         />
                       </td>
                       <td className="py-4 px-4">
                         <button 
-                          onClick={() => deleteCase(c.id)} 
-                          className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                          className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium py-2 px-4 rounded-lg text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                          onClick={() => deleteCase(c.id)}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
                           Delete
                         </button>
                       </td>

@@ -327,58 +327,115 @@ export default function FinanceHead() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-blue-700 mb-2">General Ledger</h1>
-        <p className="text-lg text-slate-600">Overview of financial statements and ledger entries</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">General Ledger</h2>
+            <p className="text-white/80 text-sm">Overview of Financial Statements & Ledger Entries</p>
+          </div>
+        </div>
       </div>
-      <div className="bg-white shadow-lg rounded-xl p-6 overflow-x-auto">
-        <div className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            {metrics.map((metric) => (
-              <div
-                key={metric.label}
-                className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 shadow-sm"
-              >
-                <p className="text-xs uppercase tracking-wide text-blue-600">{metric.label}</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900">{metric.value}</p>
-              </div>
-            ))}
-          </div>
 
-          <div className="flex flex-wrap justify-end gap-3">
-            <button
-              type="button"
-              onClick={exportCsv}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-              disabled={isFetching || !sortedEntries.length}
+      {/* Metrics Cards */}
+      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-2 border-gray-100 hover:border-blue-200 transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-2 shadow-lg">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800">Financial Metrics</h3>
+        </div>
+        
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
+          {metrics.map((metric) => (
+            <div
+              key={metric.label}
+              className="rounded-xl border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100 p-6 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
             >
-              Download CSV
-            </button>
-          </div>
+              <p className="text-xs uppercase tracking-wide text-blue-600 font-semibold">{metric.label}</p>
+              <p className="mt-3 text-2xl font-bold text-slate-900">{metric.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
+      {/* Export Actions */}
+      <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border-2 border-gray-100 hover:border-blue-200 transition-all duration-300">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-2 shadow-lg">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800">Export Data</h3>
+          </div>
+          
+          <button
+            type="button"
+            onClick={exportCsv}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            disabled={isFetching || !sortedEntries.length}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Enhanced Data Table */}
+      <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 hover:border-blue-200 transition-all duration-300 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Financial Transactions</h3>
+              <p className="text-white/80 text-sm">{sortedEntries.length} transactions</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
           {error ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50/80 p-8 text-center text-rose-600">
-              {error}
+            <div className="text-center py-12">
+              <svg className="w-20 h-20 text-red-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <p className="text-xl font-semibold text-red-500">Error Loading Data</p>
+              <p className="text-red-400 mt-2">{error}</p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-              <table className="min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-                <thead className="bg-blue-100 text-blue-900">
-                  <tr>
-                    <th className="px-4 py-3 text-center font-semibold">Date</th>
-                    <th className="px-4 py-3 text-left font-semibold">Category</th>
-                    <th className="px-4 py-3 text-left font-semibold">Primary</th>
-                    <th className="px-4 py-3 text-left font-semibold">Secondary</th>
-                    <th className="px-4 py-3 text-right font-semibold">Value</th>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b-2 border-gray-200">
+                    <th className="text-center py-4 px-4 font-semibold text-gray-700">Date</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Category</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Primary</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Secondary</th>
+                    <th className="text-right py-4 px-4 font-semibold text-gray-700">Value</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
+                <tbody>
                   {sortedEntries.length ? (
                     sortedEntries.map((entry) => (
-                      <tr key={entry.id} className="transition hover:bg-blue-50/60">
-                        <td className="px-4 py-3 text-center text-slate-500">{formatDate(entry.date)}</td>
-                        <td className="px-4 py-3">
+                      <tr key={entry.id} className="border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200">
+                        <td className="py-4 px-4 text-center text-gray-600">{formatDate(entry.date)}</td>
+                        <td className="py-4 px-4">
                           <span
                             className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${getCategoryTone(
                               entry.category
@@ -387,17 +444,32 @@ export default function FinanceHead() {
                             {entry.category}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-900">{entry.primary}</td>
-                        <td className="px-4 py-3 text-slate-600">{entry.secondary}</td>
-                        <td className={`px-4 py-3 text-right font-semibold ${getValueTone(entry.category)}`}>
+                        <td className="py-4 px-4 font-medium text-gray-900">{entry.primary}</td>
+                        <td className="py-4 px-4 text-gray-600">{entry.secondary}</td>
+                        <td className={`py-4 px-4 text-right font-semibold ${getValueTone(entry.category)}`}>
                           {entry.value}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="px-4 py-6 text-center text-sm text-slate-500" colSpan={5}>
-                        {isFetching ? "Loading finance data..." : "No finance data available"}
+                      <td className="py-12 text-center" colSpan={5}>
+                        {isFetching ? (
+                          <div className="flex flex-col items-center">
+                            <svg className="w-16 h-16 text-blue-300 mx-auto mb-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <p className="text-lg font-semibold text-blue-500">Loading finance data...</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center">
+                            <svg className="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-xl font-semibold text-gray-500">No finance data available</p>
+                            <p className="text-gray-400 mt-2">Financial transactions will appear here when available</p>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )}

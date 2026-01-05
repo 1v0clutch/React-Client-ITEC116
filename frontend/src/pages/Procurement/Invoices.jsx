@@ -73,18 +73,17 @@ export default function Invoices() {
   };
 
   return (
-    <div className="p-8 min-h-screen bg-gray-50 text-gray-800">
-      <h2 className="text-3xl font-bold mb-8 border-b-2 pb-2">
+    <div className="p-6 min-h-screen bg-gray-50">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
         Invoice Management (Goods Receipt)
       </h2>
 
-      {/* FORM */}
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-8 rounded-2xl shadow-lg mb-8 border border-gray-200"
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-lg shadow mb-6"
       >
         <select
-          className="border p-2 rounded"
+          className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={form.poId}
           onChange={(e) => setForm({ ...form, poId: e.target.value })}
           required
@@ -100,7 +99,7 @@ export default function Invoices() {
         <input
           type="text"
           placeholder="Item Description"
-          className="border p-2 rounded"
+          className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           required
@@ -109,7 +108,7 @@ export default function Invoices() {
         <input
           type="number"
           placeholder="Quantity Received"
-          className="border p-2 rounded"
+          className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           min="1"
           value={form.quantityReceived}
           onChange={(e) => setForm({ ...form, quantityReceived: e.target.value })}
@@ -119,14 +118,14 @@ export default function Invoices() {
         <input
           type="text"
           placeholder="Received By"
-          className="border p-2 rounded"
+          className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={form.receivedBy}
           onChange={(e) => setForm({ ...form, receivedBy: e.target.value })}
           required
         />
 
         <select
-          className="border p-2 rounded"
+          className="border border-gray-300 p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={form.condition}
           onChange={(e) => setForm({ ...form, condition: e.target.value })}
         >
@@ -137,7 +136,7 @@ export default function Invoices() {
 
         <textarea
           placeholder="Notes / Remarks"
-          className="border p-2 rounded col-span-full"
+          className="border border-gray-300 p-3 rounded-md col-span-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={form.notes}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
         />
@@ -145,54 +144,55 @@ export default function Invoices() {
         <div className="col-span-full text-right">
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
           >
             Submit Invoice
           </button>
         </div>
       </form>
 
-      {/* TABLE */}
-      <div className="overflow-x-auto bg-white rounded-2xl shadow-lg border border-gray-200">
-        <table className="w-full text-sm text-gray-700">
-          <thead className="bg-blue-50 text-blue-800">
-            <tr>
-              <th className="p-2 border">PO #</th>
-              <th className="p-2 border">Received Items</th>
-              <th className="p-2 border">Received By</th>
-              <th className="p-2 border">Condition</th>
-              <th className="p-2 border">Date</th>
-              <th className="p-2 border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map((r) => (
-              <tr key={r._id} className="hover:bg-gray-50">
-                <td className="border p-2">{r.poId?.poNumber}</td>
-                <td className="border p-2">
-                  {r.receivedItems.map((i, idx) => (
-                    <div key={idx}>
-                      {i.description} ({i.quantityReceived})
-                    </div>
-                  ))}
-                </td>
-                <td className="border p-2">{r.receivedBy}</td>
-                <td className="border p-2">{r.condition}</td>
-                <td className="border p-2">
-                  {new Date(r.dateReceived).toLocaleDateString()}
-                </td>
-                <td className="border p-2 text-center">
-                  <button
-                    onClick={() => handleDelete(r._id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                </td>
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">PO #</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Received Items</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Received By</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Condition</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                <th className="px-4 py-3 text-center text-sm font-medium text-gray-700">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {invoices.map((r) => (
+                <tr key={r._id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm text-gray-900">{r.poId?.poNumber}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {r.receivedItems.map((i, idx) => (
+                      <div key={idx}>
+                        {i.description} ({i.quantityReceived})
+                      </div>
+                    ))}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{r.receivedBy}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">{r.condition}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {new Date(r.dateReceived).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => handleDelete(r._id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
