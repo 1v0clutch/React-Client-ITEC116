@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 
 export default function Employees({ data = {}, setData }) {
-  const employees = data.employees || [];
-  const departments = data.departments || [];
+  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState(data.departments || []);
+  const [loading, setLoading] = useState(false);
 
   const [emp, setEmp] = useState({
     id: "",
@@ -15,10 +16,49 @@ export default function Employees({ data = {}, setData }) {
     status: "Active",
   });
 
+  // Fetch employees from backend API to sync with other components
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  // Sync local departments with parent data
+  useEffect(() => {
+    if (data.departments) {
+      setDepartments(data.departments);
+    }
+  }, [data.departments]);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:8000/api/employee");
+      if (response.ok) {
+        const employeeData = await response.json();
+        setEmployees(employeeData);
+        // Also update parent data for backward compatibility
+        setData(prev => ({ ...prev, employees: employeeData }));
+      } else {
+        console.error("Failed to fetch employees from backend");
+        // Fallback to local data if backend fails
+        setEmployees(data.employees || []);
+      }
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      // Fallback to local data if backend fails
+      setEmployees(data.employees || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 🧮 Generate next Employee ID — fills deleted gaps
   const generateEmployeeID = useCallback(() => {
     const existingNums = employees
-      .map((e) => parseInt(e.empId?.split("-")[1]))
+      .map((e) => {
+        // Handle both backend API format (employeeId) and local format (empId)
+        const id = e.employeeId || e.empId;
+        return parseInt(id?.split("-")[1]);
+      })
       .filter((num) => !isNaN(num))
       .sort((a, b) => a - b);
 
@@ -42,7 +82,7 @@ export default function Employees({ data = {}, setData }) {
   }, [generateEmployeeID, emp.id, emp.empId]);
 
   // ➕ Add or 🛠 Update Employee
-  const addEmployee = () => {
+  const addEmployee = async () => {
     if (
       !emp.name ||
       !emp.designation ||
@@ -54,52 +94,108 @@ export default function Employees({ data = {}, setData }) {
       return;
     }
 
-    let updatedEmployees;
+    try {
+      setLoading(true);
+      
+      // Prepare data for backend API
+      const employeeData = {
+        employeeId: emp.empId || generateEmployeeID(),
+        name: emp.name,
+        position: emp.designation, // Map designation to position for backend
+        department: emp.department,
+        employmentType: emp.employmentType,
+        hireDate: emp.hireDate,
+        status: emp.status,
+      };
 
-    if (emp.id) {
-      // Update existing employee (keep empId)
-      updatedEmployees = employees.map((e) =>
-        e.id === emp.id ? { ...emp, empId: e.empId } : e
-      );
-    } else {
-      // Add new employee (unique ID, fills gap)
-      const newEmp = { ...emp, id: Date.now(), empId: generateEmployeeID() };
-      updatedEmployees = [...employees, newEmp];
+      if (emp.id) {
+        // Update existing employee
+        const response = await fetch(`http://localhost:8000/api/employee/${emp.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(employeeData),
+        });
+
+        if (response.ok) {
+          alert("✅ Employee updated successfully!");
+          await fetchEmployees();
+        } else {
+          const errData = await response.json();
+          alert("Failed to update employee: " + (errData.message || "Unknown error"));
+          return;
+        }
+      } else {
+        // Add new employee
+        const response = await fetch("http://localhost:8000/api/employee", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(employeeData),
+        });
+
+        if (response.ok) {
+          alert("✅ Employee added successfully!");
+          await fetchEmployees();
+        } else {
+          const errData = await response.json();
+          alert("Failed to add employee: " + (errData.message || "Unknown error"));
+          return;
+        }
+      }
+
+      // Reset form
+      setEmp({
+        id: "",
+        empId: "",
+        name: "",
+        designation: "",
+        department: "",
+        employmentType: "",
+        hireDate: "",
+        status: "Active",
+      });
+    } catch (error) {
+      console.error("Error saving employee:", error);
+      alert("❌ Error saving employee: " + error.message);
+    } finally {
+      setLoading(false);
     }
-
-    setData({ ...data, employees: updatedEmployees });
-
-    // Reset form
-    setEmp({
-      id: "",
-      empId: "",
-      name: "",
-      designation: "",
-      department: "",
-      employmentType: "",
-      hireDate: "",
-      status: "Active",
-    });
   };
 
   // 🗑 Delete specific employee
-  const deleteEmployee = (id) => {
+  const deleteEmployee = async (id) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this employee?");
     if (!confirmDelete) return;
 
-    const updatedEmployees = employees.filter((e) => e.id !== id);
-    setData({ ...data, employees: updatedEmployees });
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8000/api/employee/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        alert("✅ Employee deleted successfully!");
+        await fetchEmployees();
+      } else {
+        const errData = await response.json();
+        alert("Failed to delete employee: " + (errData.message || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      alert("❌ Error deleting employee: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ✏️ Load data to edit
   const editEmployee = (id) => {
-    const toEdit = employees.find((e) => e.id === id);
+    const toEdit = employees.find((e) => (e._id || e.id) === id);
     if (toEdit) {
       setEmp({
-        id: toEdit.id || "",
-        empId: toEdit.empId || "",
+        id: toEdit._id || toEdit.id || "",
+        empId: toEdit.employeeId || toEdit.empId || "",
         name: toEdit.name || "",
-        designation: toEdit.designation || "",
+        designation: toEdit.position || toEdit.designation || "", // Handle both formats
         department: toEdit.department || "",
         employmentType: toEdit.employmentType || "",
         hireDate: toEdit.hireDate || "",
@@ -277,15 +373,22 @@ export default function Employees({ data = {}, setData }) {
         <div className="mt-8 flex justify-center gap-4">
           <button
             onClick={addEmployee}
+            disabled={loading}
             className={`${
               emp.id 
                 ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700" 
                 : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-            } text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2`}
+            } disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={emp.id ? "M5 13l4 4L19 7" : "M12 6v6m0 0v6m0-6h6m-6 0H6"} />
-            </svg>
+            {loading ? (
+              <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={emp.id ? "M5 13l4 4L19 7" : "M12 6v6m0 0v6m0-6h6m-6 0H6"} />
+              </svg>
+            )}
             {emp.id ? "Save Update" : "Add Employee"}
           </button>
 
@@ -345,14 +448,14 @@ export default function Employees({ data = {}, setData }) {
                 </thead>
                 <tbody>
                   {employees.map((e, index) => (
-                    <tr key={e.id || e.empId || `emp-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                    <tr key={e._id || e.id || e.empId || `emp-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
                       <td className="py-4 px-4">
                         <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-sm font-semibold font-mono">
-                          {e.empId}
+                          {e.employeeId || e.empId}
                         </span>
                       </td>
                       <td className="py-4 px-4 font-medium text-gray-800">{e.name}</td>
-                      <td className="py-4 px-4 text-gray-600">{e.designation}</td>
+                      <td className="py-4 px-4 text-gray-600">{e.position || e.designation}</td>
                       <td className="py-4 px-4 text-gray-600">{e.department}</td>
                       <td className="py-4 px-4 text-gray-600">{e.employmentType}</td>
                       <td className="py-4 px-4 text-gray-600">{e.hireDate}</td>
@@ -365,6 +468,8 @@ export default function Employees({ data = {}, setData }) {
                               ? "bg-gradient-to-r from-gray-400 to-gray-600 text-white"
                               : e.status === "Resigned"
                               ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white"
+                              : e.status === "On Leave"
+                              ? "bg-gradient-to-r from-blue-400 to-blue-600 text-white"
                               : "bg-gradient-to-r from-red-400 to-red-600 text-white"
                           }`}
                         >
@@ -374,16 +479,18 @@ export default function Employees({ data = {}, setData }) {
                       <td className="py-4 px-4">
                         <div className="flex gap-2">
                           <button
-                            key={`edit-emp-${e.id}`}
-                            onClick={() => editEmployee(e.id)}
-                            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                            key={`edit-emp-${e._id || e.id}`}
+                            onClick={() => editEmployee(e._id || e.id)}
+                            disabled={loading}
+                            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                           >
                             Edit
                           </button>
                           <button
-                            key={`delete-emp-${e.id}`}
-                            onClick={() => deleteEmployee(e.id)}
-                            className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                            key={`delete-emp-${e._id || e.id}`}
+                            onClick={() => deleteEmployee(e._id || e.id)}
+                            disabled={loading}
+                            className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                           >
                             Delete
                           </button>

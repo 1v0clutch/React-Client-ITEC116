@@ -234,7 +234,8 @@ function ProductCatalog() {
                     className="w-full h-full object-contain p-2"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = "https://via.placeholder.com/300x200?text=No+Image";
+                      // Use a data URL for a simple placeholder instead of external service
+                      e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8fafc' stroke='%23e2e8f0' stroke-width='2'/%3E%3Cg transform='translate(150,100)'%3E%3Ccircle cx='0' cy='-20' r='25' fill='%23cbd5e1'/%3E%3Cpath d='M-15,10 L15,10 L10,25 L-10,25 Z' fill='%23cbd5e1'/%3E%3Ccircle cx='-8' cy='-25' r='3' fill='%23ffffff'/%3E%3C/g%3E%3Ctext x='50%25' y='75%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='14' fill='%236b7280'%3EImage not available%3C/text%3E%3C/svg%3E";
                     }}
                   />
                 ) : (
