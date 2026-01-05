@@ -12,8 +12,15 @@ export default function Departments({ data = {}, setData }) {
   // Add Department
   const addDepartment = () => {
     if (!dept.name) return;
-    const newDept = { id: Date.now(), ...dept };
-    setData({ ...data, departments: [...data.departments, newDept] });
+    const newDept = { 
+      id: Date.now(), 
+      name: dept.name,
+      head: dept.head || ""
+    };
+    setData({ 
+      ...data, 
+      departments: [...(data.departments || []), newDept] 
+    });
     setDept({ name: "", head: "" });
   };
 
@@ -231,8 +238,8 @@ export default function Departments({ data = {}, setData }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((d) => (
-                    <tr key={d.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                  {filtered.map((d, index) => (
+                    <tr key={d.id || `dept-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
                       <td className="py-4 px-4 font-medium text-gray-800">{d.name}</td>
                       <td className="py-4 px-4 text-gray-600">{d.head || "Not assigned"}</td>
                       <td className="py-4 px-4">
@@ -243,18 +250,21 @@ export default function Departments({ data = {}, setData }) {
                       <td className="py-4 px-4">
                         <div className="flex gap-2">
                           <button
+                            key={`view-${d.id}`}
                             onClick={() => setSelected(d)}
                             className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                           >
                             View
                           </button>
                           <button
+                            key={`edit-${d.id}`}
                             onClick={() => startEdit(d)}
                             className="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                           >
                             Edit
                           </button>
                           <button
+                            key={`delete-${d.id}`}
                             onClick={() => deleteDepartment(d.id)}
                             className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                           >
@@ -345,8 +355,8 @@ export default function Departments({ data = {}, setData }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {getEmployeesForDept(selected.name).map((emp) => (
-                          <tr key={emp.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                        {getEmployeesForDept(selected.name).map((emp, index) => (
+                          <tr key={emp.id || `modal-emp-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
                             <td className="py-3 px-4 font-medium text-gray-800">{emp.name}</td>
                             <td className="py-3 px-4 text-gray-600">{emp.designation}</td>
                             <td className="py-3 px-4">

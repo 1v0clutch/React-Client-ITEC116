@@ -6,22 +6,26 @@ const API_PROJECT = "http://localhost:8000/api/project";
 
 function SmallStat({ title, value, icon }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
-      <div>
-        <div className="text-xs text-gray-500">{title}</div>
-        <div className="mt-1 font-semibold text-lg">{value}</div>
+    <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl p-6 border-2 border-gray-100 hover:border-teal-200 transition-all duration-300 hover:shadow-2xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-gray-600 mb-1">{title}</div>
+          <div className="text-2xl font-bold text-gray-800">{value}</div>
+        </div>
+        <div className="bg-gradient-to-r from-teal-500 to-cyan-600 rounded-xl p-3 shadow-lg">
+          <div className="text-2xl">{icon}</div>
+        </div>
       </div>
-      <div className="text-2xl text-gray-300">{icon}</div>
     </div>
   );
 }
 
-function ProgressBar({ value, colorClass = "bg-green-500" }) {
+function ProgressBar({ value, colorClass = "bg-gradient-to-r from-green-500 to-emerald-600" }) {
   const pct = Math.min(100, Math.max(0, Number(value || 0)));
   return (
-    <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+    <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden shadow-inner">
       <div
-        className={`${colorClass} h-full`}
+        className={`${colorClass} h-full rounded-full transition-all duration-500 ease-out shadow-sm`}
         style={{ width: `${pct}%` }}
         aria-hidden
       />
@@ -141,9 +145,9 @@ export default function Overview({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Top stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="space-y-8">
+      {/* Enhanced Top Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <SmallStat title="Progress" value={`${stats.progress}%`} icon="📈" />
         <SmallStat
           title="Budget Used"
@@ -160,25 +164,44 @@ export default function Overview({
         />
       </div>
 
-      {/* Timeline card */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="font-semibold">Project Timeline</div>
+      {/* Enhanced Timeline Card */}
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl p-8 border-2 border-gray-100 hover:border-teal-200 transition-all duration-300">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-r from-teal-500 to-cyan-600 rounded-xl p-2 shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800">Project Timeline</h3>
+              <p className="text-sm text-gray-600">Track task progress and dependencies</p>
+            </div>
+          </div>
           <button
             type="button"
-            className="text-sm text-blue-600 hover:underline"
+            className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
             onClick={() => {
               const id = project?._id ?? project?.id ?? projectId;
               if (id) navigate(`/project-management/gantt/${id}`);
             }}
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
             View Full Gantt
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {timelineTasks.length === 0 ? (
-            <div className="text-sm text-gray-500">No tasks to display.</div>
+            <div className="text-center py-12">
+              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-lg font-semibold text-gray-500">No tasks to display</p>
+              <p className="text-gray-400 mt-2">Add tasks to your project to see the timeline</p>
+            </div>
           ) : (
             timelineTasks.map((t, i) => {
               const status = t.status || "Not Started";

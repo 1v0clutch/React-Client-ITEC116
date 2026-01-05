@@ -1,0 +1,311 @@
+.container, .crm-container, .aftersales-container, .report-container {
+  width: 100vw;
+  min-width: 100vw;
+  max-width: 100vw;
+  background: linear-gradient(90deg, #f7f3f0 0%, #faf6f2 100%);
+  color: #ff9900;
+  padding: 30px 0;
+  border-radius: 0;
+  font-family: "Poppins", "Segoe UI", Arial, sans-serif;
+  box-shadow: 0 4px 24px rgba(210, 180, 140, 0.15);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.form-card, .order-card, .crm-card, .case-card {
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 12px rgba(210, 180, 140, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 700px;
+}
+
+button {
+  background: #cd853f;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  margin-top: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #daa520;
+  color: #fff;
+}
+
+select, input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid #deb887;
+  border-radius: 8px;
+  background: #fefcfa;
+  color: #5d4e37;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+input:focus, select:focus {
+  border-color: #cd853f;
+}
+
+.crm-table {
+  width: 100%;
+  max-width: 1200px;
+  border-collapse: collapse;
+  background: #fff;
+  color: #5d4e37;
+  box-shadow: 0 2px 12px rgba(210, 180, 140, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 25px;
+}
+
+.crm-table thead {
+  background: #cd853f;
+  color: #fff;
+}
+
+.crm-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #deb887;
+}
+
+.crm-table tbody tr {
+  border-bottom: 1px solid #deb887;
+  transition: background-color 0.2s;
+}
+
+.crm-table tbody tr:hover {
+  background-color: #fef9f5;
+}
+
+.crm-table td {
+  padding: 14px 16px;
+  font-size: 0.95rem;
+}
+
+.segment-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.segment-badge.vip {
+  background: #daa520;
+  color: #8b4513;
+}
+
+.segment-badge.regular {
+  background: #deb887;
+  color: #5d4e37;
+}
+
+.logs-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.logs-list li {
+  padding: 4px 0;
+  color: #5d4e37;
+}
+
+.logs-list .no-logs {
+  color: #bc9a6a;
+  font-style: italic;
+}
+
+.crm-table-container {
+  width: 100%;
+  max-width: 1200px;
+}
+
+.btn-manage {
+  background: #cd853f;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.3s;
+}
+
+.btn-manage:hover {
+  background: #b8860b;
+}
+
+.expanded-row {
+  background: #fef9f5 !important;
+}
+
+.expanded-row td {
+  padding: 20px !important;
+  border-top: 2px solid #deb887;
+}
+
+.log-management h4 {
+  margin: 0 0 15px 0;
+  color: #5d4e37;
+  font-size: 1rem;
+}
+
+.logs-section {
+  margin-bottom: 20px;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #deb887;
+}
+
+.logs-list-edit {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.log-item:hover {
+  background: #f0f0f0;
+}
+
+.log-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  width: 100%;
+}
+
+.log-display span {
+  flex: 1;
+  color: #5d4e37;
+  font-size: 0.95rem;
+}
+
+.log-edit {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.log-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #deb887;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #5d4e37;
+  background: #fefcfa;
+}
+
+.log-input:focus {
+  border-color: #cd853f;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(205, 133, 63, 0.1);
+}
+
+.btn-edit, .btn-save, .btn-cancel, .btn-delete-log, .btn-add-log {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-edit {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.btn-edit:hover {
+  background: #2563eb;
+}
+
+.btn-save {
+  background: #10b981;
+  color: #fff;
+}
+
+.btn-save:hover {
+  background: #059669;
+}
+
+.btn-cancel {
+  background: #6b7280;
+  color: #fff;
+}
+
+.btn-cancel:hover {
+  background: #4b5563;
+}
+
+.btn-delete-log {
+  background: #ef4444;
+  color: #fff;
+}
+
+.btn-delete-log:hover {
+  background: #dc2626;
+}
+
+.add-log-section {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.add-log-section .log-input {
+  flex: 1;
+}
+
+.btn-add-log {
+  background: #cd853f;
+  color: #fff;
+  padding: 8px 16px;
+}
+
+.btn-add-log:hover {
+  background: #daa520;
+}
+
+.no-logs {
+  color: #999;
+  font-style: italic;
+  padding: 10px;
+}

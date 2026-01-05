@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 export default function Employees({ data = {}, setData }) {
   const employees = data.employees || [];
@@ -16,7 +16,7 @@ export default function Employees({ data = {}, setData }) {
   });
 
   // 🧮 Generate next Employee ID — fills deleted gaps
-  const generateEmployeeID = () => {
+  const generateEmployeeID = useCallback(() => {
     const existingNums = employees
       .map((e) => parseInt(e.empId?.split("-")[1]))
       .filter((num) => !isNaN(num))
@@ -29,7 +29,7 @@ export default function Employees({ data = {}, setData }) {
     }
 
     return `EMP-${nextNum.toString().padStart(3, "0")}`;
-  };
+  }, [employees]);
 
   // Generate only when adding a new employee
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function Employees({ data = {}, setData }) {
         empId: generateEmployeeID(),
       }));
     }
-  }, [employees]);
+  }, [generateEmployeeID, emp.id, emp.empId]);
 
   // ➕ Add or 🛠 Update Employee
   const addEmployee = () => {
@@ -95,7 +95,16 @@ export default function Employees({ data = {}, setData }) {
   const editEmployee = (id) => {
     const toEdit = employees.find((e) => e.id === id);
     if (toEdit) {
-      setEmp({ ...toEdit });
+      setEmp({
+        id: toEdit.id || "",
+        empId: toEdit.empId || "",
+        name: toEdit.name || "",
+        designation: toEdit.designation || "",
+        department: toEdit.department || "",
+        employmentType: toEdit.employmentType || "",
+        hireDate: toEdit.hireDate || "",
+        status: toEdit.status || "Active",
+      });
     }
   };
 
@@ -165,7 +174,7 @@ export default function Employees({ data = {}, setData }) {
             </label>
             <input
               className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 group-hover:border-green-300 transition-all duration-200 bg-gray-50 focus:bg-white"
-              value={emp.name}
+              value={emp.name || ""}
               onChange={(e) => setEmp({ ...emp, name: e.target.value })}
               placeholder="Enter employee name"
             />
@@ -180,7 +189,7 @@ export default function Employees({ data = {}, setData }) {
             </label>
             <input
               className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 group-hover:border-teal-300 transition-all duration-200 bg-gray-50 focus:bg-white"
-              value={emp.designation}
+              value={emp.designation || ""}
               onChange={(e) => setEmp({ ...emp, designation: e.target.value })}
               placeholder="Enter designation"
             />
@@ -195,18 +204,18 @@ export default function Employees({ data = {}, setData }) {
             </label>
             <select
               className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all duration-200 bg-gray-50 focus:bg-white"
-              value={emp.department}
+              value={emp.department || ""}
               onChange={(e) => setEmp({ ...emp, department: e.target.value })}
             >
               <option key="select-dept" value="">Select Department</option>
               {departments.length > 0 ? (
-                departments.map((dept) => (
-                  <option key={dept.id} value={dept.name}>
+                departments.map((dept, index) => (
+                  <option key={`dept-option-${dept.id || index}`} value={dept.name}>
                     {dept.name}
                   </option>
                 ))
               ) : (
-                <option key="no-dept" disabled>No departments available</option>
+                <option key="no-dept-option" disabled>No departments available</option>
               )}
             </select>
           </div>
@@ -220,7 +229,7 @@ export default function Employees({ data = {}, setData }) {
             </label>
             <select
               className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 group-hover:border-purple-300 transition-all duration-200 bg-gray-50 focus:bg-white"
-              value={emp.employmentType}
+              value={emp.employmentType || ""}
               onChange={(e) => setEmp({ ...emp, employmentType: e.target.value })}
             >
               <option key="select-employment" value="">Select Employment Type</option>
@@ -240,7 +249,7 @@ export default function Employees({ data = {}, setData }) {
             <input
               type="date"
               className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 group-hover:border-indigo-300 transition-all duration-200 bg-gray-50 focus:bg-white"
-              value={emp.hireDate}
+              value={emp.hireDate || ""}
               onChange={(e) => setEmp({ ...emp, hireDate: e.target.value })}
             />
           </div>
@@ -254,7 +263,7 @@ export default function Employees({ data = {}, setData }) {
             </label>
             <select
               className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 group-hover:border-yellow-300 transition-all duration-200 bg-gray-50 focus:bg-white"
-              value={emp.status}
+              value={emp.status || "Active"}
               onChange={(e) => setEmp({ ...emp, status: e.target.value })}
             >
               <option key="active" value="Active">Active</option>
@@ -365,12 +374,14 @@ export default function Employees({ data = {}, setData }) {
                       <td className="py-4 px-4">
                         <div className="flex gap-2">
                           <button
+                            key={`edit-emp-${e.id}`}
                             onClick={() => editEmployee(e.id)}
                             className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                           >
                             Edit
                           </button>
                           <button
+                            key={`delete-emp-${e.id}`}
                             onClick={() => deleteEmployee(e.id)}
                             className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
                           >
