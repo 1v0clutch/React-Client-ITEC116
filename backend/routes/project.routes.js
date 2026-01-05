@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const projectController = require("../controllers/project.controller");
+const projectBudgetController = require("../controllers/projectBudget.controller");
 
 // Create a new project
 router.post("/projects", projectController.create);
@@ -26,7 +27,6 @@ router.put("/:id/progress", projectController.updateTaskProgress);
 
 router.delete("/projects/:id", projectController.deleteProject);
 
-// ✅ CORRECTED ROUTES FOR RESOURCE ALLOCATIONS
 router.get(
   "/projects/:id/allocations",
   projectController.getResourceAllocations
@@ -42,6 +42,29 @@ router.put(
 router.delete(
   "/projects/:projectId/allocations/:allocationId",
   projectController.deleteResourceAllocation
+);
+
+// NEW: Inventory & Procurement Integration Routes
+router.get("/:id/inventory", projectController.getProjectInventory);
+router.post("/:id/requisitions", projectController.createMaterialRequisition);
+router.post(
+  "/:id/allocate-inventory",
+  projectController.allocateInventoryToTask
+);
+router.get("/:id/material-status", projectController.getProjectMaterialStatus);
+
+// NEW: Budget & Material Cost Routes
+router.get(
+  "/:id/budget/material-costs",
+  projectBudgetController.getProjectMaterialStatus
+);
+router.put(
+  "/:projectId/task/:taskId/material",
+  projectBudgetController.updateTaskMaterialCost
+);
+router.get(
+  "/:id/procurement-status",
+  projectBudgetController.getProjectProcurementStatus
 );
 
 module.exports = router;
