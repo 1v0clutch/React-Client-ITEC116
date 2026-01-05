@@ -20,14 +20,21 @@ const financeRoutes = require("./routes/finance.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
 const hrRoutes = require("./routes/hr.routes");
+const biRoutes = require("./routes/bi.routes"); // Add BI routes import
 const demandForecastRoutes = require("./routes/demandForecast.routes");
 const logisticsRoutes = require("./routes/logistics.routes");
 const procurementRoutes = require("./routes/procurement.routes");
 const projectRoutes = require("./routes/project.routes");
 const employeeRoutes = require("./routes/employee.routes"); //
+const employeesRoutes = require("./routes/employees.routes"); // Plural version for /api/employees
+const departmentsRoutes = require("./routes/departments.routes"); // For /api/departments
+const payrollRoutes = require("./routes/payroll.routes"); // For /api/payroll
+const salaryRoutes = require("./routes/salary.routes"); // For /api/salary
 const projectBudgetRoutes = require("./routes/projectBudget.routes");
 const salesOrderRoutes = require("./routes/salesOrder.routes");
 const quotationRoutes = require("./routes/quotation.routes");
+const ecommerceRoutes = require("./routes/ecommerce.routes"); // Module 6 - Separate customer portal
+const uploadRoutes = require("./routes/upload.routes");
 
 //Middleware
 app.use(
@@ -79,9 +86,16 @@ app.use("/api/logistics", logisticsRoutes);
 app.use("/api/procurement", require("./routes/procurement.routes"));
 app.use("/api/project", projectRoutes);
 app.use("/api/employee", employeeRoutes);
+app.use("/api/employees", employeesRoutes); // Add missing /api/employees route
+app.use("/api/departments", departmentsRoutes); // Add missing /api/departments route
+app.use("/api/payroll", payrollRoutes); // Add missing /api/payroll route
+app.use("/api/salary", salaryRoutes); // Add missing /api/salary route
 app.use("/api/projectBudget", projectBudgetRoutes);
 app.use("/api/sales-orders", salesOrderRoutes);
 app.use("/api/quotations", quotationRoutes);
+app.use("/api/ecommerce", ecommerceRoutes); // Add e-commerce routes
+app.use("/api/bi", biRoutes); // Add BI routes
+app.use("/api/upload", uploadRoutes); // Add upload routes
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);

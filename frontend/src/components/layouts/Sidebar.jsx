@@ -64,6 +64,12 @@ const categories = [
     ],
   },
   {
+    label: "Reports & BI",
+    links: [
+      { path: "/report", label: "Business Intelligence" },
+    ],
+  },
+  {
     label: "SupplyChain",
     links: [
       { path: "/supply-chain/demand-forecast", label: "Demand Forecast" },
