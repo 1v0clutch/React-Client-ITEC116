@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlus, FaTrash, FaSave } from "react-icons/fa";
+import { FaPlus, FaTrash, FaSave, FaBox, FaShoppingCart } from "react-icons/fa";
 
 const API_PROJECT = "http://localhost:8000/api/project";
 const API_EMPLOYEE = "http://localhost:8000/api/employee";
+const API_INVENTORY = "http://localhost:8000/api/inventory";
+const API_PROCUREMENT = "http://localhost:8000/api/procurement";
 
 export default function DependencySetup() {
   const navigate = useNavigate();
@@ -11,6 +13,7 @@ export default function DependencySetup() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [employees, setEmployees] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
 
   // Resource allocation states
   const [assignments, setAssignments] = useState([]);
@@ -21,8 +24,20 @@ export default function DependencySetup() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [projectBudget, setProjectBudget] = useState("");
 
+  // Material planning states
+  const [materialRequests, setMaterialRequests] = useState([]);
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
+  const [materialForm, setMaterialForm] = useState({
+    taskUid: "",
+    itemId: "",
+    quantity: "",
+    source: "inventory", // inventory or procurement
+    estimatedCost: "",
+    requiredDate: "",
+  });
+
   // =============================
-  // LOAD PROJECT + EMPLOYEES
+  // LOAD PROJECT + EMPLOYEES + INVENTORY
   // =============================
   useEffect(() => {
     const draft = localStorage.getItem("newProjectDraft");
@@ -43,6 +58,7 @@ export default function DependencySetup() {
         task.phaseIndex = pIndex;
         task.taskIndex = tIndex;
         task.dependencies = [];
+        task.materials = []; // Add materials array to each task
         allTasks.push(task);
       });
     });
@@ -50,6 +66,7 @@ export default function DependencySetup() {
     setProject({ ...parsed, allTasks });
     setLoading(false);
     fetchEmployees();
+    fetchInventoryItems();
   }, []);
 
   const fetchEmployees = async () => {
@@ -59,6 +76,18 @@ export default function DependencySetup() {
       setEmployees(data);
     } catch (err) {
       console.error("Error fetching employees:", err);
+    }
+  };
+
+  const fetchInventoryItems = async () => {
+    try {
+      const res = await fetch(`${API_INVENTORY}/getItems`);
+      if (res.ok) {
+        const data = await res.json();
+        setInventoryItems(data);
+      }
+    } catch (err) {
+      console.error("Error fetching inventory items:", err);
     }
   };
 
@@ -81,6 +110,94 @@ export default function DependencySetup() {
 
       return { ...prev, allTasks: updatedTasks, phases: updatedPhases };
     });
+  };
+
+  // =============================
+  // MATERIAL PLANNING
+  // =============================
+  const openMaterialForm = (taskUid) => {
+    const task = project?.allTasks.find((t) => t._uid === Number(taskUid));
+    setMaterialForm({
+      taskUid: taskUid,
+      itemId: "",
+      quantity: "",
+      source: "inventory",
+      estimatedCost: "",
+      requiredDate: task?.end || "",
+    });
+    setShowMaterialForm(true);
+  };
+
+  const addMaterialRequest = async () => {
+    if (
+      !materialForm.taskUid ||
+      !materialForm.itemId ||
+      !materialForm.quantity
+    ) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    const task = project.allTasks.find(
+      (t) => t._uid === Number(materialForm.taskUid)
+    );
+    const item = inventoryItems.find((i) => i._id === materialForm.itemId);
+
+    if (!item) {
+      alert("Selected item not found");
+      return;
+    }
+
+    const newRequest = {
+      id: Date.now(),
+      taskUid: materialForm.taskUid,
+      taskName: task.name,
+      phaseName: project.phases[task.phaseIndex]?.name,
+      itemId: materialForm.itemId,
+      itemName: item.name,
+      quantity: parseFloat(materialForm.quantity),
+      source: materialForm.source,
+      estimatedCost: materialForm.estimatedCost || item.price,
+      requiredDate: materialForm.requiredDate,
+      status: "planned",
+    };
+
+    setMaterialRequests((prev) => [...prev, newRequest]);
+
+    // Update task materials in project data
+    setProject((prev) => {
+      const updatedTasks = prev.allTasks.map((t) =>
+        t._uid === Number(materialForm.taskUid)
+          ? { ...t, materials: [...(t.materials || []), newRequest] }
+          : t
+      );
+
+      const updatedPhases = prev.phases.map((phase, pIndex) => ({
+        ...phase,
+        tasks: phase.tasks.map((t, tIndex) => {
+          const updated = updatedTasks.find(
+            (x) => x.phaseIndex === pIndex && x.taskIndex === tIndex
+          );
+          return updated || t;
+        }),
+      }));
+
+      return { ...prev, allTasks: updatedTasks, phases: updatedPhases };
+    });
+
+    setMaterialForm({
+      taskUid: "",
+      itemId: "",
+      quantity: "",
+      source: "inventory",
+      estimatedCost: "",
+      requiredDate: "",
+    });
+    setShowMaterialForm(false);
+  };
+
+  const removeMaterialRequest = (requestId) => {
+    setMaterialRequests((prev) => prev.filter((r) => r.id !== requestId));
   };
 
   // =============================
@@ -146,7 +263,7 @@ export default function DependencySetup() {
   };
 
   const saveEdit = () => {
-    // Prevent saving edit with an employee who’s on leave
+    // Prevent saving edit with an employee who's on leave
     const selectedEmp = employees.find((e) => e._id === selectedEmployee);
     if (
       selectedEmp &&
@@ -185,8 +302,9 @@ export default function DependencySetup() {
         ...phase,
         tasks: phase.tasks.map((task) => ({
           ...task,
-          startDate: task.start, // Convert 'start' to 'startDate'
-          endDate: task.end, // Convert 'end' to 'endDate'
+          startDate: task.start,
+          endDate: task.end,
+          materials: task.materials || [], // Include materials
           start: undefined,
           end: undefined,
         })),
@@ -197,6 +315,7 @@ export default function DependencySetup() {
         phases: processedPhases,
         totalBudget: parseFloat(projectBudget) || 0,
         resourceAllocations: assignments,
+        materialRequirements: materialRequests,
       };
 
       delete payload.allTasks;
@@ -210,6 +329,28 @@ export default function DependencySetup() {
       const data = await res.json();
       if (res.ok) {
         setMessage("✅ Project and allocations saved!");
+
+        // Create procurement requisitions for materials
+        const procurementReqs = materialRequests.filter(
+          (m) => m.source === "procurement"
+        );
+        for (const req of procurementReqs) {
+          await fetch(`${API_PROCUREMENT}/requisitions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectId: data.projectId,
+              taskId: req.taskUid,
+              itemId: req.itemId,
+              quantity: req.quantity,
+              estimatedCost: req.estimatedCost,
+              requiredDate: req.requiredDate,
+              priority: "High",
+              status: "pending",
+            }),
+          });
+        }
+
         localStorage.removeItem("newProjectDraft");
         setTimeout(() => navigate("/project-management/project"), 1200);
       } else {
@@ -236,6 +377,10 @@ export default function DependencySetup() {
     );
 
   const totalBudget = assignments.reduce((sum, a) => sum + (a.budget || 0), 0);
+  const totalMaterialCost = materialRequests.reduce(
+    (sum, m) => sum + m.estimatedCost * m.quantity,
+    0
+  );
 
   return (
     <div className="w-full p-6 space-y-6">
@@ -272,6 +417,7 @@ export default function DependencySetup() {
               <th className="px-4 py-2 text-left">Dependencies</th>
               <th className="px-4 py-2 text-left">Start</th>
               <th className="px-4 py-2 text-left">End</th>
+              <th className="px-4 py-2 text-left">Materials</th>
             </tr>
           </thead>
           <tbody>
@@ -306,11 +452,92 @@ export default function DependencySetup() {
                 </td>
                 <td className="px-4 py-2">{task.start}</td>
                 <td className="px-4 py-2">{task.end}</td>
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => openMaterialForm(task._uid)}
+                    className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                  >
+                    <FaBox size={12} />
+                    Add Materials
+                  </button>
+                  {task.materials && task.materials.length > 0 && (
+                    <div className="text-xs text-gray-600 mt-1">
+                      {task.materials.length} item(s)
+                    </div>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* === Material Planning Section === */}
+      {materialRequests.length > 0 && (
+        <div className="border-t pt-6">
+          <h3 className="text-md font-semibold text-gray-700 mb-3">
+            Material Requirements
+          </h3>
+          <div className="overflow-x-auto border rounded-md">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-100 text-gray-700">
+                <tr>
+                  <th className="px-3 py-2 text-left">Task</th>
+                  <th className="px-3 py-2 text-left">Material</th>
+                  <th className="px-3 py-2 text-left">Quantity</th>
+                  <th className="px-3 py-2 text-left">Source</th>
+                  <th className="px-3 py-2 text-left">Est. Cost</th>
+                  <th className="px-3 py-2 text-left">Required By</th>
+                  <th className="px-3 py-2 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materialRequests.map((req) => (
+                  <tr key={req.id} className="border-t hover:bg-gray-50">
+                    <td className="px-3 py-2">
+                      {req.phaseName} → {req.taskName}
+                    </td>
+                    <td className="px-3 py-2">{req.itemName}</td>
+                    <td className="px-3 py-2">{req.quantity}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          req.source === "inventory"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {req.source}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      ₱{(req.estimatedCost * req.quantity).toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2">{req.requiredDate}</td>
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        onClick={() => removeMaterialRequest(req.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <FaTrash size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-gray-50 font-semibold">
+                  <td className="px-3 py-2" colSpan="4">
+                    Total Material Cost
+                  </td>
+                  <td className="px-3 py-2">
+                    ₱{totalMaterialCost.toLocaleString()}
+                  </td>
+                  <td className="px-3 py-2" colSpan="2"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* === Resource Allocation Section === */}
       <div className="border-t pt-6">
@@ -332,6 +559,11 @@ export default function DependencySetup() {
           />
           <div className="text-gray-500 text-sm">
             Allocated: ₱{totalBudget.toLocaleString()}
+            {totalMaterialCost > 0 && (
+              <span className="ml-2">
+                | Materials: ₱{totalMaterialCost.toLocaleString()}
+              </span>
+            )}
           </div>
         </div>
 
@@ -473,6 +705,132 @@ export default function DependencySetup() {
           </table>
         </div>
       </div>
+
+      {/* Material Request Modal */}
+      {showMaterialForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">
+              Add Material Requirement
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Source
+                </label>
+                <select
+                  value={materialForm.source}
+                  onChange={(e) =>
+                    setMaterialForm({ ...materialForm, source: e.target.value })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="inventory">From Existing Inventory</option>
+                  <option value="procurement">Need to Procure</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Material
+                </label>
+                <select
+                  value={materialForm.itemId}
+                  onChange={(e) => {
+                    const selectedItem = inventoryItems.find(
+                      (i) => i._id === e.target.value
+                    );
+                    setMaterialForm({
+                      ...materialForm,
+                      itemId: e.target.value,
+                      estimatedCost: selectedItem?.price || "",
+                    });
+                  }}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="">Select Material</option>
+                  {inventoryItems.map((item) => (
+                    <option key={item._id} value={item._id}>
+                      {item.name} {item.sku && `(${item.sku})`} - Stock:{" "}
+                      {item.quantity}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Quantity
+                </label>
+                <input
+                  type="number"
+                  value={materialForm.quantity}
+                  onChange={(e) =>
+                    setMaterialForm({
+                      ...materialForm,
+                      quantity: e.target.value,
+                    })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                  min="1"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Estimated Unit Cost (₱)
+                </label>
+                <input
+                  type="number"
+                  value={materialForm.estimatedCost}
+                  onChange={(e) =>
+                    setMaterialForm({
+                      ...materialForm,
+                      estimatedCost: e.target.value,
+                    })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Required By
+                </label>
+                <input
+                  type="date"
+                  value={materialForm.requiredDate}
+                  onChange={(e) =>
+                    setMaterialForm({
+                      ...materialForm,
+                      requiredDate: e.target.value,
+                    })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowMaterialForm(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={addMaterialRequest}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Add Material
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* === Save Buttons === */}
       <div className="flex justify-end mt-6 gap-3">
