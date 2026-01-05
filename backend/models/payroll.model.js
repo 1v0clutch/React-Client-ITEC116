@@ -12,4 +12,4 @@ const PayrollSchema = new mongoose.Schema({
   dateProcessed: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("Payroll", PayrollSchema);
+module.exports = mongoose.models.Payroll || mongoose.model("Payroll", PayrollSchema);

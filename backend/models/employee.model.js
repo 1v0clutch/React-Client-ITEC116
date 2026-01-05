@@ -8,4 +8,4 @@ const EmployeeSchema = new mongoose.Schema({
   hireDate: { type: String, required: true },
 });
 
-module.exports = mongoose.model("Employee", EmployeeSchema);
+module.exports = mongoose.models.Employee || mongoose.model("Employee", EmployeeSchema);
