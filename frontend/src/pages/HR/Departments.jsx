@@ -1,58 +1,109 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function Departments({ data = {}, setData }) {
-  const departments = data.departments || [];
+  const [departments, setDepartments] = useState([]);
   const employees = data.employees || [];
   const [dept, setDept] = useState({ name: "", head: "" });
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("date");
   const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Add Department
-  const addDepartment = () => {
+  useEffect(() => {
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/departments");
+      const data = await response.json();
+      setDepartments(data);
+      setData({ ...data, departments: data });
+    } catch (err) {
+      console.error("Error fetching departments:", err);
+    }
+  };
+
+  const addDepartment = async () => {
     if (!dept.name) return;
-    const newDept = { id: Date.now(), ...dept };
-    setData({ ...data, departments: [...data.departments, newDept] });
-    setDept({ name: "", head: "" });
+    setLoading(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/departments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dept),
+      });
+      const newDept = await response.json();
+      setDepartments([...departments, newDept]);
+      setData({ ...data, departments: [...departments, newDept] });
+      setDept({ name: "", head: "" });
+      alert("Department added successfully!");
+    } catch (err) {
+      console.error("Error adding department:", err);
+      alert("Error adding department");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Delete Department
-  const deleteDepartment = (id) => {
-    setData({
-      ...data,
-      departments: data.departments.filter((d) => d.id !== id),
-    });
+  const deleteDepartment = async (id) => {
+    if (!window.confirm("Are you sure?")) return;
+    setLoading(true);
+    try {
+      await fetch(`http://localhost:8000/api/departments/${id}`, {
+        method: "DELETE",
+      });
+      const updated = departments.filter((d) => d._id !== id);
+      setDepartments(updated);
+      setData({ ...data, departments: updated });
+      alert("Department deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting department:", err);
+      alert("Error deleting department");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Edit Department
   const startEdit = (d) => {
-    setEditing(d.id);
+    setEditing(d._id);
     setDept({
       name: d.name,
       head: d.head || "",
     });
   };
 
-  const saveEdit = () => {
-    setData({
-      ...data,
-      departments: data.departments.map((d) =>
-        d.id === editing ? { ...d, ...dept } : d
-      ),
-    });
-    setEditing(null);
-    setDept({ name: "", head: "" });
+  const saveEdit = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8000/api/departments/${editing}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dept),
+      });
+      const updated = await response.json();
+      const deptList = departments.map((d) => (d._id === editing ? updated : d));
+      setDepartments(deptList);
+      setData({ ...data, departments: deptList });
+      setEditing(null);
+      setDept({ name: "", head: "" });
+      alert("Department updated successfully!");
+    } catch (err) {
+      console.error("Error updating department:", err);
+      alert("Error updating department");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Filter & Sort
   const filtered = departments
     .filter((d) =>
       d.name.toLowerCase().includes(search.toLowerCase())
     )
     .sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
-      return b.id - a.id;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
 
   const getEmployeeCount = (deptName) => {
@@ -132,7 +183,7 @@ export default function Departments({ data = {}, setData }) {
           <tbody>
             {filtered.length > 0 ? (
               filtered.map((d) => (
-                <tr key={d.id} className="hover:bg-gray-50">
+                <tr key={d._id} className="hover:bg-gray-50">
                   <td className="border px-3 py-2 font-bold">{d.name}</td>
                   <td className="border px-3 py-2">{d.head || "N/A"}</td>
                   <td className="border px-3 py-2">
@@ -152,7 +203,7 @@ export default function Departments({ data = {}, setData }) {
                       Edit
                     </button>
                     <button
-                      onClick={() => deleteDepartment(d.id)}
+                      onClick={() => deleteDepartment(d._id)}
                       className="text-red-600 hover:underline"
                     >
                       Delete

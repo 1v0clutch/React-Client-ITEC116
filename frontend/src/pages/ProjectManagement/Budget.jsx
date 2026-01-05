@@ -20,8 +20,6 @@ export default function ProjectBudget({ project }) {
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedTasks, setEditedTasks] = useState({});
-<<<<<<< HEAD
-=======
   const [isSynced, setIsSynced] = useState(false);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [procurementRequisitions, setProcurementRequisitions] = useState([]);
@@ -33,7 +31,6 @@ export default function ProjectBudget({ project }) {
     source: "inventory",
     estimatedCost: "",
   });
->>>>>>> module_9
 
   // ✅ Fetch all data when project changes
   useEffect(() => {
@@ -69,12 +66,9 @@ export default function ProjectBudget({ project }) {
       }
       const data = await res.json();
       setBudgetData(data);
-<<<<<<< HEAD
-=======
       if (data?.tasks && data.tasks.length > 0) {
         setIsSynced(true);
       }
->>>>>>> module_9
     } catch (err) {
       console.error("Error fetching project budget:", err);
     }
@@ -156,12 +150,9 @@ export default function ProjectBudget({ project }) {
       if (res.ok) {
         alert("Project budget synced successfully!");
         setBudgetData(result.projectBudget);
-<<<<<<< HEAD
-=======
         setIsSynced(true);
         // Refresh material data after sync
         fetchMaterialCosts(project._id);
->>>>>>> module_9
       } else {
         alert(result.message || "Sync failed");
       }
@@ -173,8 +164,6 @@ export default function ProjectBudget({ project }) {
     }
   };
 
-<<<<<<< HEAD
-=======
   // ✅ Open material request modal
   const openMaterialRequest = (task) => {
     setSelectedTask(task);
@@ -258,7 +247,6 @@ export default function ProjectBudget({ project }) {
     }
   };
 
->>>>>>> module_9
   // ✅ Handle edits
   const handleChange = (taskId, field, value) => {
     setBudgetData((prev) => ({
@@ -345,9 +333,6 @@ export default function ProjectBudget({ project }) {
     }
   };
 
-<<<<<<< HEAD
-  // ✅ UI
-=======
   // Calculate totals with material costs
   const calculateTotals = () => {
     if (!budgetData?.tasks || budgetData.tasks.length === 0) {
@@ -400,7 +385,6 @@ export default function ProjectBudget({ project }) {
 
   const totals = calculateTotals();
 
->>>>>>> module_9
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -462,107 +446,6 @@ export default function ProjectBudget({ project }) {
             {budgetData.tasks?.length === 0 ? (
               <p className="text-gray-500 text-sm">No tasks found.</p>
             ) : (
-<<<<<<< HEAD
-              <table className="w-full border-collapse">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Phase</th>
-                    <th className="px-4 py-3 text-left">Task Name</th>
-                    <th className="px-4 py-3 text-left">Budget Est.</th>
-                    <th className="px-4 py-3 text-left">Labor</th>
-                    <th className="px-4 py-3 text-left">Materials</th>
-                    <th className="px-4 py-3 text-left">Overhead</th>
-                    <th className="px-4 py-3 text-left">Actual Cost</th>
-                    <th className="px-4 py-3 text-left">Variance</th>
-                    <th className="px-4 py-3 text-left">Status</th>
-                    <th className="px-4 py-3 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {budgetData.tasks.map((task) => (
-                    <tr key={task.taskId} className="border-t hover:bg-gray-50">
-                      <td className="px-4 py-3">{task.phaseName}</td>
-                      <td className="px-4 py-3">{task.taskName}</td>
-                      <td className="px-4 py-3">
-                        ₱{parseFloat(task.budgetEst || 0).toLocaleString()}
-                      </td>
-
-                      {/* Editable fields */}
-                      {["labor", "materials"].map((field) => (
-                        <td key={field} className="px-4 py-3">
-                          {editMode ? (
-                            <input
-                              type="number"
-                              value={task[field] || ""}
-                              onChange={(e) =>
-                                handleChange(task.taskId, field, e.target.value)
-                              }
-                              className="w-24 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
-                            />
-                          ) : (
-                            <span>
-                              ₱{parseFloat(task[field] || 0).toLocaleString()}
-                            </span>
-                          )}
-                        </td>
-                      ))}
-
-                      <td className="px-4 py-3 text-gray-700">
-                        ₱{parseFloat(task.overhead || 0).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        ₱{parseFloat(task.actualCost || 0).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        ₱{parseFloat(task.variance || 0).toLocaleString()}
-                      </td>
-
-                      <td className="px-4 py-3">
-                        {editMode ? (
-                          <select
-                            value={task.status}
-                            onChange={(e) =>
-                              handleChange(
-                                task.taskId,
-                                "status",
-                                e.target.value
-                              )
-                            }
-                            className="px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-orange-400"
-                          >
-                            <option>Planned</option>
-                            <option>In Progress</option>
-                            <option>Completed</option>
-                            <option>Over Budget</option>
-                          </select>
-                        ) : (
-                          <span
-                            className={`font-semibold ${
-                              task.status === "Completed"
-                                ? "text-green-600"
-                                : task.status === "Over Budget"
-                                ? "text-red-600"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            {task.status}
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => deleteTask(task.taskId)}
-                          className="text-red-600 hover:text-red-800 transition"
-                        >
-                          <FaTrash />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-=======
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
@@ -746,7 +629,6 @@ export default function ProjectBudget({ project }) {
                   </table>
                 </div>
               </>
->>>>>>> module_9
             )}
           </div>
         ) : (

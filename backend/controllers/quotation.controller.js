@@ -13,7 +13,10 @@ exports.createQuotation = async (req, res) => {
 
 exports.getAllQuotations = async (req, res) => {
   try {
-    const quotations = await Quotation.find().populate("productId").populate("convertedToOrderId");
+    const quotations = await Quotation.find()
+      .populate("customerId")
+      .populate("productId")
+      .populate("convertedToOrderId");
     res.json(quotations);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -22,7 +25,10 @@ exports.getAllQuotations = async (req, res) => {
 
 exports.getQuotationById = async (req, res) => {
   try {
-    const quotation = await Quotation.findById(req.params.id).populate("productId").populate("convertedToOrderId");
+    const quotation = await Quotation.findById(req.params.id)
+      .populate("customerId")
+      .populate("productId")
+      .populate("convertedToOrderId");
     if (!quotation) return res.status(404).json({ error: "Quotation not found" });
     res.json(quotation);
   } catch (error) {
@@ -34,7 +40,10 @@ exports.updateQuotation = async (req, res) => {
   try {
     const quotation = await Quotation.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
-    }).populate("productId").populate("convertedToOrderId");
+    })
+      .populate("customerId")
+      .populate("productId")
+      .populate("convertedToOrderId");
     if (!quotation) return res.status(404).json({ error: "Quotation not found" });
     res.json({ message: "Quotation updated successfully", quotation });
   } catch (error) {
@@ -55,6 +64,7 @@ exports.deleteQuotation = async (req, res) => {
 exports.getQuotationsByCustomer = async (req, res) => {
   try {
     const quotations = await Quotation.find({ customerId: req.params.customerId })
+      .populate("customerId")
       .populate("productId")
       .populate("convertedToOrderId");
     res.json(quotations);
@@ -70,7 +80,10 @@ exports.updateQuotationStatus = async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    ).populate("productId").populate("convertedToOrderId");
+    )
+      .populate("customerId")
+      .populate("productId")
+      .populate("convertedToOrderId");
     if (!quotation) return res.status(404).json({ error: "Quotation not found" });
     res.json({ message: "Quotation status updated", quotation });
   } catch (error) {
@@ -125,7 +138,9 @@ exports.rejectQuotation = async (req, res) => {
       req.params.id,
       { status: "rejected" },
       { new: true }
-    ).populate("productId");
+    )
+      .populate("customerId")
+      .populate("productId");
     if (!quotation) return res.status(404).json({ error: "Quotation not found" });
     res.json({ message: "Quotation rejected", quotation });
   } catch (error) {

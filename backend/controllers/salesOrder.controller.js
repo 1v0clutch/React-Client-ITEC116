@@ -12,7 +12,9 @@ exports.createOrder = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await SalesOrder.find().populate("productId");
+    const orders = await SalesOrder.find()
+      .populate("customerId")
+      .populate("productId");
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -21,7 +23,9 @@ exports.getAllOrders = async (req, res) => {
 
 exports.getOrderById = async (req, res) => {
   try {
-    const order = await SalesOrder.findById(req.params.id).populate("productId");
+    const order = await SalesOrder.findById(req.params.id)
+      .populate("customerId")
+      .populate("productId");
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json(order);
   } catch (error) {
@@ -33,7 +37,9 @@ exports.updateOrder = async (req, res) => {
   try {
     const order = await SalesOrder.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
-    }).populate("productId");
+    })
+      .populate("customerId")
+      .populate("productId");
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json({ message: "Order updated successfully", order });
   } catch (error) {
@@ -53,7 +59,9 @@ exports.deleteOrder = async (req, res) => {
 
 exports.getOrdersByCustomer = async (req, res) => {
   try {
-    const orders = await SalesOrder.find({ customerId: req.params.customerId }).populate("productId");
+    const orders = await SalesOrder.find({ customerId: req.params.customerId })
+      .populate("customerId")
+      .populate("productId");
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -67,7 +75,9 @@ exports.updateOrderStatus = async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    ).populate("productId");
+    )
+      .populate("customerId")
+      .populate("productId");
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json({ message: "Order status updated", order });
   } catch (error) {
@@ -82,7 +92,9 @@ exports.updateInvoiceStatus = async (req, res) => {
       req.params.id,
       { invoiceStatus },
       { new: true }
-    ).populate("productId");
+    )
+      .populate("customerId")
+      .populate("productId");
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json({ message: "Invoice status updated", order });
   } catch (error) {

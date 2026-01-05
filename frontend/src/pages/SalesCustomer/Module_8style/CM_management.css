@@ -310,3 +310,201 @@ input:focus, select:focus {
   font-style: italic;
   padding: 10px;
 }
+
+/* Analytics Styles */
+.crm-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  width: 100%;
+  max-width: 900px;
+  justify-content: center;
+}
+
+.tab-btn {
+  background: #fff;
+  color: #232526;
+  border: 2px solid #e0e0e0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.tab-btn:hover {
+  border-color: #ee7829;
+  background: #f7f7f7;
+}
+
+.tab-btn.active {
+  background: #ee7829;
+  color: #fff;
+  border-color: #ee7829;
+}
+
+.btn-refresh {
+  background: #10b981;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+  margin-bottom: 15px;
+}
+
+.btn-refresh:hover {
+  background: #059669;
+}
+
+.analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.summary-stat {
+  background: #f7f7f7;
+  border: 1px solid #e0e0e0;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-weight: 600;
+  color: #232526;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ee7829;
+}
+
+.analytics-table-container {
+  width: 100%;
+  max-width: 1400px;
+  overflow-x: auto;
+  margin-bottom: 25px;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  color: #232526;
+  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.analytics-table thead {
+  background: #ee7829;
+  color: #fff;
+}
+
+.analytics-table th {
+  padding: 14px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.analytics-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.analytics-table tbody tr:hover {
+  background-color: #f7f7f7;
+}
+
+.analytics-table td {
+  padding: 12px 14px;
+  font-size: 0.9rem;
+}
+
+.frequency-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.frequency-badge.frequent {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.frequency-badge.regular {
+  background: #2196F3;
+  color: #fff;
+}
+
+.frequency-badge.rare {
+  background: #FF9800;
+  color: #fff;
+}
+
+.frequency-badge.new {
+  background: #9C27B0;
+  color: #fff;
+}
+
+.risk-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.risk-badge.low {
+  background: #d4edda;
+  color: #155724;
+}
+
+.risk-badge.medium {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.risk-badge.high {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.loyalty-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-bar {
+  width: 80px;
+  height: 20px;
+  background: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.score-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.loyalty-score span {
+  font-weight: 600;
+  min-width: 30px;
+}

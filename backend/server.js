@@ -33,8 +33,16 @@ const salaryRoutes = require("./routes/salary.routes"); // For /api/salary
 const projectBudgetRoutes = require("./routes/projectBudget.routes");
 const salesOrderRoutes = require("./routes/salesOrder.routes");
 const quotationRoutes = require("./routes/quotation.routes");
+<<<<<<< HEAD
 const ecommerceRoutes = require("./routes/ecommerce.routes"); // Module 6 - Separate customer portal
 const uploadRoutes = require("./routes/upload.routes");
+=======
+const crmRoutes = require("./routes/crm.routes");
+const analyticsRoutes = require("./routes/analytics.routes");
+const departmentsRoutes = require("./routes/departments.routes");
+const salesTargetRoutes = require("./routes/salesTarget.routes");
+const supportCaseRoutes = require("./routes/supportCase.routes");
+>>>>>>> c0811d0fac24acc0d6f9e5388d59d608a4f1ac9e
 
 //Middleware
 app.use(
@@ -59,7 +67,7 @@ connectDB();
 // ✅ HR Core Routes
 //app.use("/api/hr", hrRoutes);
 //app.use("/api/employees", employeesRoutes);
-//app.use("/api/departments", departmentsRoutes);
+app.use("/api/departments", departmentsRoutes);
 //app.use("/api/salary", salaryRoutes);
 //app.use("/api/payroll", payrollRoutes);
 
@@ -93,9 +101,16 @@ app.use("/api/salary", salaryRoutes); // Add missing /api/salary route
 app.use("/api/projectBudget", projectBudgetRoutes);
 app.use("/api/sales-orders", salesOrderRoutes);
 app.use("/api/quotations", quotationRoutes);
+<<<<<<< HEAD
 app.use("/api/ecommerce", ecommerceRoutes); // Add e-commerce routes
 app.use("/api/bi", biRoutes); // Add BI routes
 app.use("/api/upload", uploadRoutes); // Add upload routes
+=======
+app.use("/api/crm", crmRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/sales-targets", salesTargetRoutes);
+app.use("/api/support-cases", supportCaseRoutes);
+>>>>>>> c0811d0fac24acc0d6f9e5388d59d608a4f1ac9e
 
 // ✅ Finance
 app.use("/api/finance", financeRoutes);
