@@ -43,7 +43,7 @@ import SalesReport from "./pages/SalesCustomer/salerep";
 import Project from "./pages/ProjectManagement/Project";
 import ProjectForm from "./pages/ProjectManagement/ProjectForm";
 // 👇 ADD THIS RIGHT AFTER YOUR IMPORTS
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
 
 
 function App() {
@@ -72,7 +72,7 @@ function App() {
           fetch(`${API_BASE}/salary`),
         ]);
 
-        const [employees, departments, attendance, payroll, salary] =
+        const [employeesResult, departmentsResult, attendanceResult, payrollResult, salaryResult] =
           await Promise.all([
             employeesRes.json(),
             departmentsRes.json(),
@@ -80,6 +80,13 @@ function App() {
             payrollRes.json(),
             salaryRes.json(),
           ]);
+
+        // Handle new API response format
+        const employees = employeesResult.data || employeesResult || [];
+        const departments = departmentsResult.data || departmentsResult || [];
+        const attendance = attendanceResult.data || attendanceResult || [];
+        const payroll = payrollResult.data || payrollResult || [];
+        const salary = salaryResult.data || salaryResult || [];
 
         setData({ employees, departments, attendance, payroll, salary });
       } catch (error) {
@@ -96,6 +103,8 @@ function App() {
         <Sidebar />
         <div className="ml-56 p-5 w-full bg-gray-50 min-h-screen">
           <Routes>
+            {/* Default route */}
+            <Route path="/" element={<Dashboard data={data} setData={setData} />} />
             {/* Procurement */}
             <Route path="/procurement/suppliers" element={<Suppliers />} />
             <Route path="/procurement/requisition" element={<Requisition />} />

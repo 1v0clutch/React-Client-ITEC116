@@ -1,46 +1,24 @@
 const express = require("express");
 const router = express.Router();
-const Payroll = require("../models/payroll.model");
+const controller = require("../controllers/payroll.controller");
 
 // Get all payroll records
-router.get("/", async (req, res) => {
-  try {
-    const payrolls = await Payroll.find();
-    res.json(payrolls);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+router.get("/", controller.getAll);
+
+// Get payroll by employee
+router.get("/employee/:employeeId", controller.getByEmployee);
+
+// Get payroll by period
+router.get("/period/:payPeriod", controller.getByPeriod);
 
 // Add payroll record
-router.post("/", async (req, res) => {
-  try {
-    const payroll = new Payroll(req.body);
-    await payroll.save();
-    res.json(payroll);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
+router.post("/", controller.create);
 
 // Update payroll record
-router.put("/:id", async (req, res) => {
-  try {
-    const updated = await Payroll.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
+router.put("/:id", controller.update);
+router.patch("/:id", controller.update);
 
 // Delete payroll record
-router.delete("/:id", async (req, res) => {
-  try {
-    await Payroll.findByIdAndDelete(req.params.id);
-    res.json({ message: "Payroll record deleted" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+router.delete("/:id", controller.delete);
 
 module.exports = router;

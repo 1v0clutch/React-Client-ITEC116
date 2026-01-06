@@ -31,7 +31,7 @@ const app = express();
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -48,17 +48,13 @@ connectDB();
 // =============================
 
 // ✅ HR Core Routes
-app.use("/api/hr", hrRoutes);
 app.use("/api/employees", employeesRoutes);
 app.use("/api/departments", departmentsRoutes);
-app.use("/api/salary", salaryRoutes);
-app.use("/api/payroll", payrollRoutes)
-
-// ✅ HR Submodules
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
-app.use("/api/payroll", payrollRoutes);
 app.use("/api/salary", salaryRoutes);
+app.use("/api/payroll", payrollRoutes);
+app.use("/api/hr", hrRoutes);
 
 // ✅ Procurement & Inventory
 app.use("/api/inventory", inventoryRoutes);
@@ -82,5 +78,5 @@ app.get("/", (req, res) => {
 // =============================
 // START SERVER
 // =============================
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

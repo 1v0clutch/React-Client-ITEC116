@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const AttendanceSchema = new mongoose.Schema({
   employee: { type: String, required: true },
+  employeeId: { type: String }, // Add employee ID field
   date: { type: String, required: true },
   timeIn: { type: String, required: true },
   timeOut: { type: String, default: null },
