@@ -1,11 +1,18 @@
+<<<<<<< HEAD
 const DemandForecast = require("../models/DemandForecast");
 const Inventory = require("../models/Inventory");
 
 // Create demand forecast
+=======
+const DemandForecast = require('../demandForecast.model');
+
+// CREATE
+>>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
 exports.createForecast = async (req, res) => {
   try {
     const forecast = new DemandForecast(req.body);
     await forecast.save();
+<<<<<<< HEAD
     await forecast.populate("itemId", "name sku category");
     res.status(201).json({ message: "Demand forecast created", forecast });
   } catch (error) {
@@ -101,3 +108,11 @@ exports.generateHistoricalForecast = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+=======
+    res.status(201).json(forecast);
+  } catch (err) {
+    console.error('❌ Error saving forecast:', err);
+    res.status(500).json({ message: 'Error saving forecast', error: err });
+  }
+};
+>>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760

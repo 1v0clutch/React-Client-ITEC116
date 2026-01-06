@@ -3,6 +3,7 @@ const Leave = require("../models/leave.model");
 // Get all leave records
 exports.getAll = async (req, res) => {
   try {
+<<<<<<< HEAD
     const records = await Leave.find().sort({ appliedDate: -1 });
     res.status(200).json({
       success: true,
@@ -16,12 +17,20 @@ exports.getAll = async (req, res) => {
       message: "Error fetching leave records",
       error: error.message
     });
+=======
+    const leaves = await Leave.find().sort({ createdAt: -1 });
+    res.json(leaves);
+  } catch (err) {
+    console.error("leave.getAll:", err);
+    res.status(500).json({ message: "Server error" });
+>>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
   }
 };
 
 // Create new leave application
 exports.create = async (req, res) => {
   try {
+<<<<<<< HEAD
     const record = new Leave(req.body);
     const savedRecord = await record.save();
     res.status(201).json({
@@ -148,5 +157,36 @@ exports.delete = async (req, res) => {
       message: "Error deleting leave application",
       error: error.message
     });
+=======
+    const payload = req.body;
+    const leave = new Leave(payload);
+    await leave.save();
+    res.status(201).json(leave);
+  } catch (err) {
+    console.error("leave.create:", err);
+    res.status(400).json({ message: "Invalid payload" });
+  }
+};
+
+exports.update = async (req, res) => {
+  try {
+    const updated = await Leave.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: "Not found" });
+    res.json(updated);
+  } catch (err) {
+    console.error("leave.update:", err);
+    res.status(400).json({ message: "Update failed" });
+  }
+};
+
+exports.delete = async (req, res) => {
+  try {
+    const deleted = await Leave.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Not found" });
+    res.json({ message: "Leave deleted successfully", deleted });
+  } catch (err) {
+    console.error("leave.delete:", err);
+    res.status(400).json({ message: "Delete failed" });
+>>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
   }
 };

@@ -41,6 +41,7 @@ exports.create = async (req, res) => {
 
 // Update attendance record
 exports.update = async (req, res) => {
+<<<<<<< HEAD
   try {
     const updated = await Attendance.findByIdAndUpdate(
       req.params.id, 
@@ -118,3 +119,10 @@ exports.delete = async (req, res) => {
     });
   }
 };
+=======
+  const updated = await Attendance.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
+  res.json(updated);
+};
+>>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760

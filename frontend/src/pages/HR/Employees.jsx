@@ -215,6 +215,7 @@ export default function Employees({ data = {}, setData }) {
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="px-6 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -366,6 +367,64 @@ export default function Employees({ data = {}, setData }) {
                   {employees.length === 0 ? "Get started by adding your first employee." : "Try adjusting your search or filter criteria."}
                 </p>
               </div>
+=======
+      {/* Employee Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full border border-gray-200">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border px-3 py-2 text-left">Employee ID</th>
+              <th className="border px-3 py-2 text-left">Name</th>
+              <th className="border px-3 py-2 text-left">Designation</th>
+              <th className="border px-3 py-2 text-left">Department</th>
+              <th className="border px-3 py-2 text-left">Employment Type</th>
+              <th className="border px-3 py-2 text-left">Hire Date</th>
+              <th className="border px-3 py-2 text-left">Status</th>
+              <th className="border px-3 py-2 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {employees.length > 0 ? (
+              employees.map((e, index) => (
+                <tr key={e.id || e.empId || `emp-${index}`} className="hover:bg-gray-50">
+                  <td className="border px-3 py-2 font-mono">{e.empId}</td>
+                  <td className="border px-3 py-2">{e.name}</td>
+                  <td className="border px-3 py-2">{e.designation}</td>
+                  <td className="border px-3 py-2">{e.department}</td>
+                  <td className="border px-3 py-2">{e.employmentType}</td>
+                  <td className="border px-3 py-2">{e.hireDate}</td>
+                  <td className="border px-3 py-2">
+                    <span
+                      className={`px-2 py-1 rounded text-sm ${
+                        e.status === "Active"
+                          ? "bg-green-100 text-green-600"
+                          : e.status === "Inactive"
+                          ? "bg-gray-100 text-gray-600"
+                          : e.status === "Resigned"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-red-100 text-red-600"
+                      }`}
+                    >
+                      {e.status}
+                    </span>
+                  </td>
+                  <td className="border px-3 py-2">
+                    <button
+                      onClick={() => editEmployee(e.id)}
+                      className="text-blue-600 hover:underline mr-3"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteEmployee(e.id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+>>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">

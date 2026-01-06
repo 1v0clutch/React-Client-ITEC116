@@ -7,6 +7,8 @@ router.get("/", controller.getAll);
 
 // Create new leave application
 router.post("/", controller.create);
+router.patch("/:id", controller.update);
+router.delete("/:id", controller.delete);
 
 // Update leave status (approve/reject)
 router.patch("/:id", controller.updateStatus);

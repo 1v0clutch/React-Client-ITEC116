@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import FinanceLayout from "./FinanceLayout";
 
 export default function InventoryReport() {
   const [data, setData] = useState([]);
@@ -137,6 +136,70 @@ export default function InventoryReport() {
     URL.revokeObjectURL(url);
   };
 
+  const getTypeTone = (type) => {
+    const normalized = (type || "—").toString().toLowerCase();
+    if (
+      normalized.includes("in") ||
+      normalized.includes("receive") ||
+      normalized.includes("restock") ||
+      normalized.includes("purchase") ||
+      normalized.includes("add")
+    ) {
+      return "bg-emerald-100 text-emerald-700";
+    }
+    if (
+      normalized.includes("out") ||
+      normalized.includes("issue") ||
+      normalized.includes("dispatch") ||
+      normalized.includes("consume") ||
+      normalized.includes("sale")
+    ) {
+      return "bg-rose-100 text-rose-700";
+    }
+    return "bg-slate-100 text-slate-700";
+  };
+
+  const sortedData = useMemo(() => {
+    return [...data].sort((a, b) => {
+      const dateA = parseDate(a.date)?.getTime() || 0;
+      const dateB = parseDate(b.date)?.getTime() || 0;
+      return dateB - dateA;
+    });
+  }, [data]);
+
+  const metrics = useMemo(() => {
+    const totalMovements = sortedData.length;
+    const netQuantity = sortedData.reduce((sum, entry) => {
+      return sum + (Number.isFinite(entry.quantity) ? entry.quantity : 0);
+    }, 0);
+    const inbound = sortedData.filter((entry) => {
+      const type = (entry.type || "").toLowerCase();
+      return (
+        type.includes("in") ||
+        type.includes("receive") ||
+        type.includes("restock") ||
+        type.includes("purchase") ||
+        type.includes("add")
+      );
+    }).length;
+    const outbound = sortedData.filter((entry) => {
+      const type = (entry.type || "").toLowerCase();
+      return (
+        type.includes("out") ||
+        type.includes("issue") ||
+        type.includes("dispatch") ||
+        type.includes("consume") ||
+        type.includes("sale")
+      );
+    }).length;
+    return [
+      { label: "Total Movements", value: totalMovements.toLocaleString() },
+      { label: "Net Quantity", value: netQuantity.toLocaleString() },
+      { label: "Inbound", value: inbound.toLocaleString() },
+      { label: "Outbound", value: outbound.toLocaleString() },
+    ];
+  }, [sortedData]);
+
   const exportCsv = () => {
     const headers = ["Item", "Type", "Quantity", "Remarks", "Purchase Order", "Date"];
     const rows = sortedData.map((entry) => [
@@ -151,63 +214,95 @@ export default function InventoryReport() {
     downloadFile(csv, "text/csv", "csv");
   };
 
-  const sortedData = useMemo(() => {
-    return [...data].sort((a, b) => {
-      const dateA = parseDate(a.date)?.getTime() || 0;
-      const dateB = parseDate(b.date)?.getTime() || 0;
-      return dateB - dateA;
-    });
-  }, [data]);
-
   return (
-    <FinanceLayout title="Inventory Transactions">
-      <div className="flex flex-wrap justify-end gap-3 mb-4">
-        <button
-          type="button"
-          onClick={exportCsv}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          disabled={isFetching || !sortedData.length}
-        >
-          Download CSV
-        </button>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-blue-700 mb-2">Inventory Report</h1>
+        <p className="text-lg text-slate-600">Track inventory movements and transactions</p>
       </div>
+      <div className="bg-white shadow-lg rounded-xl p-6 overflow-x-auto">
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {metrics.map((metric) => (
+              <div
+                key={metric.label}
+                className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 shadow-sm"
+              >
+                <p className="text-xs uppercase tracking-wide text-indigo-600">{metric.label}</p>
+                <p className="mt-2 text-2xl font-semibold text-slate-900">{metric.value}</p>
+              </div>
+            ))}
+          </div>
 
-      {error ? (
-        <div className="text-center text-red-600">{error}</div>
-      ) : (
-        <table className="min-w-full border border-gray-300 text-sm text-gray-700">
-          <thead className="bg-blue-100 text-blue-900">
-            <tr>
-              <th className="p-3 text-left">Item</th>
-              <th className="p-3 text-center">Type</th>
-              <th className="p-3 text-right">Quantity</th>
-              <th className="p-3 text-left">Remarks</th>
-              <th className="p-3 text-left">Purchase Order</th>
-              <th className="p-3 text-center">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedData.length ? (
-              sortedData.map((entry) => (
-                <tr key={entry.id} className="border-t hover:bg-gray-50 transition">
-                  <td className="p-3">{entry.item}</td>
-                  <td className="p-3 text-center">{entry.type}</td>
-                  <td className="p-3 text-right">{entry.quantity}</td>
-                  <td className="p-3">{entry.remarks}</td>
-                  <td className="p-3">{entry.purchaseOrderId}</td>
-                  <td className="p-3 text-center">{formatDate(entry.date)}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td className="p-3 text-center text-gray-500" colSpan={6}>
-                  {isFetching ? "Loading inventory data..." : "No inventory data available"}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      )}
-    </FinanceLayout>
+          <div className="flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              onClick={exportCsv}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              disabled={isFetching || !sortedData.length}
+            >
+              Download CSV
+            </button>
+          </div>
+
+          {error ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50/80 p-8 text-center text-rose-600">
+              {error}
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+              <table className="min-w-full divide-y divide-slate-200 text-sm text-slate-700">
+                <thead className="bg-blue-100 text-blue-900">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold">Item</th>
+                    <th className="px-4 py-3 text-center font-semibold">Type</th>
+                    <th className="px-4 py-3 text-right font-semibold">Quantity</th>
+                    <th className="px-4 py-3 text-left font-semibold">Remarks</th>
+                    <th className="px-4 py-3 text-left font-semibold">Purchase Order</th>
+                    <th className="px-4 py-3 text-center font-semibold">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {sortedData.length ? (
+                    sortedData.map((entry) => (
+                      <tr key={entry.id} className="transition hover:bg-blue-50/60">
+                        <td className="px-4 py-3 font-medium text-slate-900">{entry.item}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${getTypeTone(
+                              entry.type
+                            )}`}
+                          >
+                            {entry.type}
+                          </span>
+                        </td>
+                        <td
+                          className={`px-4 py-3 text-right text-sm font-semibold ${
+                            Number.isFinite(entry.quantity) && entry.quantity < 0
+                              ? "text-rose-600"
+                              : "text-emerald-700"
+                          }`}
+                        >
+                          {Number.isFinite(entry.quantity) ? entry.quantity.toLocaleString() : "—"}
+                        </td>
+                        <td className="px-4 py-3">{entry.remarks}</td>
+                        <td className="px-4 py-3">{entry.purchaseOrderId}</td>
+                        <td className="px-4 py-3 text-center">{formatDate(entry.date)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className="px-4 py-6 text-center text-sm text-slate-500" colSpan={6}>
+                        {isFetching ? "Loading inventory data..." : "No inventory data available"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
