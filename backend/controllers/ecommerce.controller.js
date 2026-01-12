@@ -2,6 +2,7 @@ const OnlineOrder = require("../models/OnlineOrder");
 const Customer = require("../models/Customer");
 const Inventory = require("../models/Inventory");
 const SalesOrder = require("../models/SalesOrder");
+const FinanceInventoryTransaction = require("../models/FinanceInventoryTransaction");
 
 // =============================
 // CUSTOMER MANAGEMENT
@@ -193,22 +194,34 @@ exports.createOrder = async (req, res) => {
     
     // Step 5: Deduct inventory (CRITICAL WRITE TO MODULE 1)
     for (const item of items) {
-      await Inventory.findByIdAndUpdate(
+      const product = await Inventory.findByIdAndUpdate(
         item.productId,
         { 
           $inc: { quantity: -item.quantity },
           updatedAt: Date.now(),
-        }
+        },
+        { new: true }
       );
+
+      // Record finance inventory transaction (OUT)
+      await FinanceInventoryTransaction.create({
+        itemId: item.productId,
+        itemSku: product.sku || "",
+        item: product.name || "",
+        type: "Sale - E-Commerce",
+        quantity: -item.quantity,
+        remarks: `E-commerce order ${orderNumber}`,
+        date: new Date(),
+      });
     }
     
     // Step 6: Create corresponding Sales Orders (Integration with Module 8)
     // Create one sales order per item in the cart
     const salesOrderIds = [];
     
-    // Generate a numeric customer ID for SalesOrder (Module 8 compatibility)
-    // Using timestamp + random number to ensure uniqueness
-    const numericCustomerId = Date.now() % 1000000 + Math.floor(Math.random() * 1000);
+    // Use actual customer ID from e-commerce customer
+    const ecommerceCustomerId = customerId.toString();
+    const customerName = customer.name || "E-Commerce Customer";
     
     for (const item of orderItems) {
       // Calculate tax (12%) for this item
@@ -217,7 +230,8 @@ exports.createOrder = async (req, res) => {
       const itemTotalWithTax = itemSubtotal + taxAmount;
       
       const salesOrder = new SalesOrder({
-        customerId: numericCustomerId,
+        customerId: Date.now() % 1000000 + Math.floor(Math.random() * 1000),
+        customerName: customerName,
         productId: item.productId,
         quantity: item.quantity,
         totalAmount: itemTotalWithTax,
@@ -225,6 +239,8 @@ exports.createOrder = async (req, res) => {
         discount: 0,
         status: "pending",
         invoiceStatus: "unpaid",
+        orderSource: "ecommerce",
+        onlineOrderId: order._id,
       });
       
       await salesOrder.save();
@@ -363,13 +379,25 @@ exports.cancelOrder = async (req, res) => {
     
     // Restore inventory (CRITICAL WRITE TO MODULE 1)
     for (const item of order.items) {
-      await Inventory.findByIdAndUpdate(
+      const product = await Inventory.findByIdAndUpdate(
         item.productId,
         { 
           $inc: { quantity: item.quantity },
           updatedAt: Date.now(),
-        }
+        },
+        { new: true }
       );
+
+      // Record finance inventory transaction (IN - restoration)
+      await FinanceInventoryTransaction.create({
+        itemId: item.productId,
+        itemSku: product.sku || "",
+        item: product.name || item.productName || "",
+        type: "Return - E-Commerce Cancellation",
+        quantity: item.quantity,
+        remarks: `Order ${order.orderNumber} cancelled - inventory restored`,
+        date: new Date(),
+      });
     }
     
     // Update order status
@@ -403,13 +431,25 @@ exports.deleteOrder = async (req, res) => {
     // Restore inventory if order wasn't cancelled (CRITICAL WRITE TO MODULE 1)
     if (order.status !== "cancelled") {
       for (const item of order.items) {
-        await Inventory.findByIdAndUpdate(
+        const product = await Inventory.findByIdAndUpdate(
           item.productId,
           { 
             $inc: { quantity: item.quantity },
             updatedAt: Date.now(),
-          }
+          },
+          { new: true }
         );
+
+        // Record finance inventory transaction (IN - restoration)
+        await FinanceInventoryTransaction.create({
+          itemId: item.productId,
+          itemSku: product.sku || "",
+          item: product.name || item.productName || "",
+          type: "Return - E-Commerce Deletion",
+          quantity: item.quantity,
+          remarks: `Order ${order.orderNumber} deleted - inventory restored`,
+          date: new Date(),
+        });
       }
     }
     
@@ -441,13 +481,27 @@ exports.deleteAllOrders = async (req, res) => {
     for (const order of orders) {
       if (order.status !== "cancelled") {
         for (const item of order.items) {
-          await Inventory.findByIdAndUpdate(
+          const product = await Inventory.findByIdAndUpdate(
             item.productId,
             { 
               $inc: { quantity: item.quantity },
               updatedAt: Date.now(),
-            }
+            },
+            { new: true }
           );
+
+          // Record finance inventory transaction (IN - restoration)
+          if (product) {
+            await FinanceInventoryTransaction.create({
+              itemId: item.productId,
+              itemSku: product.sku || "",
+              item: product.name || item.productName || "",
+              type: "Return - Bulk E-Commerce Deletion",
+              quantity: item.quantity,
+              remarks: `Order ${order.orderNumber} deleted (bulk) - inventory restored`,
+              date: new Date(),
+            });
+          }
         }
       }
       

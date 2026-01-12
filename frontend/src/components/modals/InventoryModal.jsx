@@ -7,9 +7,54 @@ const InventoryModal = ({
   isEditing, 
   currentItem, 
   setCurrentItem, 
-  onSubmit 
+  onSubmit,
+  allItems = [] // Add allItems prop to check for SKU uniqueness
 }) => {
   if (!isOpen) return null;
+
+  // Generate unique SKU automatically
+  const generateSKU = (name, category) => {
+    if (!name || !category) return "";
+    
+    // Create base SKU from name and category
+    const namePrefix = name.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const categoryPrefix = category.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    
+    // Generate random suffix to ensure uniqueness
+    const timestamp = Date.now().toString().slice(-4);
+    const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    
+    let newSKU = `${namePrefix}${categoryPrefix}-${timestamp}${randomSuffix}`;
+    
+    // Ensure uniqueness by checking against existing items
+    while (allItems.some(item => item.sku === newSKU)) {
+      const newRandomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+      newSKU = `${namePrefix}${categoryPrefix}-${timestamp}${newRandomSuffix}`;
+    }
+    
+    return newSKU;
+  };
+
+  // Auto-generate SKU when name or category changes (for new items only)
+  const handleNameChange = (value) => {
+    setCurrentItem({ ...currentItem, name: value });
+    // Removed automatic SKU generation - user must click Generate button
+  };
+
+  const handleCategoryChange = (value) => {
+    setCurrentItem({ ...currentItem, category: value });
+    // Removed automatic SKU generation - user must click Generate button
+  };
+
+  // Manual SKU generation function
+  const handleGenerateSKU = () => {
+    if (currentItem.name && currentItem.category) {
+      const newSKU = generateSKU(currentItem.name, currentItem.category);
+      setCurrentItem({ ...currentItem, sku: newSKU });
+    } else {
+      alert("Please enter both item name and category first to generate SKU");
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -48,7 +93,7 @@ const InventoryModal = ({
                 <span>ℹ️</span> Quick Guide
               </h4>
               <ul className="text-sm text-slate-300 space-y-1">
-                <li>• <strong>SKU</strong>: Unique code (e.g., LAP-001, DESK-WOOD-01)</li>
+                <li>• <strong>SKU</strong>: Click 'Generate' button to create unique SKU from name and category</li>
                 <li>• <strong>Price</strong>: Add price to display in e-commerce store</li>
                 <li>• <strong>Image</strong>: Upload product photo for better presentation</li>
                 <li>• Fields marked with * are required</li>
@@ -64,9 +109,7 @@ const InventoryModal = ({
               <input
                 type="text"
                 value={currentItem.name}
-                onChange={(e) =>
-                  setCurrentItem({ ...currentItem, name: e.target.value })
-                }
+                onChange={(e) => handleNameChange(e.target.value)}
                 required
                 placeholder="e.g., Dell XPS 15 Laptop"
                 minLength={2}
@@ -78,22 +121,40 @@ const InventoryModal = ({
 
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-2">
-                SKU * <span className="text-xs text-slate-500">(Stock Keeping Unit)</span>
+                SKU {isEditing ? "*" : ""} <span className="text-xs text-slate-500">
+                  {isEditing ? "(Stock Keeping Unit)" : "(Auto-generated - you can customize)"}
+                </span>
               </label>
-              <input
-                type="text"
-                value={currentItem.sku}
-                onChange={(e) =>
-                  setCurrentItem({ ...currentItem, sku: e.target.value })
+              <div className="relative">
+                <input
+                  type="text"
+                  value={currentItem.sku}
+                  onChange={(e) =>
+                    setCurrentItem({ ...currentItem, sku: e.target.value })
+                  }
+                  required={isEditing}
+                  placeholder={isEditing ? "e.g., LAP-DELL-XPS15" : "Click Generate button to create SKU"}
+                  pattern="[A-Za-z0-9-_]{3,20}"
+                  minLength={3}
+                  maxLength={20}
+                  className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2.5 pr-20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={handleGenerateSKU}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition-colors"
+                  >
+                    Generate
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {isEditing 
+                  ? "3-20 characters: letters, numbers, hyphens, underscores only" 
+                  : "Click 'Generate' button to create SKU from name and category"
                 }
-                required
-                placeholder="e.g., LAP-DELL-XPS15"
-                pattern="[A-Za-z0-9-_]{3,20}"
-                minLength={3}
-                maxLength={20}
-                className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-              <p className="text-xs text-slate-500 mt-1">3-20 characters: letters, numbers, hyphens, underscores only</p>
+              </p>
             </div>
 
             <div>
@@ -103,9 +164,7 @@ const InventoryModal = ({
               <input
                 type="text"
                 value={currentItem.category}
-                onChange={(e) =>
-                  setCurrentItem({ ...currentItem, category: e.target.value })
-                }
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 required
                 placeholder="e.g., Electronics"
                 list="category-suggestions"

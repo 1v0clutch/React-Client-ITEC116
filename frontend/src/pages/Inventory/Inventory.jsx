@@ -32,12 +32,30 @@ const Inventory = () => {
   const [showModal, setShowModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [nameFilter, setNameFilter] = useState("");
+  const [skuFilter, setSkuFilter] = useState("");
 
   const API_INVENTORY = "http://localhost:8000/api/inventory";
 
   useEffect(() => {
     fetchAllItems();
   }, []);
+
+  // Generate unique SKU automatically
+  const generateSKU = (name, category) => {
+    if (!name || !category) return "";
+    
+    // Create base SKU from name and category
+    const namePrefix = name.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const categoryPrefix = category.substring(0, 3).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    
+    // Generate random suffix to ensure uniqueness
+    const timestamp = Date.now().toString().slice(-4);
+    const randomSuffix = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+    
+    return `${namePrefix}${categoryPrefix}-${timestamp}${randomSuffix}`;
+  };
 
   const fetchAllItems = async () => {
     try {
@@ -62,10 +80,16 @@ const Inventory = () => {
 
   const addItem = async () => {
     try {
+      // Generate SKU if not provided
+      let itemToAdd = { ...currentItem };
+      if (!itemToAdd.sku && itemToAdd.name && itemToAdd.category) {
+        itemToAdd.sku = generateSKU(itemToAdd.name, itemToAdd.category);
+      }
+
       const response = await fetch(`${API_INVENTORY}/addItem`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentItem),
+        body: JSON.stringify(itemToAdd),
       });
       const data = await response.json();
 
@@ -118,7 +142,7 @@ const Inventory = () => {
   };
 
   const deleteItem = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
+    if (!window.confirm("Are you sure you want to permanently delete this item? This action cannot be undone and will remove the item completely from the system, including any warehouse assignments.")) return;
 
     try {
       const response = await fetch(`${API_INVENTORY}/deleteItem/${id}`, {
@@ -127,11 +151,22 @@ const Inventory = () => {
       const data = await response.json();
 
       if (response.ok) {
+        // Also clean up warehouse assignments for this item
+        try {
+          await fetch(`http://localhost:8000/api/warehouses/removeItemFromAllWarehouses/${id}`, {
+            method: "DELETE",
+          });
+        } catch (warehouseError) {
+          console.warn("Failed to clean up warehouse assignments:", warehouseError);
+        }
+
         setMessage({
-          text: data.message || "Item deleted successfully",
+          text: data.message || "Item permanently deleted from inventory and all warehouses",
           type: "success",
         });
-        fetchAllItems();
+        // Remove item from local state immediately for better UX
+        setAllItems(prevItems => prevItems.filter(item => item._id !== id));
+        setItems(prevItems => prevItems.filter(item => item._id !== id));
       } else {
         setMessage({
           text: data.error || "Failed to delete item",
@@ -194,6 +229,8 @@ const Inventory = () => {
       description: "",
       category: "",
       quantity: 0,
+      price: 0,
+      imageUrl: "",
     });
     setIsEditing(false);
     setEditingId(null);
@@ -202,6 +239,7 @@ const Inventory = () => {
 
   const openAddModal = () => {
     resetForm();
+    // Don't auto-generate SKU - let user click Generate button
     setShowModal(true);
   };
 
@@ -212,6 +250,8 @@ const Inventory = () => {
       description: item.description || "",
       category: item.category,
       quantity: item.quantity,
+      price: item.price || 0,
+      imageUrl: item.imageUrl || "",
     });
     setIsEditing(true);
     setEditingId(item._id);
@@ -229,9 +269,23 @@ const Inventory = () => {
   // Get unique categories
   const categories = ["all", ...new Set(allItems.map(item => item.category))];
 
-  // Filter items based on search, category, and stock level
+  // Enhanced filtering function with multiple criteria
   const getFilteredItems = () => {
     let filtered = searchId.trim() ? items : allItems;
+
+    // Filter by name (if nameFilter is set)
+    if (nameFilter.trim()) {
+      filtered = filtered.filter(item => 
+        item.name.toLowerCase().includes(nameFilter.toLowerCase())
+      );
+    }
+
+    // Filter by SKU (if skuFilter is set)
+    if (skuFilter.trim()) {
+      filtered = filtered.filter(item => 
+        item.sku.toLowerCase().includes(skuFilter.toLowerCase())
+      );
+    }
 
     // Filter by category
     if (categoryFilter !== "all") {
@@ -248,6 +302,16 @@ const Inventory = () => {
     }
 
     return filtered;
+  };
+
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setCategoryFilter("all");
+    setStockFilter("all");
+    setNameFilter("");
+    setSkuFilter("");
+    setSearchId("");
+    fetchAllItems();
   };
 
   const filteredItems = getFilteredItems();
@@ -304,11 +368,20 @@ const Inventory = () => {
 
       {/* Enhanced Search and Filter Section */}
       <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border-2 border-gray-100 hover:border-indigo-200 transition-all duration-300">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-600 rounded-xl p-2 shadow-lg">
-            <Search className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-r from-blue-500 to-cyan-600 rounded-xl p-2 shadow-lg">
+              <Search className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800">Search & Filter</h3>
           </div>
-          <h3 className="text-xl font-bold text-gray-800">Search & Filter</h3>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            {showFilters ? "Hide Filters" : "Show Filters"}
+          </button>
         </div>
 
         {/* Search Bar */}
@@ -340,54 +413,89 @@ const Inventory = () => {
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-indigo-500" />
-            <span className="text-sm font-semibold text-gray-700">Filters:</span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Category:</label>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat === "all" ? "All Categories" : cat}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Advanced Filters - Collapsible */}
+        {showFilters && (
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-6 border-2 border-gray-200">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="w-5 h-5 text-indigo-500" />
+              <span className="text-lg font-semibold text-gray-700">Advanced Filters</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {/* Name Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Name:</label>
+                <input
+                  type="text"
+                  placeholder="Enter item name..."
+                  value={nameFilter}
+                  onChange={(e) => setNameFilter(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white"
+                />
+              </div>
 
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Stock Level:</label>
-            <select
-              value={stockFilter}
-              onChange={(e) => setStockFilter(e.target.value)}
-              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-            >
-              <option value="all">All Items</option>
-              <option value="in-stock">In Stock</option>
-              <option value="low">Low Stock</option>
-              <option value="out">Out of Stock</option>
-            </select>
-          </div>
+              {/* SKU Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by SKU:</label>
+                <input
+                  type="text"
+                  placeholder="Enter SKU..."
+                  value={skuFilter}
+                  onChange={(e) => setSkuFilter(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white"
+                />
+              </div>
 
-          {(categoryFilter !== "all" || stockFilter !== "all") && (
-            <button
-              onClick={() => {
-                setCategoryFilter("all");
-                setStockFilter("all");
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category:</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat === "all" ? "All Categories" : cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Stock Level Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Stock Level:</label>
+                <select
+                  value={stockFilter}
+                  onChange={(e) => setStockFilter(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white"
+                >
+                  <option value="all">All Items</option>
+                  <option value="in-stock">In Stock (≥10)</option>
+                  <option value="low">Low Stock (&lt;10)</option>
+                  <option value="out">Out of Stock (0)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Filter Actions */}
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {filteredItems.length} of {allItems.length} items
+              </div>
+              
+              {(categoryFilter !== "all" || stockFilter !== "all" || nameFilter.trim() || skuFilter.trim()) && (
+                <button
+                  onClick={clearAllFilters}
+                  className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-medium px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Clear All Filters
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Enhanced Items List */}
@@ -493,6 +601,7 @@ const Inventory = () => {
         currentItem={currentItem}
         setCurrentItem={setCurrentItem}
         onSubmit={handleModalSubmit}
+        allItems={allItems}
       />
     </div>
   );

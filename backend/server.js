@@ -52,6 +52,12 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
 // =============================
+// SERVE STATIC FILES (UPLOADS)
+// =============================
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// =============================
 // CONNECT TO DATABASE
 // =============================
 connectDB();

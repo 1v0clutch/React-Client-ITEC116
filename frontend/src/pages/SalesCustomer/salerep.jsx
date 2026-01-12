@@ -9,33 +9,83 @@ const salesData = [
 ];
 
 function SalesReport() {
-  const [filter, setFilter] = useState({ product: "", region: "", rep: "" });
+  const [salesData, setSalesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState({ product: "", source: "", status: "" });
+
+  useEffect(() => {
+    fetchSalesData();
+  }, []);
+
+  const fetchSalesData = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/sales-orders/all");
+      const data = await response.json();
+      setSalesData(data);
+    } catch (error) {
+      console.error("Error fetching sales data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filtered data
   const filtered = salesData.filter(s =>
-    (!filter.product || s.product === filter.product) &&
-    (!filter.region || s.region === filter.region) &&
-    (!filter.rep || s.rep === filter.rep)
+    (!filter.product || s.productId?._id === filter.product) &&
+    (!filter.source || s.orderSource === filter.source) &&
+    (!filter.status || s.status === filter.status)
   );
 
+  // Get unique products for filter
+  const uniqueProducts = [...new Set(salesData.map(s => s.productId).filter(Boolean))];
+
   // Calculate totals
-  const totalSales = filtered.reduce((sum, s) => sum + s.amount, 0);
-  const salesByProduct = salesData.reduce((acc, s) => {
-    acc[s.product] = (acc[s.product] || 0) + s.amount;
-    return acc;
-  }, {});
-  const salesByRegion = salesData.reduce((acc, s) => {
-    acc[s.region] = (acc[s.region] || 0) + s.amount;
-    return acc;
-  }, {});
-  const salesByRep = salesData.reduce((acc, s) => {
-    acc[s.rep] = (acc[s.rep] || 0) + s.amount;
+  const totalSales = filtered.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+  const totalOrders = filtered.length;
+  
+  // Sales by source
+  const salesBySource = filtered.reduce((acc, s) => {
+    const source = s.orderSource || "manual";
+    acc[source] = (acc[source] || 0) + (s.totalAmount || 0);
     return acc;
   }, {});
 
-  // Simple revenue forecast (average per day * 30)
-  const avgPerDay = salesData.length ? (salesData.reduce((sum, s) => sum + s.amount, 0) / salesData.length) : 0;
-  const forecastRevenue = Math.round(avgPerDay * 30);
+  // Sales by product
+  const salesByProduct = filtered.reduce((acc, s) => {
+    const productName = s.productId?.name || "Unknown";
+    acc[productName] = (acc[productName] || 0) + (s.totalAmount || 0);
+    return acc;
+  }, {});
+
+  // Sales by status
+  const salesByStatus = filtered.reduce((acc, s) => {
+    const status = s.status || "pending";
+    acc[status] = (acc[status] || 0) + (s.totalAmount || 0);
+    return acc;
+  }, {});
+
+  // Count by source
+  const countBySource = filtered.reduce((acc, s) => {
+    const source = s.orderSource || "manual";
+    acc[source] = (acc[source] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Revenue forecast (average per order * 30)
+  const avgPerOrder = totalOrders ? (totalSales / totalOrders) : 0;
+  const forecastRevenue = Math.round(avgPerOrder * 30);
+
+  // Paid vs Unpaid
+  const paidRevenue = filtered
+    .filter(s => s.invoiceStatus === "paid")
+    .reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+  const unpaidRevenue = filtered
+    .filter(s => s.invoiceStatus === "unpaid")
+    .reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+
+  if (loading) {
+    return <div className="report-container"><h2>Loading sales data...</h2></div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">

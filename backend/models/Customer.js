@@ -15,4 +15,4 @@ const CustomerSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
-module.exports = mongoose.model("Customer", CustomerSchema);
+module.exports = mongoose.models.Customer || mongoose.model("Customer", CustomerSchema);

@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const SalesOrderSchema = new mongoose.Schema(
   {
     customerId: { type: Number, required: true },
+    customerName: { type: String, default: "" },
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Inventory",
@@ -12,6 +13,16 @@ const SalesOrderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Quotation",
       default: null,
+    },
+    onlineOrderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "OnlineOrder",
+      default: null,
+    },
+    orderSource: {
+      type: String,
+      enum: ["manual", "ecommerce", "quotation"],
+      default: "manual",
     },
     quantity: { type: Number, required: true, min: 1 },
     discount: { type: Number, default: 0, min: 0, max: 100 },

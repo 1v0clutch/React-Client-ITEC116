@@ -1,6 +1,11 @@
 const Project = require("../models/Project");
 const Employee = require("../models/Employee");
 const ProjectBudget = require("../models/ProjectBudget");
+const axios = require("axios");
+
+// Inventory & Procurement APIs
+const INVENTORY_API = "http://localhost:8000/api/inventory";
+const PROCUREMENT_API = "http://localhost:8000/api/procurement";
 
 exports.create = async (req, res) => {
   try {
@@ -13,6 +18,8 @@ exports.create = async (req, res) => {
       phases,
       totalBudget,
       resourceAllocations,
+      materialRequirements,
+      estimatedMaterialCost,
     } = req.body;
 
     if (!name) {
@@ -45,6 +52,7 @@ exports.create = async (req, res) => {
           status: task.status || "Not Started",
           assignee: task.assignee || "",
           dependencies: task.dependencies || [],
+          materials: task.materials || [], // Include materials
         };
       });
 
@@ -66,11 +74,12 @@ exports.create = async (req, res) => {
       status: status || "Planned",
       phases: processedPhases,
       totalBudget: totalBudget || 0,
+      estimatedMaterialCost: estimatedMaterialCost || 0,
     });
 
     project = await project.save();
 
-    // ... rest of your existing code for resource allocations ...
+    // Process resource allocations
     const allocations = [];
     const teamSet = new Set();
 
@@ -121,6 +130,35 @@ exports.create = async (req, res) => {
 
       project.resourceAllocations = allocations;
       project.team = Array.from(teamSet);
+    }
+
+    // Process material requirements
+    if (
+      Array.isArray(materialRequirements) &&
+      materialRequirements.length > 0
+    ) {
+      project.materialRequirements = materialRequirements;
+
+      // Send procurement requests for materials marked as 'procurement'
+      const procurementRequests = materialRequirements.filter(
+        (m) => m.source === "procurement"
+      );
+      for (const req of procurementRequests) {
+        try {
+          await axios.post(`${PROCUREMENT_API}/requisitions`, {
+            projectId: project._id,
+            taskId: req.taskUid,
+            itemId: req.itemId,
+            quantity: req.quantity,
+            estimatedCost: req.estimatedCost,
+            requiredDate: req.requiredDate,
+            priority: "High",
+            status: "pending",
+          });
+        } catch (err) {
+          console.error("Error creating procurement requisition:", err.message);
+        }
+      }
     }
 
     // Final save to trigger any hooks
@@ -620,6 +658,245 @@ exports.deleteProject = async (req, res) => {
     console.error("Error deleting project:", err);
     res.status(500).json({
       message: err.message || "Error deleting project",
+    });
+  }
+};
+
+// ✅ Update task progress
+exports.updateTaskProgress = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { updates } = req.body;
+
+    if (!updates || !Array.isArray(updates)) {
+      return res.status(400).json({ message: "Updates array is required" });
+    }
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    let updatedCount = 0;
+
+    // Update progress for each task
+    updates.forEach((progressUpdate) => {
+      const { taskId, progress } = progressUpdate;
+
+      if (taskId && progress !== undefined) {
+        let taskFound = false;
+
+        // Find and update the task in phases
+        project.phases.forEach((phase) => {
+          phase.tasks.forEach((task) => {
+            if (String(task._id) === String(taskId)) {
+              task.progress = Math.min(
+                100,
+                Math.max(0, parseInt(progress) || 0)
+              );
+
+              // Update task status based on progress
+              if (task.progress === 100) {
+                task.status = "Completed";
+              } else if (task.progress > 0) {
+                task.status = "In Progress";
+              } else {
+                task.status = "Not Started";
+              }
+
+              taskFound = true;
+              updatedCount++;
+            }
+          });
+        });
+      }
+    });
+
+    // Recalculate phase progress
+    project.phases.forEach((phase) => {
+      if (phase.tasks && phase.tasks.length > 0) {
+        const totalProgress = phase.tasks.reduce(
+          (sum, task) => sum + (task.progress || 0),
+          0
+        );
+        phase.progress = Math.round(totalProgress / phase.tasks.length);
+      } else {
+        phase.progress = 0;
+      }
+    });
+
+    await project.save();
+
+    res.json({
+      message: `Progress updated for ${updatedCount} tasks`,
+      project,
+    });
+  } catch (err) {
+    console.error("Error updating task progress:", err);
+    res.status(500).json({
+      message: "Error updating task progress",
+      error: err.message,
+    });
+  }
+};
+
+// ✅ NEW: Get project-related inventory items
+exports.getProjectInventory = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    // Fetch inventory items from Inventory module
+    const response = await axios.get(`${INVENTORY_API}/getItems`);
+
+    res.json({
+      message: "Inventory items for project",
+      projectId,
+      items: response.data,
+    });
+  } catch (err) {
+    console.error("Error fetching project inventory:", err);
+    res.status(500).json({
+      message: "Error fetching inventory",
+      error: err.message,
+    });
+  }
+};
+
+// ✅ NEW: Create material requisition for project
+exports.createMaterialRequisition = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { taskId, itemId, quantity, requiredDate, priority } = req.body;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Call Procurement module API to create requisition
+    try {
+      const response = await axios.post(`${PROCUREMENT_API}/requisitions`, {
+        projectId,
+        taskId,
+        itemId,
+        quantity,
+        requiredDate,
+        priority: priority || "Medium",
+        status: "pending",
+      });
+
+      res.status(201).json({
+        message: "Material requisition created",
+        requisition: response.data,
+      });
+    } catch (procurementError) {
+      console.error("Procurement module error:", procurementError.message);
+      res.status(500).json({
+        message: "Error creating requisition in Procurement module",
+        error: procurementError.message,
+      });
+    }
+  } catch (err) {
+    console.error("Error creating material requisition:", err);
+    res.status(500).json({
+      message: "Error creating requisition",
+      error: err.message,
+    });
+  }
+};
+
+// ✅ NEW: Allocate inventory items to project task
+exports.allocateInventoryToTask = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { taskId, itemId, quantity } = req.body;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Call Inventory module API to allocate items
+    try {
+      const response = await axios.post(`${INVENTORY_API}/allocate`, {
+        itemId,
+        quantity,
+        projectId,
+        taskId,
+        allocationType: "project_task",
+      });
+
+      // Update project with allocation info
+      project.inventoryAllocations = project.inventoryAllocations || [];
+      project.inventoryAllocations.push({
+        itemId,
+        taskId,
+        quantity,
+        allocatedAt: new Date(),
+      });
+
+      await project.save();
+
+      res.status(200).json({
+        message: "Inventory allocated to task successfully",
+        allocation: response.data,
+      });
+    } catch (inventoryError) {
+      console.error("Inventory module error:", inventoryError.message);
+      res.status(500).json({
+        message: "Error allocating inventory",
+        error: inventoryError.message,
+      });
+    }
+  } catch (err) {
+    console.error("Error allocating inventory:", err);
+    res.status(500).json({
+      message: "Error allocating inventory",
+      error: err.message,
+    });
+  }
+};
+
+// ✅ NEW: Get project material status
+exports.getProjectMaterialStatus = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    // Get procurement requisitions for this project
+    let procurementStatus = [];
+    try {
+      const response = await axios.get(
+        `${PROCUREMENT_API}/requisitions/project/${projectId}`
+      );
+      procurementStatus = response.data;
+    } catch (procurementError) {
+      console.error(
+        "Error fetching procurement status:",
+        procurementError.message
+      );
+    }
+
+    // Get inventory allocations for this project
+    const inventoryAllocations = project.inventoryAllocations || [];
+
+    res.json({
+      projectId,
+      projectName: project.name,
+      procurementRequisitions: procurementStatus,
+      inventoryAllocations,
+      materialRequirements: project.materialRequirements || [],
+      estimatedMaterialCost: project.estimatedMaterialCost || 0,
+    });
+  } catch (err) {
+    console.error("Error fetching project material status:", err);
+    res.status(500).json({
+      message: "Error fetching material status",
+      error: err.message,
     });
   }
 };

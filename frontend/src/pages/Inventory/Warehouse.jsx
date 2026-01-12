@@ -38,7 +38,14 @@ const WarehouseManagement = () => {
       const res = await fetch(`${API_WAREHOUSE}/getAllWarehouse`);
       if (!res.ok) throw new Error("Failed to fetch warehouses");
       const data = await res.json();
-      setWarehouses(data);
+      
+      // Filter out items that no longer exist in inventory
+      const cleanedWarehouses = data.map(warehouse => ({
+        ...warehouse,
+        items: warehouse.items.filter(item => item.itemId && item.itemId._id)
+      }));
+      
+      setWarehouses(cleanedWarehouses);
     } catch (err) {
       setMessage({ text: err.message, type: "error" });
     }

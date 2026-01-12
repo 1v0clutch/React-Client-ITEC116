@@ -57,4 +57,4 @@ const OnlineOrderSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
-module.exports = mongoose.model("OnlineOrder", OnlineOrderSchema);
+module.exports = mongoose.models.OnlineOrder || mongoose.model("OnlineOrder", OnlineOrderSchema);
