@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 
-<<<<<<< HEAD
 const API_BASE = "http://localhost:8000/api";
 
 // TimeOut Input Component with confirmation
@@ -19,260 +18,9 @@ const TimeOutInput = ({ recordId, onTimeOutUpdate }) => {
   const handleCancel = () => {
     setTimeOut("");
     setShowConfirm(false);
-=======
-// Use env var if available, otherwise fallback to backend port 8000
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
-
-export default function LeaveAttendance({ data = {} }) {
-  const [activeTab, setActiveTab] = useState("attendance");
-  const [attendanceSearch, setAttendanceSearch] = useState("");
-  const [leaveSearch, setLeaveSearch] = useState("");
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [attendanceRecords, setAttendanceRecords] = useState([]);
-  const [leaveRecords, setLeaveRecords] = useState([]);
-  const [showAttendanceDropdown, setShowAttendanceDropdown] = useState(false);
-  const [showLeaveDropdown, setShowLeaveDropdown] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [serverOnline, setServerOnline] = useState(true);
-
-  const [leaveForm, setLeaveForm] = useState({
-    type: "",
-    reason: "",
-    startDate: "",
-    endDate: "",
-  });
-
-  // helper fetch functions
-  const fetchAttendance = async () => {
-    const url = `${API_BASE}/attendance`;
-    try {
-      console.log("[Attendance] GET", url);
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Failed to fetch attendance (status ${res.status})`);
-      const data = await res.json();
-      setAttendanceRecords(Array.isArray(data) ? data : []);
-      setServerOnline(true);
-    } catch (err) {
-      console.error("fetchAttendance error:", err);
-      setServerOnline(false);
-    }
   };
-
-  const fetchLeaves = async () => {
-    const url = `${API_BASE}/leaves`;
-    try {
-      console.log("[Leaves] GET", url);
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Failed to fetch leaves (status ${res.status})`);
-      const data = await res.json();
-      setLeaveRecords(Array.isArray(data) ? data : []);
-      setServerOnline(true);
-    } catch (err) {
-      console.error("fetchLeaves error:", err);
-      setServerOnline(false);
-    }
-  };
-
-  // Fetch attendance and leave records on mount and poll for updates
-  useEffect(() => {
-    fetchAttendance();
-    fetchLeaves();
-
-    const interval = setInterval(() => {
-      // try fetching periodically; respects serverOnline flag for logging/behavior
-      fetchAttendance();
-      fetchLeaves();
-    }, 5000); // every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Filters
-  const employees = data?.employees || [];
-
-  const filteredAttendanceEmployees = employees.filter((emp) => {
-    const q = attendanceSearch.toLowerCase();
-    return (
-      (emp?.name || "").toLowerCase().includes(q) ||
-      (emp?.employeeId || "").toLowerCase().includes(q)
-    );
-  });
-
-  const filteredLeaveEmployees = employees.filter((emp) => {
-    const q = leaveSearch.toLowerCase();
-    return (
-      (emp?.name || "").toLowerCase().includes(q) ||
-      (emp?.employeeId || "").toLowerCase().includes(q)
-    );
-  });
-
-  // Record attendance
-  const handleRecordAttendance = async (type) => {
-    if (!serverOnline) return alert("Server is offline. Start backend to record attendance.");
-    if (!selectedEmployee) return alert("Please select an employee.");
-    setIsProcessing(true);
-    try {
-      const nowIso = new Date().toISOString();
-
-      if (type === "in") {
-        const alreadyIn = attendanceRecords.find(
-          (r) => r.empId === selectedEmployee.employeeId && !r.timeOut
-        );
-        if (alreadyIn) {
-          alert("Already timed in!");
-          setIsProcessing(false);
-          return;
-        }
-
-        const newRecord = {
-          empId: selectedEmployee.employeeId,
-          name: selectedEmployee.name,
-          timeIn: nowIso,
-          timeOut: null,
-          overtime: "0 hours",
-        };
-
-        const res = await fetch(`${API_BASE}/attendance`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newRecord),
-        });
-        if (!res.ok) throw new Error("Failed to save time in");
-        const saved = await res.json();
-        setAttendanceRecords((prev) => [...prev, saved]);
-        setSelectedEmployee(null);
-        setAttendanceSearch("");
-        setShowAttendanceDropdown(false);
-      } else if (type === "out") {
-        const lastRecord = attendanceRecords
-          .slice()
-          .reverse()
-          .find((r) => r.empId === selectedEmployee.employeeId && !r.timeOut);
-        if (!lastRecord) {
-          alert("No time-in record found.");
-          setIsProcessing(false);
-          return;
-        }
-
-        const timeIn = new Date(lastRecord.timeIn);
-        const now = new Date();
-        const diffHours = (now - timeIn) / (1000 * 60 * 60);
-        const overtime = diffHours > 8 ? (diffHours - 8).toFixed(1) : 0;
-
-        const res = await fetch(`${API_BASE}/attendance/${lastRecord._id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            timeOut: now.toISOString(),
-            overtime: `${overtime} hours`,
-          }),
-        });
-        if (!res.ok) throw new Error("Failed to save time out");
-        const updated = await res.json();
-        setAttendanceRecords((prev) =>
-          prev.map((rec) => (rec._id === updated._id ? updated : rec))
-        );
-        setSelectedEmployee(null);
-        setAttendanceSearch("");
-        setShowAttendanceDropdown(false);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("An error occurred. Check console for details.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Apply Leave
-  const handleApplyLeave = async () => {
-    if (!serverOnline) return alert("Server is offline. Start backend to apply leave.");
-    if (!selectedEmployee) return alert("Please select an employee.");
-    if (
-      !leaveForm.type ||
-      !leaveForm.reason ||
-      !leaveForm.startDate ||
-      !leaveForm.endDate
-    )
-      return alert("Please fill all leave details.");
-
-    setIsProcessing(true);
-    try {
-      const newLeave = {
-        empId: selectedEmployee.employeeId,
-        name: selectedEmployee.name,
-        type: leaveForm.type,
-        reason: leaveForm.reason,
-        startDate: leaveForm.startDate,
-        endDate: leaveForm.endDate,
-        status: "Pending",
-      };
-
-      const res = await fetch(`${API_BASE}/leaves`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newLeave),
-      });
-      if (!res.ok) throw new Error("Failed to apply leave");
-      const saved = await res.json();
-      setLeaveRecords((prev) => [...prev, saved]);
-      setLeaveForm({ type: "", reason: "", startDate: "", endDate: "" });
-      setSelectedEmployee(null);
-      setLeaveSearch("");
-    } catch (err) {
-      console.error(err);
-      alert("An error occurred. Check console for details.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Approve / Reject / Delete Leave
-  const handleLeaveAction = async (index, action) => {
-    if (!serverOnline) return alert("Server is offline. Start backend to perform this action.");
-    const leave = leaveRecords[index];
-    if (!leave) return;
-
-    setIsProcessing(true);
-    try {
-      if (action === "delete") {
-        const res = await fetch(`${API_BASE}/leaves/${leave._id}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!res.ok) throw new Error("Failed to delete leave");
-        setLeaveRecords((prev) => prev.filter((rec) => rec._id !== leave._id));
-      } else {
-        const res = await fetch(`${API_BASE}/leaves/${leave._id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: action === "approve" ? "Approved" : "Rejected",
-          }),
-        });
-        if (!res.ok) throw new Error("Failed to update leave status");
-        const updated = await res.json();
-        setLeaveRecords((prev) =>
-          prev.map((rec) => (rec._id === updated._id ? updated : rec))
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      alert("An error occurred. Check console for details.");
-    } finally {
-      setIsProcessing(false);
-    }
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
-  };
-
-  // UI helpers: small delay on blur so click on dropdown works
-  const handleAttendanceInputBlur = () =>
-    setTimeout(() => setShowAttendanceDropdown(false), 150);
-  const handleLeaveInputBlur = () =>
-    setTimeout(() => setShowLeaveDropdown(false), 150);
 
   return (
-<<<<<<< HEAD
     <div className="flex items-center space-x-2">
       <input
         type="time"
@@ -283,17 +31,6 @@ export default function LeaveAttendance({ data = {} }) {
       />
       {timeOut && (
         <div className="flex space-x-1">
-=======
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {!serverOnline && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded">
-          Backend unreachable — start the server (backend) and MongoDB. API calls are disabled.
-        </div>
-      )}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        {/* Tabs */}
-        <div className="flex gap-4 mb-4">
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
           <button
             onClick={handleSubmit}
             className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
@@ -309,257 +46,7 @@ export default function LeaveAttendance({ data = {} }) {
             ✕
           </button>
         </div>
-<<<<<<< HEAD
       )}
-=======
-
-        {/* Attendance Section */}
-        {activeTab === "attendance" && (
-          <div>
-            <h2 className="font-semibold mb-2">Record Attendance</h2>
-
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search employee by name or ID..."
-                value={attendanceSearch}
-                onChange={(e) => {
-                  setAttendanceSearch(e.target.value);
-                  setShowAttendanceDropdown(true);
-                  setSelectedEmployee(null);
-                }}
-                onFocus={() => setShowAttendanceDropdown(true)}
-                onBlur={handleAttendanceInputBlur}
-                className="border p-2 w-full mb-2 rounded"
-              />
-
-              {showAttendanceDropdown &&
-                attendanceSearch &&
-                filteredAttendanceEmployees.length > 0 &&
-                !selectedEmployee && (
-                  <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
-                    {filteredAttendanceEmployees.map((emp, index) => (
-                      <li
-                        key={emp.employeeId || index}
-                        onMouseDown={(e) => e.preventDefault()} // prevent blur
-                        onClick={() => {
-                          setSelectedEmployee(emp);
-                          setAttendanceSearch(`${emp.name} (${emp.employeeId})`);
-                          setShowAttendanceDropdown(false);
-                        }}
-                        className="p-2 hover:bg-gray-100 cursor-pointer border-b"
-                      >
-                        <div className="font-semibold">{emp.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {emp.employeeId} — {emp.department} — Hired: {emp.hireDate}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-            </div>
-
-            {selectedEmployee && (
-              <div className="mt-3 flex gap-2">
-                <button
-                  onClick={() => handleRecordAttendance("in")}
-                  className="bg-green-500 text-white px-3 py-1 rounded"
-                  disabled={isProcessing || !serverOnline}
-                >
-                  Time In
-                </button>
-                <button
-                  onClick={() => handleRecordAttendance("out")}
-                  className="bg-red-500 text-white px-3 py-1 rounded"
-                  disabled={isProcessing || !serverOnline}
-                >
-                  Time Out
-                </button>
-              </div>
-            )}
-
-            <table className="w-full mt-4 border text-sm">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border p-2">Employee ID</th>
-                  <th className="border p-2">Employee</th>
-                  <th className="border p-2">Time In</th>
-                  <th className="border p-2">Time Out</th>
-                  <th className="border p-2">Overtime</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendanceRecords.map((rec, i) => (
-                  <tr key={rec._id || i}>
-                    <td className="border p-2">{rec.empId}</td>
-                    <td className="border p-2">{rec.name}</td>
-                    <td className="border p-2">
-                      {rec.timeIn ? new Date(rec.timeIn).toLocaleString() : "-"}
-                    </td>
-                    <td className="border p-2">
-                      {rec.timeOut ? new Date(rec.timeOut).toLocaleString() : "-"}
-                    </td>
-                    <td className="border p-2">{rec.overtime}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Leaves Section */}
-        {activeTab === "leaves" && (
-          <div>
-            <h2 className="font-semibold mb-2">Apply Leave</h2>
-
-            <div className="relative mb-3">
-              <input
-                type="text"
-                placeholder="Search employee by name or ID..."
-                value={leaveSearch}
-                onChange={(e) => {
-                  setLeaveSearch(e.target.value);
-                  setShowLeaveDropdown(true);
-                  setSelectedEmployee(null);
-                }}
-                onFocus={() => setShowLeaveDropdown(true)}
-                onBlur={handleLeaveInputBlur}
-                className="border p-2 w-full rounded"
-              />
-
-              {showLeaveDropdown &&
-                leaveSearch &&
-                filteredLeaveEmployees.length > 0 &&
-                !selectedEmployee && (
-                  <ul className="absolute z-10 bg-white border w-full rounded mt-1 max-h-48 overflow-y-auto">
-                    {filteredLeaveEmployees.map((emp, index) => (
-                      <li
-                        key={emp.employeeId || index}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          setSelectedEmployee(emp);
-                          setLeaveSearch(`${emp.name} (${emp.employeeId})`);
-                          setShowLeaveDropdown(false);
-                        }}
-                        className="p-2 hover:bg-gray-100 cursor-pointer border-b"
-                      >
-                        <div className="font-semibold">{emp.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {emp.employeeId} — {emp.department} — Hired: {emp.hireDate}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-            </div>
-
-            {selectedEmployee && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-                  <select
-                    value={leaveForm.type}
-                    onChange={(e) =>
-                      setLeaveForm({ ...leaveForm, type: e.target.value })
-                    }
-                    className="border p-2 rounded"
-                  >
-                    <option value="">Select Leave Type</option>
-                    <option value="Sick Leave">Sick Leave</option>
-                    <option value="Vacation Leave">Vacation Leave</option>
-                    <option value="Emergency Leave">Emergency Leave</option>
-                  </select>
-
-                  <input
-                    type="text"
-                    placeholder="Reason"
-                    value={leaveForm.reason}
-                    onChange={(e) =>
-                      setLeaveForm({ ...leaveForm, reason: e.target.value })
-                    }
-                    className="border p-2 rounded"
-                  />
-                  <input
-                    type="date"
-                    value={leaveForm.startDate}
-                    onChange={(e) =>
-                      setLeaveForm({ ...leaveForm, startDate: e.target.value })
-                    }
-                    className="border p-2 rounded"
-                  />
-                  <input
-                    type="date"
-                    value={leaveForm.endDate}
-                    onChange={(e) =>
-                      setLeaveForm({ ...leaveForm, endDate: e.target.value })
-                    }
-                    className="border p-2 rounded"
-                  />
-                </div>
-
-                <button
-                  onClick={handleApplyLeave}
-                  className="bg-blue-500 text-white px-4 py-2 rounded"
-                  disabled={isProcessing || !serverOnline}
-                >
-                  Apply Leave
-                </button>
-              </>
-            )}
-
-            <table className="w-full mt-4 border text-sm">
-              <thead>
-                <tr className="bg-gray-200">
-                  <th className="border p-2">Employee ID</th>
-                  <th className="border p-2">Employee</th>
-                  <th className="border p-2">Type</th>
-                  <th className="border p-2">Reason</th>
-                  <th className="border p-2">Start Date</th>
-                  <th className="border p-2">End Date</th>
-                  <th className="border p-2">Status</th>
-                  <th className="border p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaveRecords.map((rec, i) => (
-                  <tr key={rec._id || i}>
-                    <td className="border p-2">{rec.empId}</td>
-                    <td className="border p-2">{rec.name}</td>
-                    <td className="border p-2">{rec.type}</td>
-                    <td className="border p-2">{rec.reason}</td>
-                    <td className="border p-2">{rec.startDate}</td>
-                    <td className="border p-2">{rec.endDate}</td>
-                    <td className="border p-2">{rec.status}</td>
-                    <td className="border p-2 text-center">
-                      <button
-                        onClick={() => handleLeaveAction(i, "approve")}
-                        className="bg-green-500 text-white px-2 py-1 rounded mr-1"
-                        disabled={isProcessing}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleLeaveAction(i, "reject")}
-                        className="bg-yellow-500 text-white px-2 py-1 rounded mr-1"
-                        disabled={isProcessing}
-                      >
-                        Reject
-                      </button>
-                      <button
-                        onClick={() => handleLeaveAction(i, "delete")}
-                        className="bg-red-500 text-white px-2 py-1 rounded"
-                        disabled={isProcessing}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
     </div>
   );
 };
@@ -569,6 +56,16 @@ export default function Attendance({ data = {} }) {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [leaveRecords, setLeaveRecords] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // Search states for attendance
+  const [attendanceSearch, setAttendanceSearch] = useState("");
+  const [filteredAttendanceEmployees, setFilteredAttendanceEmployees] = useState([]);
+  const [selectedAttendanceEmployee, setSelectedAttendanceEmployee] = useState(null);
+  
+  // Search states for leaves
+  const [leaveSearch, setLeaveSearch] = useState("");
+  const [filteredLeaveEmployees, setFilteredLeaveEmployees] = useState([]);
+  const [selectedLeaveEmployee, setSelectedLeaveEmployee] = useState(null);
   
   // Form state - only for Time In
   const [attendanceForm, setAttendanceForm] = useState({
@@ -628,14 +125,13 @@ export default function Attendance({ data = {} }) {
   // Handle Time In submission
   const handleTimeInSubmit = async (e) => {
     e.preventDefault();
-    if (!attendanceForm.employee || !attendanceForm.timeIn) {
-      alert("Please fill in all required fields");
+    if (!selectedAttendanceEmployee || !attendanceForm.timeIn) {
+      alert("Please select an employee and fill in all required fields");
       return;
     }
 
-    // Find the selected employee to get their ID
-    const selectedEmployee = employees.find(emp => emp.name === attendanceForm.employee);
-    const employeeId = selectedEmployee?.employeeId || selectedEmployee?.empId || '';
+    // Use the selected employee data
+    const employeeId = selectedAttendanceEmployee?.employeeId || selectedAttendanceEmployee?.empId || '';
 
     try {
       setLoading(true);
@@ -646,7 +142,8 @@ export default function Attendance({ data = {} }) {
         },
         body: JSON.stringify({
           ...attendanceForm,
-          employeeId: employeeId, // Include employee ID
+          employee: selectedAttendanceEmployee.name,
+          employeeId: employeeId,
           timeOut: ""
         }),
       });
@@ -655,11 +152,15 @@ export default function Attendance({ data = {} }) {
         const result = await response.json();
         const newRecord = result.data || result;
         setAttendanceRecords(prev => Array.isArray(prev) ? [...prev, newRecord] : [newRecord]);
+        
+        // Reset form
         setAttendanceForm({
           employee: "",
           date: new Date().toISOString().split('T')[0],
           timeIn: ""
         });
+        setSelectedAttendanceEmployee(null);
+        setAttendanceSearch("");
         alert("Time In recorded successfully!");
       }
     } catch (error) {
@@ -705,14 +206,13 @@ export default function Attendance({ data = {} }) {
   // Handle Leave submission
   const handleLeaveSubmit = async (e) => {
     e.preventDefault();
-    if (!leaveForm.employee || !leaveForm.leaveType || !leaveForm.reason || !leaveForm.startDate || !leaveForm.endDate) {
-      alert("Please fill in all required fields");
+    if (!selectedLeaveEmployee || !leaveForm.leaveType || !leaveForm.reason || !leaveForm.startDate || !leaveForm.endDate) {
+      alert("Please select an employee and fill in all required fields");
       return;
     }
 
-    // Find the selected employee to get their ID
-    const selectedEmployee = employees.find(emp => emp.name === leaveForm.employee);
-    const employeeId = selectedEmployee?.employeeId || selectedEmployee?.empId || '';
+    // Use the selected employee data
+    const employeeId = selectedLeaveEmployee?.employeeId || selectedLeaveEmployee?.empId || '';
 
     try {
       setLoading(true);
@@ -723,7 +223,8 @@ export default function Attendance({ data = {} }) {
         },
         body: JSON.stringify({
           ...leaveForm,
-          employeeId: employeeId, // Include employee ID
+          employee: selectedLeaveEmployee.name,
+          employeeId: employeeId,
           status: "Pending"
         }),
       });
@@ -732,6 +233,8 @@ export default function Attendance({ data = {} }) {
         const result = await response.json();
         const newRecord = result.data || result;
         setLeaveRecords(prev => Array.isArray(prev) ? [...prev, newRecord] : [newRecord]);
+        
+        // Reset form
         setLeaveForm({
           employee: "",
           leaveType: "",
@@ -739,6 +242,8 @@ export default function Attendance({ data = {} }) {
           startDate: "",
           endDate: ""
         });
+        setSelectedLeaveEmployee(null);
+        setLeaveSearch("");
         alert("Leave application submitted successfully!");
       }
     } catch (error) {
@@ -768,6 +273,66 @@ export default function Attendance({ data = {} }) {
       case "rejected": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  };
+
+  // Attendance search functionality
+  const handleAttendanceSearchChange = (e) => {
+    const value = e.target.value;
+    setAttendanceSearch(value);
+    
+    if (!value.trim()) {
+      setFilteredAttendanceEmployees([]);
+      setSelectedAttendanceEmployee(null);
+      return;
+    }
+
+    const result = employees.filter((emp) =>
+      emp.employeeId?.toLowerCase().includes(value.toLowerCase()) ||
+      emp.name?.toLowerCase().includes(value.toLowerCase())
+    );
+
+    setFilteredAttendanceEmployees(result);
+  };
+
+  // Select employee for attendance
+  const selectAttendanceEmployee = (emp) => {
+    setSelectedAttendanceEmployee(emp);
+    setAttendanceSearch(`${emp.name} (${emp.employeeId})`);
+    setFilteredAttendanceEmployees([]);
+    setAttendanceForm({
+      ...attendanceForm,
+      employee: emp.name
+    });
+  };
+
+  // Leave search functionality
+  const handleLeaveSearchChange = (e) => {
+    const value = e.target.value;
+    setLeaveSearch(value);
+    
+    if (!value.trim()) {
+      setFilteredLeaveEmployees([]);
+      setSelectedLeaveEmployee(null);
+      return;
+    }
+
+    const result = employees.filter((emp) =>
+      emp.employeeId?.toLowerCase().includes(value.toLowerCase()) ||
+      emp.name?.toLowerCase().includes(value.toLowerCase())
+    );
+
+    setFilteredLeaveEmployees(result);
+  };
+
+  // Select employee for leave
+  const selectLeaveEmployee = (emp) => {
+    setSelectedLeaveEmployee(emp);
+    setLeaveSearch(`${emp.name} (${emp.employeeId})`);
+    setFilteredLeaveEmployees([]);
+    setLeaveForm({
+      ...leaveForm,
+      employee: emp.name
+    });
   };
 
   return (
@@ -815,51 +380,115 @@ export default function Attendance({ data = {} }) {
             </div>
             
             <div className="p-4 md:p-6">
-              <form onSubmit={handleTimeInSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <form onSubmit={handleTimeInSubmit} className="space-y-4">
+                {/* Employee Search */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Employee</label>
-                  <select
-                    value={attendanceForm.employee}
-                    onChange={(e) => setAttendanceForm({ ...attendanceForm, employee: e.target.value })}
-                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Select Employee</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id || emp._id} value={emp.name}>
-                        {emp.name} ({emp.employeeId || emp.empId})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search Employee</label>
                   <input
-                    type="date"
-                    value={attendanceForm.date}
-                    onChange={(e) => setAttendanceForm({ ...attendanceForm, date: e.target.value })}
-                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    type="text"
+                    placeholder="Search by Employee ID or Name..."
+                    value={attendanceSearch}
+                    onChange={handleAttendanceSearchChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
+                  
+                  {/* Search Results */}
+                  {filteredAttendanceEmployees.length > 0 && attendanceSearch && !selectedAttendanceEmployee && (
+                    <div className="mt-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
+                      {filteredAttendanceEmployees.map((emp) => (
+                        <div
+                          key={emp._id || emp.id}
+                          onClick={() => selectAttendanceEmployee(emp)}
+                          className="flex items-center justify-between p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8">
+                              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span className="text-xs font-medium text-blue-700">
+                                  {emp.name?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">{emp.name}</div>
+                              <div className="text-xs text-gray-500">{emp.employeeId} • {emp.department}</div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-blue-600 font-medium">Select</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* No Results */}
+                  {filteredAttendanceEmployees.length === 0 && attendanceSearch && (
+                    <div className="mt-2 text-center py-3 text-sm text-gray-500">
+                      No employees found matching "{attendanceSearch}"
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected Employee Info */}
+                {selectedAttendanceEmployee && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-700">
+                            {selectedAttendanceEmployee.name?.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{selectedAttendanceEmployee.name}</div>
+                        <div className="text-xs text-gray-500">{selectedAttendanceEmployee.employeeId} • {selectedAttendanceEmployee.department}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedAttendanceEmployee(null);
+                          setAttendanceSearch("");
+                          setAttendanceForm({ ...attendanceForm, employee: "" });
+                        }}
+                        className="ml-auto text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                    <input
+                      type="date"
+                      value={attendanceForm.date}
+                      onChange={(e) => setAttendanceForm({ ...attendanceForm, date: e.target.value })}
+                      className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Time In</label>
+                    <input
+                      type="time"
+                      value={attendanceForm.timeIn}
+                      onChange={(e) => setAttendanceForm({ ...attendanceForm, timeIn: e.target.value })}
+                      className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      required
+                    />
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Time In</label>
-                  <input
-                    type="time"
-                    value={attendanceForm.timeIn}
-                    onChange={(e) => setAttendanceForm({ ...attendanceForm, timeIn: e.target.value })}
-                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div className="flex items-end">
+                <div className="flex justify-end">
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    disabled={loading || !selectedAttendanceEmployee}
+                    className="inline-flex justify-center items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {loading ? "Recording..." : "Record Time In"}
                   </button>
@@ -1000,24 +629,86 @@ export default function Attendance({ data = {} }) {
             
             <div className="p-6">
               <form onSubmit={handleLeaveSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Employee</label>
-                    <select
-                      value={leaveForm.employee}
-                      onChange={(e) => setLeaveForm({ ...leaveForm, employee: e.target.value })}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="">Select Employee</option>
-                      {employees.map((emp) => (
-                        <option key={emp.id || emp._id} value={emp.name}>
-                          {emp.name} ({emp.employeeId || emp.empId})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* Employee Search */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Search Employee</label>
+                  <input
+                    type="text"
+                    placeholder="Search by Employee ID or Name..."
+                    value={leaveSearch}
+                    onChange={handleLeaveSearchChange}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
                   
+                  {/* Search Results */}
+                  {filteredLeaveEmployees.length > 0 && leaveSearch && !selectedLeaveEmployee && (
+                    <div className="mt-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
+                      {filteredLeaveEmployees.map((emp) => (
+                        <div
+                          key={emp._id || emp.id}
+                          onClick={() => selectLeaveEmployee(emp)}
+                          className="flex items-center justify-between p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8">
+                              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span className="text-xs font-medium text-blue-700">
+                                  {emp.name?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">{emp.name}</div>
+                              <div className="text-xs text-gray-500">{emp.employeeId} • {emp.department}</div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-blue-600 font-medium">Select</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* No Results */}
+                  {filteredLeaveEmployees.length === 0 && leaveSearch && (
+                    <div className="mt-2 text-center py-3 text-sm text-gray-500">
+                      No employees found matching "{leaveSearch}"
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected Employee Info */}
+                {selectedLeaveEmployee && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-700">
+                            {selectedLeaveEmployee.name?.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{selectedLeaveEmployee.name}</div>
+                        <div className="text-xs text-gray-500">{selectedLeaveEmployee.employeeId} • {selectedLeaveEmployee.department}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedLeaveEmployee(null);
+                          setLeaveSearch("");
+                          setLeaveForm({ ...leaveForm, employee: "" });
+                        }}
+                        className="ml-auto text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Leave Type</label>
                     <select
@@ -1072,7 +763,7 @@ export default function Attendance({ data = {} }) {
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !selectedLeaveEmployee}
                     className="inline-flex justify-center items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? "Submitting..." : "Submit Leave Request"}

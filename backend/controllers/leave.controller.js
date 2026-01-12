@@ -3,7 +3,6 @@ const Leave = require("../models/leave.model");
 // Get all leave records
 exports.getAll = async (req, res) => {
   try {
-<<<<<<< HEAD
     const records = await Leave.find().sort({ appliedDate: -1 });
     res.status(200).json({
       success: true,
@@ -17,20 +16,12 @@ exports.getAll = async (req, res) => {
       message: "Error fetching leave records",
       error: error.message
     });
-=======
-    const leaves = await Leave.find().sort({ createdAt: -1 });
-    res.json(leaves);
-  } catch (err) {
-    console.error("leave.getAll:", err);
-    res.status(500).json({ message: "Server error" });
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
   }
 };
 
 // Create new leave application
 exports.create = async (req, res) => {
   try {
-<<<<<<< HEAD
     const record = new Leave(req.body);
     const savedRecord = await record.save();
     res.status(201).json({
@@ -48,25 +39,12 @@ exports.create = async (req, res) => {
   }
 };
 
-// Update leave status (approve/reject)
-exports.updateStatus = async (req, res) => {
+// Update leave application
+exports.update = async (req, res) => {
   try {
-    const { status, reviewedBy } = req.body;
-    
-    if (!["Approved", "Rejected"].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid status. Must be 'Approved' or 'Rejected'"
-      });
-    }
-
     const updated = await Leave.findByIdAndUpdate(
-      req.params.id,
-      { 
-        status, 
-        reviewedBy: reviewedBy || "HR Manager",
-        reviewedDate: new Date()
-      },
+      req.params.id, 
+      req.body, 
       { new: true, runValidators: true }
     );
     
@@ -79,14 +57,14 @@ exports.updateStatus = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Leave application ${status.toLowerCase()} successfully`,
+      message: "Leave application updated successfully",
       data: updated
     });
   } catch (error) {
-    console.error("Error updating leave status:", error);
+    console.error("Error updating leave application:", error);
     res.status(400).json({
       success: false,
-      message: "Error updating leave status",
+      message: "Error updating leave application",
       error: error.message
     });
   }
@@ -114,26 +92,7 @@ exports.getByEmployee = async (req, res) => {
   }
 };
 
-// Get pending leaves
-exports.getPending = async (req, res) => {
-  try {
-    const records = await Leave.find({ status: "Pending" }).sort({ appliedDate: -1 });
-    res.status(200).json({
-      success: true,
-      count: records.length,
-      data: records
-    });
-  } catch (error) {
-    console.error("Error fetching pending leave records:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching pending leave records",
-      error: error.message
-    });
-  }
-};
-
-// Delete leave record
+// Delete leave application
 exports.delete = async (req, res) => {
   try {
     const deleted = await Leave.findByIdAndDelete(req.params.id);
@@ -157,36 +116,5 @@ exports.delete = async (req, res) => {
       message: "Error deleting leave application",
       error: error.message
     });
-=======
-    const payload = req.body;
-    const leave = new Leave(payload);
-    await leave.save();
-    res.status(201).json(leave);
-  } catch (err) {
-    console.error("leave.create:", err);
-    res.status(400).json({ message: "Invalid payload" });
-  }
-};
-
-exports.update = async (req, res) => {
-  try {
-    const updated = await Leave.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ message: "Not found" });
-    res.json(updated);
-  } catch (err) {
-    console.error("leave.update:", err);
-    res.status(400).json({ message: "Update failed" });
-  }
-};
-
-exports.delete = async (req, res) => {
-  try {
-    const deleted = await Leave.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Not found" });
-    res.json({ message: "Leave deleted successfully", deleted });
-  } catch (err) {
-    console.error("leave.delete:", err);
-    res.status(400).json({ message: "Delete failed" });
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
   }
 };

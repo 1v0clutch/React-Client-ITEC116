@@ -19,6 +19,9 @@ const invoiceRoutes = require("./routes/invoice.routes");
 const financeRoutes = require("./routes/finance.routes");
 const attendanceRoutes = require("./routes/attendance.routes");
 const leaveRoutes = require("./routes/leave.routes");
+const departmentsRoutes = require("./routes/departments.routes");
+const salaryRoutes = require("./routes/salary.routes");
+const payrollRoutes = require("./routes/payroll.routes");
 const hrRoutes = require("./routes/hr.routes");
 const demandForecastRoutes = require("./routes/demandForecast.routes");
 const logisticsRoutes = require("./routes/logistics.routes");
@@ -33,11 +36,7 @@ const quotationRoutes = require("./routes/quotation.routes");
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "*",
-<<<<<<< HEAD
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-=======
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -54,27 +53,13 @@ connectDB();
 // =============================
 
 // ✅ HR Core Routes
-<<<<<<< HEAD
-app.use("/api/employees", employeesRoutes);
+app.use("/api/employees", employeeRoutes);
 app.use("/api/departments", departmentsRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/salary", salaryRoutes);
 app.use("/api/payroll", payrollRoutes);
 app.use("/api/hr", hrRoutes);
-=======
-//app.use("/api/hr", hrRoutes);
-//app.use("/api/employees", employeesRoutes);
-//app.use("/api/departments", departmentsRoutes);
-//app.use("/api/salary", salaryRoutes);
-//app.use("/api/payroll", payrollRoutes);
-
-// ✅ HR Submodules
-//app.use("/api/attendance", attendanceRoutes);
-//app.use("/api/leaves", leaveRoutes);
-//app.use("/api/payroll", payrollRoutes);
-//app.use("/api/salary", salaryRoutes);
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
 
 // ✅ Procurement & Inventory
 app.use("/api/inventory", inventoryRoutes);

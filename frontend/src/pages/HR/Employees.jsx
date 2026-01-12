@@ -20,6 +20,11 @@ export default function Employees({ data = {}, setData }) {
   const [filterDepartment, setFilterDepartment] = useState("All");
   const [showForm, setShowForm] = useState(false);
 
+  // Search functionality similar to Salary module
+  const [search, setSearch] = useState("");
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
   // Fetch employees and departments from API
   useEffect(() => {
     fetchEmployees();
@@ -73,10 +78,11 @@ export default function Employees({ data = {}, setData }) {
 
   // Generate only when adding a new employee
   useEffect(() => {
-    if (!emp._id && !emp.employeeId && showForm) {
+    if (!emp._id && showForm) {
+      const newEmployeeId = generateEmployeeID();
       setEmp((prev) => ({
         ...prev,
-        employeeId: generateEmployeeID(),
+        employeeId: newEmployeeId,
       }));
     }
   }, [employees, showForm]);
@@ -122,7 +128,7 @@ export default function Employees({ data = {}, setData }) {
         }
       }
 
-      // Reset form
+      // Reset form completely
       setEmp({
         _id: "",
         employeeId: "",
@@ -175,7 +181,7 @@ export default function Employees({ data = {}, setData }) {
   };
 
   // Filter employees
-  const filteredEmployees = employees.filter((employee) => {
+  const filteredEmployeesForTable = employees.filter((employee) => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.position.toLowerCase().includes(searchTerm.toLowerCase());
@@ -183,6 +189,41 @@ export default function Employees({ data = {}, setData }) {
     
     return matchesSearch && matchesDepartment;
   });
+
+  // Search functionality similar to Salary module
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    
+    if (!value.trim()) {
+      setFilteredEmployees([]);
+      return;
+    }
+
+    const result = employees.filter((emp) =>
+      emp.employeeId?.toLowerCase().includes(value.toLowerCase()) ||
+      emp.name?.toLowerCase().includes(value.toLowerCase())
+    );
+
+    setFilteredEmployees(result);
+  };
+
+  // Select employee from search results
+  const selectEmployee = (employee) => {
+    setSelectedEmployee(employee);
+    setSearch(`${employee.name} (${employee.employeeId})`);
+    setFilteredEmployees([]);
+    // Auto-populate form for editing
+    setEmp({
+      _id: employee._id,
+      employeeId: employee.employeeId,
+      name: employee.name,
+      position: employee.position,
+      department: employee.department,
+      hireDate: employee.hireDate,
+    });
+    setShowForm(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -195,7 +236,6 @@ export default function Employees({ data = {}, setData }) {
           </div>
           <button
             onClick={() => {
-              setShowForm(true);
               setEmp({
                 _id: "",
                 employeeId: "",
@@ -204,6 +244,10 @@ export default function Employees({ data = {}, setData }) {
                 department: "",
                 hireDate: "",
               });
+              setSearch("");
+              setFilteredEmployees([]);
+              setSelectedEmployee(null);
+              setShowForm(true);
             }}
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
           >
@@ -215,7 +259,6 @@ export default function Employees({ data = {}, setData }) {
         </div>
       </div>
 
-<<<<<<< HEAD
       <div className="px-6 space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -292,10 +335,70 @@ export default function Employees({ data = {}, setData }) {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Filtered Results</dt>
-                  <dd className="text-lg font-medium text-gray-900">{filteredEmployees.length}</dd>
+                  <dd className="text-lg font-medium text-gray-900">{filteredEmployeesForTable.length}</dd>
                 </dl>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Employee Search */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">Search Employee</h2>
+            <p className="text-gray-600 mt-1">Find an employee to edit their information</p>
+          </div>
+          
+          <div className="p-6">
+            <div className="flex space-x-4">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Search by Employee ID or Name..."
+                  value={search}
+                  onChange={handleSearchChange}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Search Results */}
+            {filteredEmployees.length > 0 && search && (
+              <div className="mt-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Search Results ({filteredEmployees.length}):</h3>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {filteredEmployees.map((emp) => (
+                    <div
+                      key={emp._id || emp.id}
+                      onClick={() => selectEmployee(emp)}
+                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-all"
+                    >
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-700">
+                              {emp.name?.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{emp.name}</div>
+                          <div className="text-sm text-gray-500">{emp.employeeId} • {emp.department} • {emp.position}</div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-blue-600 font-medium">Edit</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No Results */}
+            {filteredEmployees.length === 0 && search && (
+              <div className="mt-4 text-center py-4">
+                <div className="text-sm text-gray-500">No employees found matching "{search}"</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -303,7 +406,7 @@ export default function Employees({ data = {}, setData }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Name/ID/Position</label>
               <input
                 type="text"
                 placeholder="Search by name, ID, or position..."
@@ -347,7 +450,7 @@ export default function Employees({ data = {}, setData }) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
-              Employees ({filteredEmployees.length})
+              Employees ({filteredEmployeesForTable.length})
             </h2>
           </div>
           
@@ -357,7 +460,7 @@ export default function Employees({ data = {}, setData }) {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <span className="ml-3 text-gray-600">Loading employees...</span>
               </div>
-            ) : filteredEmployees.length === 0 ? (
+            ) : filteredEmployeesForTable.length === 0 ? (
               <div className="text-center py-8">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -367,64 +470,6 @@ export default function Employees({ data = {}, setData }) {
                   {employees.length === 0 ? "Get started by adding your first employee." : "Try adjusting your search or filter criteria."}
                 </p>
               </div>
-=======
-      {/* Employee Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border border-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-3 py-2 text-left">Employee ID</th>
-              <th className="border px-3 py-2 text-left">Name</th>
-              <th className="border px-3 py-2 text-left">Designation</th>
-              <th className="border px-3 py-2 text-left">Department</th>
-              <th className="border px-3 py-2 text-left">Employment Type</th>
-              <th className="border px-3 py-2 text-left">Hire Date</th>
-              <th className="border px-3 py-2 text-left">Status</th>
-              <th className="border px-3 py-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.length > 0 ? (
-              employees.map((e, index) => (
-                <tr key={e.id || e.empId || `emp-${index}`} className="hover:bg-gray-50">
-                  <td className="border px-3 py-2 font-mono">{e.empId}</td>
-                  <td className="border px-3 py-2">{e.name}</td>
-                  <td className="border px-3 py-2">{e.designation}</td>
-                  <td className="border px-3 py-2">{e.department}</td>
-                  <td className="border px-3 py-2">{e.employmentType}</td>
-                  <td className="border px-3 py-2">{e.hireDate}</td>
-                  <td className="border px-3 py-2">
-                    <span
-                      className={`px-2 py-1 rounded text-sm ${
-                        e.status === "Active"
-                          ? "bg-green-100 text-green-600"
-                          : e.status === "Inactive"
-                          ? "bg-gray-100 text-gray-600"
-                          : e.status === "Resigned"
-                          ? "bg-yellow-100 text-yellow-600"
-                          : "bg-red-100 text-red-600"
-                      }`}
-                    >
-                      {e.status}
-                    </span>
-                  </td>
-                  <td className="border px-3 py-2">
-                    <button
-                      onClick={() => editEmployee(e.id)}
-                      className="text-blue-600 hover:underline mr-3"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteEmployee(e.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -438,7 +483,7 @@ export default function Employees({ data = {}, setData }) {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredEmployees.map((employee) => (
+                    {filteredEmployeesForTable.map((employee) => (
                       <tr key={employee._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
@@ -490,62 +535,90 @@ export default function Employees({ data = {}, setData }) {
 
       {/* Employee Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-auto">
+            <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900">
                   {emp._id ? "Edit Employee" : "Add New Employee"}
                 </h3>
                 <button
-                  onClick={() => setShowForm(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  onClick={() => {
+                    setShowForm(false);
+                    setEmp({
+                      _id: "",
+                      employeeId: "",
+                      name: "",
+                      position: "",
+                      department: "",
+                      hireDate: "",
+                    });
+                    setSearch("");
+                    setFilteredEmployees([]);
+                    setSelectedEmployee(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={(e) => { e.preventDefault(); addEmployee(); }} className="space-y-4">
+                {/* Employee ID */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Employee ID
+                  </label>
                   <input
                     type="text"
                     value={emp.employeeId}
                     readOnly
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500"
+                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                    placeholder="Auto-generated"
                   />
                 </div>
-                
+
+                {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={emp.name}
                     onChange={(e) => setEmp({ ...emp, name: e.target.value })}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter full name"
                     required
                   />
                 </div>
-                
+
+                {/* Position */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Position *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Position <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={emp.position}
                     onChange={(e) => setEmp({ ...emp, position: e.target.value })}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter position"
                     required
                   />
                 </div>
-                
+
+                {/* Department */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Department <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={emp.department}
                     onChange={(e) => setEmp({ ...emp, department: e.target.value })}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     <option value="">Select Department</option>
@@ -556,34 +629,59 @@ export default function Employees({ data = {}, setData }) {
                     ))}
                   </select>
                 </div>
-                
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Hire Date *</label>
+
+                {/* Hire Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hire Date <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="date"
                     value={emp.hireDate}
                     onChange={(e) => setEmp({ ...emp, hireDate: e.target.value })}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addEmployee}
-                  disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  {loading ? "Saving..." : (emp._id ? "Update Employee" : "Add Employee")}
-                </button>
-              </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(false);
+                      setEmp({
+                        _id: "",
+                        employeeId: "",
+                        name: "",
+                        position: "",
+                        department: "",
+                        hireDate: "",
+                      });
+                      setSearch("");
+                      setFilteredEmployees([]);
+                      setSelectedEmployee(null);
+                    }}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </div>
+                    ) : (
+                      emp._id ? "Update" : "Add Employee"
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
