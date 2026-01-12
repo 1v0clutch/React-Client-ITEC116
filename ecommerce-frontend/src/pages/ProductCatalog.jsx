@@ -13,6 +13,8 @@ function ProductCatalog() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -126,6 +128,23 @@ function ProductCatalog() {
     navigate("/cart");
   };
 
+  const openProductModal = (product) => {
+    setSelectedProduct(product);
+    setShowModal(true);
+  };
+
+  const closeProductModal = () => {
+    setShowModal(false);
+    setTimeout(() => setSelectedProduct(null), 300);
+  };
+
+  const addToCartFromModal = async () => {
+    if (selectedProduct) {
+      await addToCart(selectedProduct);
+      closeProductModal();
+    }
+  };
+
   if (loading) {
     return <div className="p-5">Loading products...</div>;
   }
@@ -141,11 +160,11 @@ function ProductCatalog() {
       )}
       
       {/* Header */}
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="text-2xl font-bold">Product Catalog</h1>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-5">
+        <h1 className="text-2xl md:text-3xl font-bold">Product Catalog</h1>
         <button
           onClick={viewCart}
-          className="bg-[#36454F] text-white px-4 py-2 rounded hover:bg-[#818589]"
+          className="bg-[#36454F] text-white px-4 py-2 rounded hover:bg-[#818589] transition-colors w-full sm:w-auto"
         >
           🛒 Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
         </button>
@@ -153,7 +172,7 @@ function ProductCatalog() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Search */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -217,14 +236,15 @@ function ProductCatalog() {
             : "No products available"}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredProducts.map((product) => (
             <div
               key={product._id}
-              className="border rounded-lg overflow-hidden shadow hover:shadow-lg transition bg-white"
+              onClick={() => openProductModal(product)}
+              className="border rounded-lg overflow-hidden shadow hover:shadow-lg transition bg-white cursor-pointer transform hover:scale-105 duration-200"
             >
               {/* Product Image - Improved Size */}
-              <div className="relative h-40 bg-gray-100 overflow-hidden">
+              <div className="relative h-48 bg-gray-100 overflow-hidden">
                 {product.imageUrl ? (
                   <img
                     src={product.imageUrl.startsWith('/uploads/') 
@@ -292,7 +312,10 @@ function ProductCatalog() {
                 </div>
                 
                 <button
-                  onClick={() => addToCart(product)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addToCart(product);
+                  }}
                   disabled={product.quantity === 0}
                   className={`w-full py-2 rounded text-sm font-medium ${
                     product.quantity === 0
@@ -305,6 +328,140 @@ function ProductCatalog() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Product Detail Modal */}
+      {showModal && selectedProduct && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn"
+          onClick={closeProductModal}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl transform transition-all duration-300 animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+              <h2 className="text-2xl font-bold text-gray-900">Product Details</h2>
+              <button
+                onClick={closeProductModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Product Image */}
+                <div className="relative">
+                  <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                    {selectedProduct.imageUrl ? (
+                      <img
+                        src={selectedProduct.imageUrl.startsWith('/uploads/') 
+                          ? `http://localhost:8000${selectedProduct.imageUrl}`
+                          : selectedProduct.imageUrl}
+                        alt={selectedProduct.name}
+                        className="w-full h-full object-contain p-4"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8fafc' stroke='%23e2e8f0' stroke-width='2'/%3E%3Cg transform='translate(150,100)'%3E%3Ccircle cx='0' cy='-20' r='25' fill='%23cbd5e1'/%3E%3Cpath d='M-15,10 L15,10 L10,25 L-10,25 Z' fill='%23cbd5e1'/%3E%3Ccircle cx='-8' cy='-25' r='3' fill='%23ffffff'/%3E%3C/g%3E%3Ctext x='50%25' y='75%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='14' fill='%236b7280'%3EImage not available%3C/text%3E%3C/svg%3E";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <div className="text-center">
+                          <svg className="w-24 h-24 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-sm">No Image Available</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Stock Badge */}
+                  {selectedProduct.quantity === 0 && (
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-lg">
+                        Out of Stock
+                      </span>
+                    </div>
+                  )}
+                  {selectedProduct.quantity > 0 && selectedProduct.quantity < 10 && (
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-orange-500 text-white px-4 py-2 rounded-lg font-semibold shadow-lg">
+                        Low Stock
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Product Info */}
+                <div className="flex flex-col">
+                  <div className="flex-1">
+                    <h3 className="text-3xl font-bold text-gray-900 mb-2">{selectedProduct.name}</h3>
+                    <p className="text-sm text-gray-500 mb-4">SKU: {selectedProduct.sku}</p>
+                    
+                    <div className="mb-6">
+                      <span className="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                        {selectedProduct.category || "Uncategorized"}
+                      </span>
+                    </div>
+
+                    <div className="mb-6">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Description</h4>
+                      <p className="text-gray-600 leading-relaxed">
+                        {selectedProduct.description || "No description available for this product."}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Price</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          ₱{selectedProduct.price ? selectedProduct.price.toFixed(2) : "0.00"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Availability</p>
+                        <p className={`text-lg font-semibold ${
+                          selectedProduct.quantity > 10 ? "text-green-600" : 
+                          selectedProduct.quantity > 0 ? "text-orange-600" : "text-red-600"
+                        }`}>
+                          {selectedProduct.quantity} {selectedProduct.unit} left
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={closeProductModal}
+                      className="flex-1 py-3 px-6 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors order-2 sm:order-1"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={addToCartFromModal}
+                      disabled={selectedProduct.quantity === 0}
+                      className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors order-1 sm:order-2 ${
+                        selectedProduct.quantity === 0
+                          ? "bg-gray-300 cursor-not-allowed text-gray-600"
+                          : "bg-[#36454F] text-white hover:bg-[#818589]"
+                      }`}
+                    >
+                      {selectedProduct.quantity === 0 ? "Out of Stock" : "🛒 Add to Cart"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

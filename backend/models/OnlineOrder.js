@@ -13,6 +13,12 @@ const OrderItemSchema = new mongoose.Schema({
 });
 
 const OnlineOrderSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: false, // Optional for backward compatibility with existing orders
+    index: true, // Add index for query performance
+  },
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Customer",
