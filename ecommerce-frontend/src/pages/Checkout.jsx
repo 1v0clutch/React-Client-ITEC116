@@ -108,7 +108,8 @@ function Checkout() {
       });
 
       if (!customerResponse.ok) {
-        throw new Error("Failed to create customer profile");
+        const errorData = await customerResponse.json();
+        throw new Error(errorData.error || "Failed to process customer information");
       }
 
       const customerResult = await customerResponse.json();

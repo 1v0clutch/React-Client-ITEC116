@@ -10,7 +10,26 @@ const FinanceInventoryTransaction = require("../models/FinanceInventoryTransacti
 
 exports.createCustomer = async (req, res) => {
   try {
-    const customer = new Customer(req.body);
+    const { email } = req.body;
+    
+    // Check if customer with this email already exists
+    let customer = await Customer.findOne({ email });
+    
+    if (customer) {
+      // Update existing customer with new information
+      customer = await Customer.findByIdAndUpdate(
+        customer._id,
+        req.body,
+        { new: true, runValidators: true }
+      );
+      return res.status(200).json({ 
+        message: "Customer information updated successfully", 
+        customer 
+      });
+    }
+    
+    // Create new customer if doesn't exist
+    customer = new Customer(req.body);
     await customer.save();
     res.status(201).json({ message: "Customer created successfully", customer });
   } catch (error) {
