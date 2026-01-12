@@ -2,7 +2,7 @@ Budget.jsx
 ==> Fetch the project budget from the ProjectBudget Database
 ==> Can update and delete.
 ==> Automatically calculate the actual cost, variance, and overhead after the labor and material/equipment cost.
-==> After selecting a newly created project, clicked the sync budget button to get the budget table but its important to note that you can only clicked it once, if you clicked it again, it will reset the data excluding the estimated budget.
+==> After selecting a newly created project, clicked the sync budget button to get the budget table but its important that you can only clicked it only once to a project, if ypu clicked it again, it will reset the data excluding the estimated budget.
 
 ProjectForm.jsx
 ==> Create new project, with input fields: Phase Name, Start and End Date, Phase and Its own Task with each start and end date.
@@ -43,6 +43,3 @@ TaskSchedule.jsx
 WorkBreakdowns.jsx
 ==> Display the task wbs of the selected project.
 ==> Can add, update, and delete.
-
-Report.jsx
-==>

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import ProjectGantt from "./ProjectGantt";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; //
 
 const API_PROJECT = "http://localhost:8000/api/project";
 
@@ -29,20 +29,27 @@ function ProgressBar({ value, colorClass = "bg-green-500" }) {
   );
 }
 
+/*
+  Overview
+  Props:
+    - project: optional full project object
+    - projectId: optional project id string (used if `project` not provided)
+  If neither provided, component shows empty state.
+*/
 export default function Overview({
   project: propProject = null,
   projectId = null,
 }) {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // <--- added
   const [project, setProject] = useState(propProject);
   const [loading, setLoading] = useState(false);
 
-  // Reset project when propProject changes
+  // keep local project in sync when parent passes a new project
   useEffect(() => {
     setProject(propProject);
   }, [propProject]);
 
-  // Fetch project data when needed
+  // fetch when project not provided but projectId is
   useEffect(() => {
     let mounted = true;
     const fetchProject = async (id) => {
@@ -61,10 +68,7 @@ export default function Overview({
       }
     };
 
-    // Only fetch if we don't have a project but we have a projectId
-    if (!propProject && projectId) {
-      fetchProject(projectId);
-    }
+    if (!propProject && projectId) fetchProject(projectId);
     return () => {
       mounted = false;
     };
@@ -156,28 +160,20 @@ export default function Overview({
         />
       </div>
 
-      {/* Gantt Chart Section */}
-      <div className="bg-white rounded-lg shadow-sm p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="font-semibold">Project Gantt Chart</div>
-          {/* <button
-            type="button"
-            className="text-sm text-blue-600 hover:underline"
-            onClick={() => {
-              const id = project?._id ?? project?.id;
-              if (id) navigate(`/project-management/gantt/${id}`);
-            }}
-          >
-            View Full Gantt
-          </button> */}
-        </div>
-        <ProjectGantt project={project} />
-      </div>
-
       {/* Timeline card */}
       <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="font-semibold">Project Timeline</div>
+          <button
+            type="button"
+            className="text-sm text-blue-600 hover:underline"
+            onClick={() => {
+              const id = project?._id ?? project?.id ?? projectId;
+              if (id) navigate(`/project-management/gantt/${id}`);
+            }}
+          >
+            View Full Gantt
+          </button>
         </div>
 
         <div className="space-y-4">

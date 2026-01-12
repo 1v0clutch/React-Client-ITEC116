@@ -1,24 +1,30 @@
 CustomerReport.jsx:
     Icoconnect between Customer Sales etc pero wala pa so prepared palang
+
     Button na Download CSV ay madodownload ang table via CSV
 
 EmployeePayrollReport.jsx:
     Table format na kumukuha ng data from HR's Payroll.jsx
+
     Button na Download CSV ay madodownload ang table via CSV
 
 FinanceHead.jsx (General Finance name sa website):
     Table format ng overall Financial Statements kumbaga lahat ng transactions na ginawa sa all modules.
+
     Button na Download CSV ay madodownload ang table via CSV
 
 FinanceReport.jsx:
     Basically wala pa sya pero idea nyan is charts and graphs ng Transactions kung lugi ba o kumita
+
     Button na Download CSV ay madodownload ang table via CSV
 
 InventoryReport.jsx:
     Table format na kumukuha ng data from Inventory's (pages/Dashboard Folder) Transaction.jsx
+
     Button na Download CSV ay madodownload ang table via CSV
 
 SupplierReport.jsx:
     Table format na kumukuha ng data from Procurement's (pages/Procurement Folder) PurchaseOrders.jsx
+
     Button na Download CSV ay madodownload ang table via CSV
 

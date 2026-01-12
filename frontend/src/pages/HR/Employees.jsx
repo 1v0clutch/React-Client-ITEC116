@@ -225,8 +225,8 @@ export default function Employees({ data = {}, setData }) {
           </thead>
           <tbody>
             {employees.length > 0 ? (
-              employees.map((e) => (
-                <tr key={e.id} className="hover:bg-gray-50">
+              employees.map((e, index) => (
+                <tr key={e.id || e.empId || `emp-${index}`} className="hover:bg-gray-50">
                   <td className="border px-3 py-2 font-mono">{e.empId}</td>
                   <td className="border px-3 py-2">{e.name}</td>
                   <td className="border px-3 py-2">{e.designation}</td>

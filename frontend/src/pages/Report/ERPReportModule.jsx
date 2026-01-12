@@ -529,7 +529,7 @@ export default function ERPReportModule() {
           moduleData = [
             ...payrollHr.map((p, idx) => ({ ID: `P${idx + 1}`, Type: "Payroll", Employee: p.name || "N/A", Department: p.department || "N/A", NetPay: p.netPay || 0 })),
             ...attendance.map((a, idx) => ({ ID: `A${idx + 1}`, Type: "Attendance", Employee: a.employeeId || "N/A", Date: a.date ? new Date(a.date).toLocaleDateString() : "N/A", Status: a.status || "N/A" })),
-            ...leaves.map((l, idx) => ({ ID: `L${idx + 1}`, Type: "Leave", Employee: l.employeeId || "N/A", Type: l.type || "N/A", Status: l.status || "N/A" })),
+            ...leaves.map((l, idx) => ({ ID: `L${idx + 1}`, Type: "Leave", Employee: l.employeeId || "N/A", LeaveType: l.type || "N/A", Status: l.status || "N/A" })),
           ];
           break;
 

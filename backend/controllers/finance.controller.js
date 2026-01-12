@@ -6,8 +6,10 @@ const Inventory = require("../models/Inventory");
 const Transaction = require("../models/Transaction");
 const Supplier = require("../models/Supplier");
 const PurchaseOrder = require("../models/PurchaseOrder");
-const Project = require("../models/Project"); // Make sure this path is correct
-const ProjectBudget = require("../models/ProjectBudget"); // Make sure this path is correct
+const Project = require("../models/Project");
+const ProjectBudget = require("../models/ProjectBudget");
+const OnlineOrder = require("../models/OnlineOrder");
+const SalesOrder = require("../models/SalesOrder");
 
 const toNumber = (value) => {
   if (typeof value === "number") {
@@ -59,131 +61,172 @@ exports.getInvoices = async (req, res) => {
 
 exports.getCustomerReport = async (req, res) => {
   try {
-    const invoices = await FinanceInvoice.find().lean();
-    if (!invoices.length) {
-      return res.json([]);
-    }
-
-    const supplierIdStrings = [];
-    const purchaseOrderIdStrings = [];
-
-    for (const invoice of invoices) {
-      if (invoice.supplierId) {
-        supplierIdStrings.push(invoice.supplierId.toString());
-      }
-      if (invoice.purchaseOrderId) {
-        purchaseOrderIdStrings.push(invoice.purchaseOrderId.toString());
-      }
-    }
-
-    const uniqueSupplierIds = [
-      ...new Set(
-        supplierIdStrings.filter((id) => mongoose.Types.ObjectId.isValid(id))
-      ),
-    ];
-    const uniquePurchaseOrderIds = [
-      ...new Set(
-        purchaseOrderIdStrings.filter((id) =>
-          mongoose.Types.ObjectId.isValid(id)
-        )
-      ),
-    ];
-
-    const [suppliers, purchaseOrders] = await Promise.all([
-      uniqueSupplierIds.length
-        ? Supplier.find({ _id: { $in: uniqueSupplierIds } })
-            .select("name contactPerson")
-            .lean()
-        : [],
-      uniquePurchaseOrderIds.length
-        ? PurchaseOrder.find({ _id: { $in: uniquePurchaseOrderIds } })
-            .select("poNumber totalAmount status createdAt")
-            .lean()
-        : [],
+    const [invoices, ecommerceOrders] = await Promise.all([
+      FinanceInvoice.find().lean(),
+      OnlineOrder.find().populate('customerId').lean()
     ]);
 
-    const supplierMap = suppliers.reduce((acc, supplier) => {
-      acc[supplier._id.toString()] = supplier;
-      return acc;
-    }, {});
+    const report = [];
 
-    const purchaseOrderMap = purchaseOrders.reduce((acc, po) => {
-      acc[po._id.toString()] = po;
-      return acc;
-    }, {});
+    // Process supplier invoices (existing logic)
+    if (invoices.length > 0) {
+      const supplierIdStrings = [];
+      const purchaseOrderIdStrings = [];
 
-    const report = invoices.map((invoice) => {
-      const supplierKey = invoice.supplierId
-        ? invoice.supplierId.toString()
-        : null;
-      const purchaseOrderKey = invoice.purchaseOrderId
-        ? invoice.purchaseOrderId.toString()
-        : null;
-      const supplier = supplierKey ? supplierMap[supplierKey] : undefined;
-      const purchaseOrder = purchaseOrderKey
-        ? purchaseOrderMap[purchaseOrderKey]
-        : undefined;
-
-      const totalFromInvoice = toNumber(invoice.totalAmount);
-      const totalFromPurchaseOrder = toNumber(purchaseOrder?.totalAmount);
-      const totalAmount = Number.isFinite(totalFromInvoice)
-        ? totalFromInvoice
-        : Number.isFinite(totalFromPurchaseOrder)
-        ? totalFromPurchaseOrder
-        : 0;
-
-      const balanceCandidates = [
-        invoice.balance,
-        invoice.amountDue,
-        invoice.remainingBalance,
-        invoice.totalAmount,
-        purchaseOrder?.totalAmount,
-      ];
-      let balance = 0;
-      for (const candidate of balanceCandidates) {
-        const numeric = toNumber(candidate);
-        if (Number.isFinite(numeric)) {
-          balance = numeric;
-          break;
+      for (const invoice of invoices) {
+        if (invoice.supplierId) {
+          supplierIdStrings.push(invoice.supplierId.toString());
         }
-      }
-      if (!Number.isFinite(balance) || balance <= 0) {
-        balance = totalAmount;
-      }
-
-      const dateCandidates = [
-        invoice.dateIssued,
-        purchaseOrder?.createdAt,
-        invoice.createdAt,
-        invoice.updatedAt,
-      ];
-      let resolvedDate = null;
-      for (const candidate of dateCandidates) {
-        if (candidate) {
-          resolvedDate = candidate;
-          break;
+        if (invoice.purchaseOrderId) {
+          purchaseOrderIdStrings.push(invoice.purchaseOrderId.toString());
         }
       }
 
-      return {
-        id: invoice._id.toString(),
-        customerName:
-          invoice.customerName ||
-          invoice.customer ||
-          supplier?.name ||
-          supplierKey ||
-          "—",
-        customerId: supplier ? { name: supplier.name } : undefined,
-        invoiceNumber: invoice.invoiceNumber || purchaseOrder?.poNumber || "—",
-        status: invoice.status || purchaseOrder?.status || "Pending",
-        totalAmount,
+      const uniqueSupplierIds = [
+        ...new Set(
+          supplierIdStrings.filter((id) => mongoose.Types.ObjectId.isValid(id))
+        ),
+      ];
+      const uniquePurchaseOrderIds = [
+        ...new Set(
+          purchaseOrderIdStrings.filter((id) =>
+            mongoose.Types.ObjectId.isValid(id)
+          )
+        ),
+      ];
+
+      const [suppliers, purchaseOrders] = await Promise.all([
+        uniqueSupplierIds.length
+          ? Supplier.find({ _id: { $in: uniqueSupplierIds } })
+              .select("name contactPerson")
+              .lean()
+          : [],
+        uniquePurchaseOrderIds.length
+          ? PurchaseOrder.find({ _id: { $in: uniquePurchaseOrderIds } })
+              .select("poNumber totalAmount status createdAt")
+              .lean()
+          : [],
+      ]);
+
+      const supplierMap = suppliers.reduce((acc, supplier) => {
+        acc[supplier._id.toString()] = supplier;
+        return acc;
+      }, {});
+
+      const purchaseOrderMap = purchaseOrders.reduce((acc, po) => {
+        acc[po._id.toString()] = po;
+        return acc;
+      }, {});
+
+      invoices.forEach((invoice) => {
+        const supplierKey = invoice.supplierId
+          ? invoice.supplierId.toString()
+          : null;
+        const purchaseOrderKey = invoice.purchaseOrderId
+          ? invoice.purchaseOrderId.toString()
+          : null;
+        const supplier = supplierKey ? supplierMap[supplierKey] : undefined;
+        const purchaseOrder = purchaseOrderKey
+          ? purchaseOrderMap[purchaseOrderKey]
+          : undefined;
+
+        const totalFromInvoice = toNumber(invoice.totalAmount);
+        const totalFromPurchaseOrder = toNumber(purchaseOrder?.totalAmount);
+        const totalAmount = Number.isFinite(totalFromInvoice)
+          ? totalFromInvoice
+          : Number.isFinite(totalFromPurchaseOrder)
+          ? totalFromPurchaseOrder
+          : 0;
+
+        const balanceCandidates = [
+          invoice.balance,
+          invoice.amountDue,
+          invoice.remainingBalance,
+          invoice.totalAmount,
+          purchaseOrder?.totalAmount,
+        ];
+        let balance = 0;
+        for (const candidate of balanceCandidates) {
+          const numeric = toNumber(candidate);
+          if (Number.isFinite(numeric)) {
+            balance = numeric;
+            break;
+          }
+        }
+        if (!Number.isFinite(balance) || balance <= 0) {
+          balance = totalAmount;
+        }
+
+        const dateCandidates = [
+          invoice.dateIssued,
+          purchaseOrder?.createdAt,
+          invoice.createdAt,
+          invoice.updatedAt,
+        ];
+        let resolvedDate = null;
+        for (const candidate of dateCandidates) {
+          if (candidate) {
+            resolvedDate = candidate;
+            break;
+          }
+        }
+
+        report.push({
+          id: invoice._id.toString(),
+          customerName:
+            invoice.customerName ||
+            invoice.customer ||
+            supplier?.name ||
+            supplierKey ||
+            "—",
+          customerId: supplier ? { name: supplier.name } : undefined,
+          invoiceNumber: invoice.invoiceNumber || purchaseOrder?.poNumber || "—",
+          status: invoice.status || purchaseOrder?.status || "Pending",
+          totalAmount,
+          total: totalAmount,
+          grandTotal: totalAmount,
+          balance,
+          amountDue: balance,
+          remainingBalance: balance,
+          date: resolvedDate,
+        });
+      });
+    }
+
+    // Add e-commerce orders (customer receivables)
+    ecommerceOrders.forEach((order) => {
+      const customerName = order.customerId?.name || "Unknown Customer";
+      const totalAmount = order.totalAmount || 0;
+      
+      // Determine status and balance based on order state
+      let status;
+      let balance;
+      
+      if (order.status === 'cancelled') {
+        status = 'Cancelled';
+        balance = 0; // No money owed - sale voided
+      } else if (order.paymentStatus === 'paid') {
+        status = 'Paid';
+        balance = 0; // Already paid
+      } else {
+        status = 'Unpaid';
+        balance = totalAmount; // Customer still owes money
+      }
+
+      report.push({
+        id: order._id.toString(),
+        customerName: customerName,
+        customerId: order.customerId ? { name: customerName } : undefined,
+        invoiceNumber: order.orderNumber || "—",
+        status: status,
+        totalAmount: totalAmount,
         total: totalAmount,
         grandTotal: totalAmount,
-        balance,
+        balance: balance,
         amountDue: balance,
         remainingBalance: balance,
-        date: resolvedDate,
-      };
+        date: order.createdAt,
+      });
     });
 
     res.json(report);
@@ -502,5 +545,66 @@ exports.getProjectReport = async (req, res) => {
     res
       .status(500)
       .json({ error: "Failed to generate project finance report" });
+  }
+};
+
+// E-Commerce Revenue Report
+exports.getEcommerceRevenue = async (req, res) => {
+  try {
+    const orders = await OnlineOrder.find()
+      .populate('customerId')
+      .populate('items.productId')
+      .lean();
+
+    // Separate active and cancelled orders
+    const activeOrders = orders.filter(o => o.status !== 'cancelled');
+    const cancelledOrders = orders.filter(o => o.status === 'cancelled');
+
+    // Calculate revenue from active orders only
+    const totalRevenue = activeOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+    const paidOrders = activeOrders.filter(o => o.paymentStatus === 'paid');
+    const unpaidOrders = activeOrders.filter(o => o.paymentStatus === 'unpaid');
+    const paidRevenue = paidOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const unpaidRevenue = unpaidOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const taxCollected = totalRevenue * 0.12;
+
+    // Calculate cancelled revenue (for reference)
+    const cancelledRevenue = cancelledOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+    const summary = {
+      totalRevenue: totalRevenue,
+      paidRevenue: paidRevenue,
+      unpaidRevenue: unpaidRevenue,
+      totalOrders: activeOrders.length,
+      paidOrders: paidOrders.length,
+      unpaidOrders: unpaidOrders.length,
+      cancelledOrders: cancelledOrders.length,
+      cancelledRevenue: cancelledRevenue,
+      taxCollected: taxCollected,
+      netRevenue: totalRevenue - taxCollected
+    };
+
+    const orderDetails = orders.map(order => ({
+      id: order._id.toString(),
+      orderNumber: order.orderNumber,
+      customerName: order.customerId?.name || 'Unknown',
+      customerEmail: order.customerId?.email || '',
+      totalAmount: order.totalAmount || 0,
+      tax: (order.totalAmount || 0) * 0.12,
+      netAmount: (order.totalAmount || 0) * 0.88,
+      paymentStatus: order.paymentStatus,
+      orderStatus: order.status,
+      itemCount: order.items?.length || 0,
+      date: order.createdAt,
+      isCancelled: order.status === 'cancelled'
+    }));
+
+    res.json({
+      summary,
+      orders: orderDetails
+    });
+  } catch (error) {
+    console.error("E-Commerce Revenue Report error:", error.message);
+    res.status(500).json({ error: "Failed to generate e-commerce revenue report" });
   }
 };

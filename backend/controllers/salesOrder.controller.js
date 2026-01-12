@@ -89,3 +89,26 @@ exports.updateInvoiceStatus = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
+exports.getEcommerceOrders = async (req, res) => {
+  try {
+    const orders = await SalesOrder.find({ orderSource: "ecommerce" })
+      .populate("productId")
+      .populate("onlineOrderId");
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getOrdersBySource = async (req, res) => {
+  try {
+    const { source } = req.params;
+    const orders = await SalesOrder.find({ orderSource: source })
+      .populate("productId")
+      .populate("onlineOrderId");
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

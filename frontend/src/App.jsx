@@ -42,6 +42,8 @@ import AfterSales from "./pages/SalesCustomer/AfterSales";
 import CMmanagement from "./pages/SalesCustomer/CMmanagement";
 import SalesOrder from "./pages/SalesCustomer/Salesorder";
 import SalesReport from "./pages/SalesCustomer/salerep";
+
+// Report
 import ReportPage from "./pages/Report/ReportPage";
 
 // SupplyChain
