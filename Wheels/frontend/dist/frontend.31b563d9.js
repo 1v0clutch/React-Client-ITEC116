@@ -207,11 +207,11 @@
       });
     }
   }
-})({"5j6Kf":[function(require,module,exports,__globalThis) {
+})({"lrAuY":[function(require,module,exports,__globalThis) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
-var HMR_SERVER_PORT = 1234;
+var HMR_SERVER_PORT = 50823;
 var HMR_SECURE = false;
 var HMR_ENV_HASH = "439701173a9199ea";
 var HMR_USE_SSE = false;
@@ -17555,7 +17555,11 @@ const Login = ({ onSwitchToRegister })=>{
                 localStorage.setItem('user', JSON.stringify(data.user));
                 console.log("\uD83D\uDD10 Login successful:", data.user);
                 alert('Welcome back! Login successful!');
-            // Redirect to dashboard here
+                // 🔥 ROLE CHECK
+                if (data.user.role === "admin") // Redirect to ADMIN frontend
+                window.location.href = "http://localhost:5173";
+                else // Normal user
+                alert("Logged in as regular user");
             } else setError(data.error || 'Login failed. Please check your credentials.');
         } catch (error) {
             setError('Network error. Please check your connection and try again.');
@@ -17573,13 +17577,13 @@ const Login = ({ onSwitchToRegister })=>{
                         children: "back"
                     }, void 0, false, {
                         fileName: "src/components/Login.jsx",
-                        lineNumber: 54,
+                        lineNumber: 64,
                         columnNumber: 17
                     }, undefined)
                 ]
             }, void 0, true, {
                 fileName: "src/components/Login.jsx",
-                lineNumber: 53,
+                lineNumber: 63,
                 columnNumber: 7
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("p", {
@@ -17587,7 +17591,7 @@ const Login = ({ onSwitchToRegister })=>{
                 children: "Sign in to your account"
             }, void 0, false, {
                 fileName: "src/components/Login.jsx",
-                lineNumber: 56,
+                lineNumber: 66,
                 columnNumber: 7
             }, undefined),
             error && /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -17595,7 +17599,7 @@ const Login = ({ onSwitchToRegister })=>{
                 children: error
             }, void 0, false, {
                 fileName: "src/components/Login.jsx",
-                lineNumber: 58,
+                lineNumber: 68,
                 columnNumber: 17
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("form", {
@@ -17610,7 +17614,7 @@ const Login = ({ onSwitchToRegister })=>{
                                 children: "Username"
                             }, void 0, false, {
                                 fileName: "src/components/Login.jsx",
-                                lineNumber: 62,
+                                lineNumber: 72,
                                 columnNumber: 11
                             }, undefined),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("input", {
@@ -17625,13 +17629,13 @@ const Login = ({ onSwitchToRegister })=>{
                                 disabled: loading
                             }, void 0, false, {
                                 fileName: "src/components/Login.jsx",
-                                lineNumber: 65,
+                                lineNumber: 75,
                                 columnNumber: 11
                             }, undefined)
                         ]
                     }, void 0, true, {
                         fileName: "src/components/Login.jsx",
-                        lineNumber: 61,
+                        lineNumber: 71,
                         columnNumber: 9
                     }, undefined),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -17643,7 +17647,7 @@ const Login = ({ onSwitchToRegister })=>{
                                 children: "Password"
                             }, void 0, false, {
                                 fileName: "src/components/Login.jsx",
-                                lineNumber: 79,
+                                lineNumber: 89,
                                 columnNumber: 11
                             }, undefined),
                             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("input", {
@@ -17658,13 +17662,13 @@ const Login = ({ onSwitchToRegister })=>{
                                 disabled: loading
                             }, void 0, false, {
                                 fileName: "src/components/Login.jsx",
-                                lineNumber: 82,
+                                lineNumber: 92,
                                 columnNumber: 11
                             }, undefined)
                         ]
                     }, void 0, true, {
                         fileName: "src/components/Login.jsx",
-                        lineNumber: 78,
+                        lineNumber: 88,
                         columnNumber: 9
                     }, undefined),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("button", {
@@ -17674,13 +17678,13 @@ const Login = ({ onSwitchToRegister })=>{
                         children: loading ? 'SIGNING IN...' : 'SIGN IN'
                     }, void 0, false, {
                         fileName: "src/components/Login.jsx",
-                        lineNumber: 95,
+                        lineNumber: 105,
                         columnNumber: 9
                     }, undefined)
                 ]
             }, void 0, true, {
                 fileName: "src/components/Login.jsx",
-                lineNumber: 60,
+                lineNumber: 70,
                 columnNumber: 7
             }, undefined),
             /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -17692,7 +17696,7 @@ const Login = ({ onSwitchToRegister })=>{
                         children: "Forgot your password?"
                     }, void 0, false, {
                         fileName: "src/components/Login.jsx",
-                        lineNumber: 105,
+                        lineNumber: 115,
                         columnNumber: 9
                     }, undefined),
                     /*#__PURE__*/ (0, _jsxDevRuntime.jsxDEV)("div", {
@@ -17705,25 +17709,25 @@ const Login = ({ onSwitchToRegister })=>{
                                 children: "Sign up"
                             }, void 0, false, {
                                 fileName: "src/components/Login.jsx",
-                                lineNumber: 108,
+                                lineNumber: 118,
                                 columnNumber: 11
                             }, undefined)
                         ]
                     }, void 0, true, {
                         fileName: "src/components/Login.jsx",
-                        lineNumber: 106,
+                        lineNumber: 116,
                         columnNumber: 9
                     }, undefined)
                 ]
             }, void 0, true, {
                 fileName: "src/components/Login.jsx",
-                lineNumber: 104,
+                lineNumber: 114,
                 columnNumber: 7
             }, undefined)
         ]
     }, void 0, true, {
         fileName: "src/components/Login.jsx",
-        lineNumber: 52,
+        lineNumber: 62,
         columnNumber: 5
     }, undefined);
 };
@@ -20560,6 +20564,6 @@ $RefreshReg$(_c, "Register");
   globalThis.$RefreshReg$ = prevRefreshReg;
   globalThis.$RefreshSig$ = prevRefreshSig;
 }
-},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"lW6qc":[function() {},{}],"lW6qc":[function() {},{}]},["5j6Kf","a0t4e"], "a0t4e", "parcelRequire10c2", {}, null, null, "http://localhost:1234")
+},{"react/jsx-dev-runtime":"dVPUn","react":"jMk1U","@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT","@parcel/transformer-react-refresh-wrap/lib/helpers/helpers.js":"7h6Pi"}],"lW6qc":[function() {},{}],"lW6qc":[function() {},{}]},["lrAuY","a0t4e"], "a0t4e", "parcelRequire10c2", {}, null, null, "http://localhost:50823")
 
 //# sourceMappingURL=frontend.31b563d9.js.map

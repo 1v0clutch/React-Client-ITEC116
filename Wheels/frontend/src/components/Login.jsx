@@ -37,7 +37,17 @@ const Login = ({ onSwitchToRegister }) => {
         
         console.log('🔐 Login successful:', data.user);
         alert('Welcome back! Login successful!');
-        // Redirect to dashboard here
+
+        // 🔥 ROLE CHECK
+        if (data.user.role === "admin") {
+          // Redirect to ADMIN frontend
+          window.location.href = "http://localhost:5173"; 
+        } else {
+          // Normal user
+          alert("Logged in as regular user");
+          // pwede mo palitan later ng user dashboard
+        }
+
       } else {
         setError(data.error || 'Login failed. Please check your credentials.');
       }

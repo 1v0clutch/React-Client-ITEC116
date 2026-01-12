@@ -20,6 +20,14 @@ const userSchema = new mongoose.Schema({
     type: String, 
     default: ''
   },
+
+  // 🔥 ROLE FIELD
+  role: {
+    type: String,
+    enum: ['admin', 'user'],
+    default: 'user'
+  },
+
   createdAt: { 
     type: Date, 
     default: Date.now 
