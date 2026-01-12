@@ -135,6 +135,9 @@ exports.createOrder = async (req, res) => {
   try {
     const { customerId, items, shippingAddress } = req.body;
     
+    // Extract userId from authenticated request (set by verifyToken middleware)
+    const userId = req.userId;
+    
     // Step 1: Validate customer exists
     const customer = await Customer.findById(customerId);
     if (!customer) {
@@ -177,8 +180,9 @@ exports.createOrder = async (req, res) => {
     const orderCount = await OnlineOrder.countDocuments();
     const orderNumber = `ORD-${Date.now()}-${orderCount + 1}`;
     
-    // Step 4: Create online order
+    // Step 4: Create online order with userId
     const order = new OnlineOrder({
+      userId, // Include authenticated user's ID
       customerId,
       orderNumber,
       items: orderItems,
@@ -258,10 +262,14 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// Get all orders
+// Get all orders (filtered by authenticated user)
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await OnlineOrder.find()
+    // Extract userId from authenticated request (set by verifyToken middleware)
+    const userId = req.userId;
+    
+    // Filter orders by authenticated user's ID
+    const orders = await OnlineOrder.find({ userId })
       .populate("customerId")
       .populate("items.productId")
       .populate("salesOrderId")

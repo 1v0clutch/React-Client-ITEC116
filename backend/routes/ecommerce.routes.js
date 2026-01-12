@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const ecommerceController = require("../controllers/ecommerce.controller");
+const { verifyToken } = require("../middleware/auth");
 
 // =============================
 // CUSTOMER ROUTES
@@ -21,8 +22,8 @@ router.post("/products/validate-stock", ecommerceController.validateStock);
 // =============================
 // ORDER ROUTES
 // =============================
-router.post("/orders/create", ecommerceController.createOrder);
-router.get("/orders/all", ecommerceController.getAllOrders);
+router.post("/orders/create", verifyToken, ecommerceController.createOrder);
+router.get("/orders/all", verifyToken, ecommerceController.getAllOrders);
 router.get("/orders/:id", ecommerceController.getOrderById);
 router.get("/orders/customer/:customerId", ecommerceController.getOrdersByCustomer);
 router.put("/orders/status/:id", ecommerceController.updateOrderStatus);

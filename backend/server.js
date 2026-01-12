@@ -9,6 +9,7 @@ const app = express();
 // =============================
 // ROUTE IMPORTS
 // =============================
+const authRoutes = require("./routes/auth.routes");
 const inventoryRoutes = require("./routes/inventory.routes");
 const transactionRoutes = require("./routes/transaction.routes");
 const warehouseRoutes = require("./routes/warehouse.routes");
@@ -47,6 +48,9 @@ app.use(
 
 app.use(express.json());
 
+// Serve static files from uploads folder
+app.use("/uploads", express.static("uploads"));
+
 // =============================
 // SERVE STATIC FILES (UPLOADS)
 // =============================
@@ -61,6 +65,9 @@ connectDB();
 // =============================
 // ROUTES
 // =============================
+
+// ✅ Authentication Routes (must be registered first)
+app.use("/api/auth", authRoutes);
 
 // ✅ HR Core Routes
 //app.use("/api/hr", hrRoutes);

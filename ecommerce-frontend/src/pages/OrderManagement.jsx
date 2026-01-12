@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Toast from "../components/Toast";
+import { useAuth } from "../context/AuthContext";
 
 const API_BASE = "http://localhost:8000/api";
 
 function OrderManagement() {
+  const { getAuthHeader, isAuthenticated } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -15,10 +17,21 @@ function OrderManagement() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`${API_BASE}/ecommerce/orders/all`);
+      // Include Authorization header for authenticated requests
+      const response = await fetch(`${API_BASE}/ecommerce/orders/all`, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
+      
+      if (response.status === 401) {
+        throw new Error("Authentication required. Please log in.");
+      }
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const data = await response.json();
       // Sort orders by creation date - newest first
       const sortedOrders = Array.isArray(data) 
@@ -41,7 +54,10 @@ function OrderManagement() {
     try {
       const response = await fetch(`${API_BASE}/ecommerce/orders/status/${orderId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
         body: JSON.stringify({ status }),
       });
       
@@ -65,7 +81,10 @@ function OrderManagement() {
     try {
       const response = await fetch(`${API_BASE}/ecommerce/orders/payment/${orderId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...getAuthHeader(),
+        },
         body: JSON.stringify({ paymentStatus }),
       });
       
@@ -93,6 +112,9 @@ function OrderManagement() {
     try {
       const response = await fetch(`${API_BASE}/ecommerce/orders/cancel/${orderId}`, {
         method: "PUT",
+        headers: {
+          ...getAuthHeader(),
+        },
       });
       
       if (!response.ok) throw new Error("Failed to cancel order");
@@ -124,6 +146,9 @@ function OrderManagement() {
     try {
       const response = await fetch(`${API_BASE}/ecommerce/orders/delete-all`, {
         method: "DELETE",
+        headers: {
+          ...getAuthHeader(),
+        },
       });
       
       if (!response.ok) throw new Error("Failed to delete all orders");
@@ -182,8 +207,13 @@ function OrderManagement() {
       </div>
 
       {orders.length === 0 ? (
-        <div className="text-center py-10 text-gray-500">
-          No orders found
+        <div className="text-center py-10">
+          <p className="text-gray-500 text-lg mb-2">No orders found</p>
+          <p className="text-gray-400 text-sm">
+            {isAuthenticated() 
+              ? "You haven't placed any orders yet. Start shopping to see your orders here!"
+              : "Please log in to view your orders."}
+          </p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">

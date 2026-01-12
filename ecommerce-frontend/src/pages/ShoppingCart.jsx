@@ -139,7 +139,7 @@ function ShoppingCart() {
   };
 
   return (
-    <div className="p-5">
+    <div className="p-3 sm:p-5">
       {toast && (
         <Toast
           message={toast.message}
@@ -147,11 +147,11 @@ function ShoppingCart() {
           onClose={() => setToast(null)}
         />
       )}
-      <div className="flex justify-between items-center mb-5">
-        <h1 className="text-2xl font-bold">Shopping Cart</h1>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-5">
+        <h1 className="text-2xl md:text-3xl font-bold">Shopping Cart</h1>
         <button
           onClick={() => navigate("/")}
-          className="bg-[#4b5563] text-white px-4 py-2 rounded hover:bg-[#374151]"
+          className="bg-[#4b5563] text-white px-4 py-2 rounded hover:bg-[#374151] w-full sm:w-auto"
         >
           Continue Shopping
         </button>
@@ -169,7 +169,8 @@ function ShoppingCart() {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg shadow overflow-hidden mb-5">
+          {/* Desktop Table View */}
+          <div className="hidden lg:block bg-white rounded-lg shadow overflow-hidden mb-5">
             <table className="w-full">
               <thead className="bg-gray-100">
                 <tr>
@@ -225,8 +226,67 @@ function ShoppingCart() {
             </table>
           </div>
 
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-4 mb-5">
+            {cart.map((item) => (
+              <div key={item.productId} className="bg-white rounded-lg shadow p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-semibold text-lg flex-1">{item.name}</h3>
+                  <button
+                    onClick={() => removeItem(item.productId)}
+                    className="text-red-600 hover:text-red-700 ml-2"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Price:</span>
+                    <span className="font-medium">₱{item.price}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Quantity:</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        className="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400"
+                      >
+                        -
+                      </button>
+                      <span className="w-12 text-center font-medium">{item.quantity}</span>
+                      <button
+                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        className="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Available Stock:</span>
+                    <span className={`font-medium ${item.availableStock < item.quantity ? "text-red-600" : "text-green-600"}`}>
+                      {item.availableStock} units
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="font-semibold">Subtotal:</span>
+                    <span className="text-lg font-bold text-green-600">
+                      ₱{(item.price * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="flex justify-end">
-            <div className="bg-white rounded-lg shadow p-5 w-96">
+            <div className="bg-white rounded-lg shadow p-5 w-full sm:w-96">
               <div className="flex justify-between mb-3">
                 <span className="font-semibold">Total:</span>
                 <span className="text-2xl font-bold text-green-600">
