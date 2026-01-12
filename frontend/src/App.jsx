@@ -51,17 +51,14 @@ import ProcurementSupplyChain from "./pages/SupplyChain/ProcurementSupplyChain";
 // Project Management
 import Project from "./pages/ProjectManagement/Project";
 import ProjectForm from "./pages/ProjectManagement/ProjectForm";
-<<<<<<< HEAD
 // 👇 ADD THIS RIGHT AFTER YOUR IMPORTS
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
-=======
+
 import ProjectGantt from "./pages/ProjectManagement/ProjectGantt";
 import DependencySetup from "./pages/ProjectManagement/DependencySetup";
 import Employee from "./pages/ProjectManagement/Employee";
 import ProjectList from "./pages/ProjectManagement/ProjectList";
->>>>>>> 09486672ed3dcd349f4ce9c474ad2ea8eede6760
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000/api";
 
 function App() {
   const [data, setData] = useState({
