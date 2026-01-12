@@ -3,6 +3,15 @@ const Requisition = require("../models/Requisition");
 //Create new requisition
 exports.createRequisition = async (req, res) => {
   try {
+    // sanitize contact field -> digits only
+    if (!req.body.contact) {
+      return res.status(400).json({ error: "Contact (phone) is required" });
+    }
+    req.body.contact = String(req.body.contact).replace(/\D/g, "");
+    if (!/^\d+$/.test(req.body.contact)) {
+      return res.status(400).json({ error: "Contact must contain only digits" });
+    }
+
     const requisition = new Requisition(req.body);
     await requisition.save();
     res.status(201).json(requisition);
@@ -37,6 +46,12 @@ exports.getRequisitionById = async (req, res) => {
 //Update requisition fields
 exports.updateRequisition = async (req, res) => {
   try {
+    if (req.body.contact !== undefined) {
+      req.body.contact = String(req.body.contact).replace(/\D/g, "");
+      if (!/^\d+$/.test(req.body.contact)) {
+        return res.status(400).json({ error: "Contact must contain only digits" });
+      }
+    }
     const updated = await Requisition.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) return res.status(404).json({ error: "Requisition not found" });
     res.json(updated);

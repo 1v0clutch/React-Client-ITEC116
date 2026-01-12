@@ -225,11 +225,15 @@ export default function Supplier() {
 
               <div className="flex flex-col gap-3">
                 <input
-                  type="text"
-                  placeholder="Phone Number"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="\d*"
+                  placeholder="Contact #"
                   className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })
+                  }
                 />
                 <input
                   type="text"

@@ -3,6 +3,14 @@ const Supplier = require("../models/Supplier");
 //Create Supplier
 exports.createSupplier = async (req, res) => {
   try {
+    // sanitize phone (keep digits only)
+    if (req.body.phone) req.body.phone = String(req.body.phone).replace(/\D/g, "");
+
+    // optional: reject if phone provided but empty after sanitize
+    if (req.body.phone !== undefined && req.body.phone === "") {
+      return res.status(400).json({ error: "Phone must contain digits only" });
+    }
+
     const supplier = new Supplier(req.body);
     await supplier.save();
     res.status(201).json(supplier);
@@ -35,6 +43,8 @@ exports.getSupplierById = async (req, res) => {
 //Update supplier
 exports.updateSupplier = async (req, res) => {
   try {
+    if (req.body.phone) req.body.phone = String(req.body.phone).replace(/\D/g, "");
+
     const updated = await Supplier.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) return res.status(404).json({ error: "Supplier not found" });
     res.json(updated);

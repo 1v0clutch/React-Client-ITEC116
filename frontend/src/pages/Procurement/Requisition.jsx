@@ -295,12 +295,14 @@ export default function Requisition() {
                   required
                 />
                 <input
-                  type="text"
-                  placeholder="Contact Information"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="\d*"
+                  placeholder="Contact #"
                   className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none"
                   value={form.contact}
                   onChange={(e) =>
-                    setForm({ ...form, contact: e.target.value })
+                    setForm({ ...form, contact: e.target.value.replace(/\D/g, "") })
                   }
                   required
                 />
