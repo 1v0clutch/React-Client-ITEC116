@@ -38,7 +38,14 @@ const WarehouseManagement = () => {
       const res = await fetch(`${API_WAREHOUSE}/getAllWarehouse`);
       if (!res.ok) throw new Error("Failed to fetch warehouses");
       const data = await res.json();
-      setWarehouses(data);
+      
+      // Filter out items that no longer exist in inventory
+      const cleanedWarehouses = data.map(warehouse => ({
+        ...warehouse,
+        items: warehouse.items.filter(item => item.itemId && item.itemId._id)
+      }));
+      
+      setWarehouses(cleanedWarehouses);
     } catch (err) {
       setMessage({ text: err.message, type: "error" });
     }
@@ -162,32 +169,37 @@ const WarehouseManagement = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 mb-8">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Warehouse className="w-10 h-10" />
-            <h1 className="text-4xl font-bold">Warehouse Management</h1>
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+              <Warehouse className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white tracking-tight">Warehouse Management</h1>
+              <p className="text-white/80 text-sm">Manage Warehouses & Item Assignments</p>
+            </div>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold px-4 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
               Add Warehouse
             </button>
             <button
               onClick={() => setShowAssignModal(true)}
-              className="px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold px-4 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
             >
               <Package className="w-5 h-5" />
               Assign Item
             </button>
             <button
               onClick={() => setShowTransferModal(true)}
-              className="px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold px-4 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
             >
               <ArrowRightLeft className="w-5 h-5" />
               Transfer Item
@@ -199,10 +211,10 @@ const WarehouseManagement = () => {
       {/* Message Display */}
       {message.text && (
         <div
-          className={`mb-6 p-4 rounded-lg flex items-center justify-between ${
+          className={`mb-6 p-4 rounded-xl flex items-center justify-between ${
             message.type === "success"
-              ? "bg-green-500/10 border border-green-500/30 text-green-400"
-              : "bg-red-500/10 border border-red-500/30 text-red-400"
+              ? "bg-green-100 border border-green-300 text-green-800"
+              : "bg-red-100 border border-red-300 text-red-800"
           }`}
         >
           <div className="flex items-center gap-2">
@@ -222,89 +234,98 @@ const WarehouseManagement = () => {
         </div>
       )}
 
-      {/* Warehouse List */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold">
-            Warehouses ({warehouses.length})
-          </h3>
+      {/* Enhanced Warehouse List */}
+      <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 hover:border-blue-200 transition-all duration-300 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2">
+              <Warehouse className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Warehouses</h3>
+              <p className="text-white/80 text-sm">{warehouses.length} active warehouses</p>
+            </div>
+          </div>
         </div>
 
-        {warehouses.length === 0 ? (
-          <div className="text-center py-12">
-            <Warehouse className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400 text-lg">No warehouses found</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {warehouses.map((w) => (
-              <div
-                key={w._id}
-                className="bg-slate-900/50 border border-slate-700 rounded-lg p-5 hover:border-slate-600 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Warehouse className="w-5 h-5 text-blue-400" />
-                      <h4 className="font-semibold text-lg">{w.name}</h4>
+        <div className="p-6">
+          {warehouses.length === 0 ? (
+            <div className="text-center py-12">
+              <Warehouse className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+              <p className="text-xl font-semibold text-gray-500">No warehouses found</p>
+              <p className="text-gray-400 mt-2">Add your first warehouse above</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {warehouses.map((w) => (
+                <div
+                  key={w._id}
+                  className="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-gray-200 hover:border-blue-300 rounded-2xl p-6 transition-all duration-300 hover:shadow-lg"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Warehouse className="w-5 h-5 text-blue-500" />
+                        <h4 className="font-bold text-lg text-gray-800">{w.name}</h4>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600 text-sm">
+                        <MapPin className="w-4 h-4" />
+                        <span>{w.location}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-400 text-sm">
-                      <MapPin className="w-4 h-4" />
-                      <span>{w.location}</span>
-                    </div>
+                    <button
+                      onClick={() => handleDeleteWarehouse(w._id)}
+                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white p-2 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDeleteWarehouse(w._id)}
-                    className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
 
-                {w.items.length > 0 ? (
-                  <div className="mt-4 pt-4 border-t border-slate-700">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Package className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm font-medium text-slate-400">
-                        Items ({w.items.length})
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {w.items.map((i, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-slate-800/50 rounded-lg p-3 text-sm"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">
-                              {i.itemId?.name || "Unknown Item"}
-                            </span>
-                            <span className="text-blue-400 font-semibold">
-                              Qty: {i.quantity}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-slate-400 text-xs">
-                            <span>SKU: {i.itemId?.sku || "N/A"}</span>
-                            {i.zone && (
-                              <span className="px-2 py-0.5 bg-slate-700 rounded">
-                                Zone: {i.zone}
+                  {w.items.length > 0 ? (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Package className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm font-semibold text-gray-700">
+                          Items ({w.items.length})
+                        </span>
+                      </div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {w.items.map((i, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-white rounded-lg p-3 text-sm border border-gray-200 hover:border-blue-200 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-gray-800">
+                                {i.itemId?.name || "Unknown Item"}
                               </span>
-                            )}
+                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold">
+                                Qty: {i.quantity}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-gray-500 text-xs">
+                              <span>SKU: {i.itemId?.sku || "N/A"}</span>
+                              {i.zone && (
+                                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                                  Zone: {i.zone}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="mt-4 pt-4 border-t border-slate-700 text-center text-slate-500 text-sm">
-                    No items assigned
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                  ) : (
+                    <div className="mt-4 pt-4 border-t border-gray-200 text-center text-gray-500 text-sm">
+                      No items assigned
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modals */}

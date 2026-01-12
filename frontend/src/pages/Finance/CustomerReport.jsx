@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function CustomerReport() {
   const [data, setData] = useState([]);
@@ -65,24 +65,65 @@ export default function CustomerReport() {
     const load = async () => {
       try {
         setIsFetching(true);
-        const res = await fetch("http://localhost:8000/api/finance/customer-report");
-        if (!res.ok) throw new Error("Failed to load customer report");
-        const payload = await res.json();
-        if (!active) return;
-        const list = toArray(payload).map(normalize);
-        setData(list);
         setError(null);
+
+        // Fetch from multiple Sales endpoints for comprehensive customer data
+        const [salesOrdersRes, financeCustomerRes] = await Promise.allSettled([
+          fetch("http://localhost:8000/api/sales-orders/all"),
+          fetch("http://localhost:8000/api/finance/customer-report") // Fallback
+        ]);
+
+        if (!active) return;
+
+        let salesOrders = [];
+
+        // Process sales orders data (primary source)
+        if (salesOrdersRes.status === "fulfilled" && salesOrdersRes.value.ok) {
+          const payload = await salesOrdersRes.value.json();
+          salesOrders = toArray(payload);
+        } else if (financeCustomerRes.status === "fulfilled" && financeCustomerRes.value.ok) {
+          // Fallback to finance endpoint
+          const payload = await financeCustomerRes.value.json();
+          const fallbackData = toArray(payload).map(normalize);
+          setData(fallbackData);
+          setError(fallbackData.length === 0 ? "No customer data available from Sales or Finance modules" : null);
+          return;
+        }
+
+        // Transform sales orders into customer receivables data
+        const customerData = salesOrders.map((order, index) => {
+          const totalAmount = Number(order.totalAmount || order.total || order.grandTotal) || 0;
+          const paidAmount = Number(order.paidAmount || order.amountPaid) || 0;
+          const balance = totalAmount - paidAmount;
+          
+          return {
+            ...normalize(order, index),
+            customer: order.customerName || order.customer || order.clientName || order.customerId?.name || "—",
+            reference: order.orderNumber || order.invoiceNumber || order.referenceNumber || "—",
+            status: order.invoiceStatus || order.paymentStatus || order.status || "—",
+            total: totalAmount,
+            balance: balance,
+            date: order.orderDate || order.invoiceDate || order.createdAt || null,
+            customerEmail: order.customerEmail || order.customerId?.email || "—",
+            customerPhone: order.customerPhone || order.customerId?.phone || "—",
+            source: "Sales Module"
+          };
+        });
+
+        setData(customerData);
+        setError(customerData.length === 0 ? "No customer data available from Sales modules" : null);
       } catch (err) {
         if (!active) return;
-        setError("Unable to fetch customer data");
+        setError("Unable to fetch customer data from Sales modules");
         setData([]);
+        console.error("Customer data loading error:", err);
       } finally {
         if (active) setIsFetching(false);
       }
     };
 
     load();
-    const interval = setInterval(load, 5000);
+    const interval = setInterval(load, 8000); // Real-time updates every 8 seconds
     return () => {
       active = false;
       clearInterval(interval);
@@ -199,21 +240,54 @@ export default function CustomerReport() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-blue-700 mb-2">Accounts Receivable (Customer)</h1>
-        <p className="text-lg text-slate-600">Manage and track customer accounts and receivables</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">Comprehensive Customer Report</h2>
+            <p className="text-white/80 text-sm">Integrated sales customer and receivables analytics</p>
+          </div>
+        </div>
       </div>
-      <div className="bg-white shadow-lg rounded-xl p-6 overflow-x-auto">
-        <div className="space-y-6">
+
+      <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 hover:border-blue-200 transition-all duration-300 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Customer Financial Overview</h3>
+              <p className="text-white/80 text-sm">Real-time receivables and account status</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {metrics.map((metric) => (
               <div
                 key={metric.label}
-                className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 shadow-sm"
+                className="rounded-2xl border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:border-blue-200"
               >
-                <p className="text-xs uppercase tracking-wide text-blue-600">{metric.label}</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900">{metric.value}</p>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-2 shadow-md">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-bold text-blue-700 uppercase tracking-wide">{metric.label}</p>
+                </div>
+                <p className="text-2xl font-bold text-gray-800">{metric.value}</p>
               </div>
             ))}
           </div>
@@ -222,58 +296,73 @@ export default function CustomerReport() {
             <button
               type="button"
               onClick={exportCsv}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               disabled={isFetching || !sortedData.length}
             >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
               Download CSV
             </button>
           </div>
 
           {error ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50/80 p-8 text-center text-rose-600">
-              {error}
+            <div className="text-center py-12">
+              <svg className="w-20 h-20 text-red-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xl font-semibold text-red-500">{error}</p>
+              <p className="text-gray-400 mt-2">Please try refreshing the page</p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-              <table className="min-w-full divide-y divide-slate-200 text-sm text-slate-700">
-                <thead className="bg-blue-100 text-blue-900">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold">Customer</th>
-                    <th className="px-4 py-3 text-left font-semibold">Reference</th>
-                    <th className="px-4 py-3 text-center font-semibold">Status</th>
-                    <th className="px-4 py-3 text-right font-semibold">Total</th>
-                    <th className="px-4 py-3 text-right font-semibold">Balance</th>
-                    <th className="px-4 py-3 text-center font-semibold">Date</th>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-blue-50 border-b-2 border-blue-200">
+                    <th className="text-left py-4 px-4 font-bold text-gray-700">Customer</th>
+                    <th className="text-left py-4 px-4 font-bold text-gray-700">Reference</th>
+                    <th className="text-center py-4 px-4 font-bold text-gray-700">Status</th>
+                    <th className="text-right py-4 px-4 font-bold text-gray-700">Total</th>
+                    <th className="text-right py-4 px-4 font-bold text-gray-700">Balance</th>
+                    <th className="text-center py-4 px-4 font-bold text-gray-700">Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
+                <tbody>
                   {sortedData.length ? (
                     sortedData.map((entry) => (
-                      <tr key={entry.id} className="transition hover:bg-blue-50/60">
-                        <td className="px-4 py-3 font-medium text-slate-900">{entry.customer}</td>
-                        <td className="px-4 py-3">{entry.reference}</td>
-                        <td className="px-4 py-3 text-center">
+                      <tr key={entry.id} className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200">
+                        <td className="py-4 px-4 font-semibold text-gray-800">{entry.customer}</td>
+                        <td className="py-4 px-4 text-gray-600">{entry.reference}</td>
+                        <td className="py-4 px-4 text-center">
                           <span
-                            className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold ${getStatusTone(
+                            className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-bold shadow-sm ${getStatusTone(
                               entry.status
                             )}`}
                           >
                             {entry.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-blue-700">
+                        <td className="py-4 px-4 text-right font-bold text-blue-700">
                           {formatCurrency(entry.total)}
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-emerald-700">
+                        <td className="py-4 px-4 text-right font-bold text-emerald-700">
                           {formatCurrency(entry.balance)}
                         </td>
-                        <td className="px-4 py-3 text-center">{formatDate(entry.date)}</td>
+                        <td className="py-4 px-4 text-center text-gray-600">{formatDate(entry.date)}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="px-4 py-6 text-center text-sm text-slate-500" colSpan={6}>
-                        {isFetching ? "Loading customer data..." : "No customer data available"}
+                      <td className="py-12 text-center text-gray-500" colSpan={6}>
+                        <div className="flex flex-col items-center">
+                          <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <p className="text-lg font-semibold text-gray-500">
+                            {isFetching ? "Loading customer data..." : "No customer data available"}
+                          </p>
+                          {!isFetching && <p className="text-gray-400 mt-2">Customer records will appear here once available</p>}
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -283,6 +372,7 @@ export default function CustomerReport() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

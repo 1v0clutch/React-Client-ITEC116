@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 export default function Employees({ data = {}, setData }) {
-  const employees = data.employees || [];
-  const departments = data.departments || [];
+  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState(data.departments || []);
+  const [loading, setLoading] = useState(false);
 
   const [emp, setEmp] = useState({
     id: "",
@@ -15,10 +16,49 @@ export default function Employees({ data = {}, setData }) {
     status: "Active",
   });
 
+  // Fetch employees from backend API to sync with other components
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  // Sync local departments with parent data
+  useEffect(() => {
+    if (data.departments) {
+      setDepartments(data.departments);
+    }
+  }, [data.departments]);
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:8000/api/employee");
+      if (response.ok) {
+        const employeeData = await response.json();
+        setEmployees(employeeData);
+        // Also update parent data for backward compatibility
+        setData(prev => ({ ...prev, employees: employeeData }));
+      } else {
+        console.error("Failed to fetch employees from backend");
+        // Fallback to local data if backend fails
+        setEmployees(data.employees || []);
+      }
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      // Fallback to local data if backend fails
+      setEmployees(data.employees || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 🧮 Generate next Employee ID — fills deleted gaps
-  const generateEmployeeID = () => {
+  const generateEmployeeID = useCallback(() => {
     const existingNums = employees
-      .map((e) => parseInt(e.empId?.split("-")[1]))
+      .map((e) => {
+        // Handle both backend API format (employeeId) and local format (empId)
+        const id = e.employeeId || e.empId;
+        return parseInt(id?.split("-")[1]);
+      })
       .filter((num) => !isNaN(num))
       .sort((a, b) => a - b);
 
@@ -29,7 +69,7 @@ export default function Employees({ data = {}, setData }) {
     }
 
     return `EMP-${nextNum.toString().padStart(3, "0")}`;
-  };
+  }, [employees]);
 
   // Generate only when adding a new employee
   useEffect(() => {
@@ -39,10 +79,10 @@ export default function Employees({ data = {}, setData }) {
         empId: generateEmployeeID(),
       }));
     }
-  }, [employees]);
+  }, [generateEmployeeID, emp.id, emp.empId]);
 
   // ➕ Add or 🛠 Update Employee
-  const addEmployee = () => {
+  const addEmployee = async () => {
     if (
       !emp.name ||
       !emp.designation ||
@@ -54,48 +94,113 @@ export default function Employees({ data = {}, setData }) {
       return;
     }
 
-    let updatedEmployees;
+    try {
+      setLoading(true);
+      
+      // Prepare data for backend API
+      const employeeData = {
+        employeeId: emp.empId || generateEmployeeID(),
+        name: emp.name,
+        position: emp.designation, // Map designation to position for backend
+        department: emp.department,
+        employmentType: emp.employmentType,
+        hireDate: emp.hireDate,
+        status: emp.status,
+      };
 
-    if (emp.id) {
-      // Update existing employee (keep empId)
-      updatedEmployees = employees.map((e) =>
-        e.id === emp.id ? { ...emp, empId: e.empId } : e
-      );
-    } else {
-      // Add new employee (unique ID, fills gap)
-      const newEmp = { ...emp, id: Date.now(), empId: generateEmployeeID() };
-      updatedEmployees = [...employees, newEmp];
+      if (emp.id) {
+        // Update existing employee
+        const response = await fetch(`http://localhost:8000/api/employee/${emp.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(employeeData),
+        });
+
+        if (response.ok) {
+          alert("✅ Employee updated successfully!");
+          await fetchEmployees();
+        } else {
+          const errData = await response.json();
+          alert("Failed to update employee: " + (errData.message || "Unknown error"));
+          return;
+        }
+      } else {
+        // Add new employee
+        const response = await fetch("http://localhost:8000/api/employee", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(employeeData),
+        });
+
+        if (response.ok) {
+          alert("✅ Employee added successfully!");
+          await fetchEmployees();
+        } else {
+          const errData = await response.json();
+          alert("Failed to add employee: " + (errData.message || "Unknown error"));
+          return;
+        }
+      }
+
+      // Reset form
+      setEmp({
+        id: "",
+        empId: "",
+        name: "",
+        designation: "",
+        department: "",
+        employmentType: "",
+        hireDate: "",
+        status: "Active",
+      });
+    } catch (error) {
+      console.error("Error saving employee:", error);
+      alert("❌ Error saving employee: " + error.message);
+    } finally {
+      setLoading(false);
     }
-
-    setData({ ...data, employees: updatedEmployees });
-
-    // Reset form
-    setEmp({
-      id: "",
-      empId: "",
-      name: "",
-      designation: "",
-      department: "",
-      employmentType: "",
-      hireDate: "",
-      status: "Active",
-    });
   };
 
   // 🗑 Delete specific employee
-  const deleteEmployee = (id) => {
+  const deleteEmployee = async (id) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this employee?");
     if (!confirmDelete) return;
 
-    const updatedEmployees = employees.filter((e) => e.id !== id);
-    setData({ ...data, employees: updatedEmployees });
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8000/api/employee/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        alert("✅ Employee deleted successfully!");
+        await fetchEmployees();
+      } else {
+        const errData = await response.json();
+        alert("Failed to delete employee: " + (errData.message || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      alert("❌ Error deleting employee: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ✏️ Load data to edit
   const editEmployee = (id) => {
-    const toEdit = employees.find((e) => e.id === id);
+    const toEdit = employees.find((e) => (e._id || e.id) === id);
     if (toEdit) {
-      setEmp({ ...toEdit });
+      setEmp({
+        id: toEdit._id || toEdit.id || "",
+        empId: toEdit.employeeId || toEdit.empId || "",
+        name: toEdit.name || "",
+        designation: toEdit.position || toEdit.designation || "", // Handle both formats
+        department: toEdit.department || "",
+        employmentType: toEdit.employmentType || "",
+        hireDate: toEdit.hireDate || "",
+        status: toEdit.status || "Active",
+      });
     }
   };
 
@@ -114,165 +219,290 @@ export default function Employees({ data = {}, setData }) {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Employees</h2>
-
-      {/* Add / Edit Form */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <input
-          className="border p-2 rounded bg-gray-100"
-          value={emp.empId || generateEmployeeID()}
-          readOnly
-        />
-        <input
-          className="border p-2 rounded"
-          value={emp.name}
-          onChange={(e) => setEmp({ ...emp, name: e.target.value })}
-          placeholder="Employee Name"
-        />
-        <input
-          className="border p-2 rounded"
-          value={emp.designation}
-          onChange={(e) => setEmp({ ...emp, designation: e.target.value })}
-          placeholder="Designation"
-        />
-
-        {/* Department */}
-        <select
-          className="border p-2 rounded"
-          value={emp.department}
-          onChange={(e) => setEmp({ ...emp, department: e.target.value })}
-        >
-          <option value="">Select Department</option>
-          {departments.length > 0 ? (
-            departments.map((dept) => (
-              <option key={dept.id} value={dept.name}>
-                {dept.name}
-              </option>
-            ))
-          ) : (
-            <option disabled>No departments available</option>
-          )}
-        </select>
-
-        {/* Employment Type */}
-        <select
-          className="border p-2 rounded"
-          value={emp.employmentType}
-          onChange={(e) => setEmp({ ...emp, employmentType: e.target.value })}
-        >
-          <option value="">Select Employment Type</option>
-          <option value="Full Time">Full Time</option>
-          <option value="Part Time">Part Time</option>
-          <option value="Contract">On Contract</option>
-        </select>
-
-        {/* Hire Date */}
-        <input
-          type="date"
-          className="border p-2 rounded"
-          value={emp.hireDate}
-          onChange={(e) => setEmp({ ...emp, hireDate: e.target.value })}
-        />
-
-        {/* Status */}
-        <select
-          className="border p-2 rounded"
-          value={emp.status}
-          onChange={(e) => setEmp({ ...emp, status: e.target.value })}
-        >
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="Terminated">Terminated</option>
-          <option value="Resigned">Resigned</option>
-        </select>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">Employee Management</h2>
+            <p className="text-white/80 text-sm">Manage employee records and information</p>
+          </div>
+        </div>
       </div>
 
-      <div className="flex gap-3 mb-6">
-        <button
-          onClick={addEmployee}
-          className={`${
-            emp.id ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"
-          } text-white px-4 py-2 rounded`}
-        >
-          {emp.id ? "Save Update" : "Add Employee"}
-        </button>
+      {/* Enhanced Add/Edit Form */}
+      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-2 border-gray-100 hover:border-green-200 transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-2 shadow-lg">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800">{emp.id ? "Edit Employee" : "Add New Employee"}</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+              </svg>
+              Employee ID
+            </label>
+            <input
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 bg-gray-100 text-gray-600 cursor-not-allowed"
+              value={emp.empId || generateEmployeeID()}
+              readOnly
+            />
+          </div>
 
-        {emp.id && (
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Employee Name
+            </label>
+            <input
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 group-hover:border-green-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={emp.name || ""}
+              onChange={(e) => setEmp({ ...emp, name: e.target.value })}
+              placeholder="Enter employee name"
+            />
+          </div>
+
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+              </svg>
+              Designation
+            </label>
+            <input
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 group-hover:border-teal-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={emp.designation || ""}
+              onChange={(e) => setEmp({ ...emp, designation: e.target.value })}
+              placeholder="Enter designation"
+            />
+          </div>
+
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Department
+            </label>
+            <select
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={emp.department || ""}
+              onChange={(e) => setEmp({ ...emp, department: e.target.value })}
+            >
+              <option key="select-dept" value="">Select Department</option>
+              {departments.length > 0 ? (
+                departments.map((dept, index) => (
+                  <option key={`dept-option-${dept.id || index}`} value={dept.name}>
+                    {dept.name}
+                  </option>
+                ))
+              ) : (
+                <option key="no-dept-option" disabled>No departments available</option>
+              )}
+            </select>
+          </div>
+
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              Employment Type
+            </label>
+            <select
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 group-hover:border-purple-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={emp.employmentType || ""}
+              onChange={(e) => setEmp({ ...emp, employmentType: e.target.value })}
+            >
+              <option key="select-employment" value="">Select Employment Type</option>
+              <option key="full-time" value="Full Time">Full Time</option>
+              <option key="part-time" value="Part Time">Part Time</option>
+              <option key="contract" value="Contract">On Contract</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Hire Date
+            </label>
+            <input
+              type="date"
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 group-hover:border-indigo-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={emp.hireDate || ""}
+              onChange={(e) => setEmp({ ...emp, hireDate: e.target.value })}
+            />
+          </div>
+
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Status
+            </label>
+            <select
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 group-hover:border-yellow-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={emp.status || "Active"}
+              onChange={(e) => setEmp({ ...emp, status: e.target.value })}
+            >
+              <option key="active" value="Active">Active</option>
+              <option key="inactive" value="Inactive">Inactive</option>
+              <option key="terminated" value="Terminated">Terminated</option>
+              <option key="resigned" value="Resigned">Resigned</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-8 flex justify-center gap-4">
           <button
-            onClick={cancelEdit}
-            className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded"
+            onClick={addEmployee}
+            disabled={loading}
+            className={`${
+              emp.id 
+                ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700" 
+                : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            } disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2`}
           >
-            Cancel
+            {loading ? (
+              <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={emp.id ? "M5 13l4 4L19 7" : "M12 6v6m0 0v6m0-6h6m-6 0H6"} />
+              </svg>
+            )}
+            {emp.id ? "Save Update" : "Add Employee"}
           </button>
-        )}
+
+          {emp.id && (
+            <button
+              onClick={cancelEdit}
+              className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Employee Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border border-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-3 py-2 text-left">Employee ID</th>
-              <th className="border px-3 py-2 text-left">Name</th>
-              <th className="border px-3 py-2 text-left">Designation</th>
-              <th className="border px-3 py-2 text-left">Department</th>
-              <th className="border px-3 py-2 text-left">Employment Type</th>
-              <th className="border px-3 py-2 text-left">Hire Date</th>
-              <th className="border px-3 py-2 text-left">Status</th>
-              <th className="border px-3 py-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.length > 0 ? (
-              employees.map((e, index) => (
-                <tr key={e.id || e.empId || `emp-${index}`} className="hover:bg-gray-50">
-                  <td className="border px-3 py-2 font-mono">{e.empId}</td>
-                  <td className="border px-3 py-2">{e.name}</td>
-                  <td className="border px-3 py-2">{e.designation}</td>
-                  <td className="border px-3 py-2">{e.department}</td>
-                  <td className="border px-3 py-2">{e.employmentType}</td>
-                  <td className="border px-3 py-2">{e.hireDate}</td>
-                  <td className="border px-3 py-2">
-                    <span
-                      className={`px-2 py-1 rounded text-sm ${
-                        e.status === "Active"
-                          ? "bg-green-100 text-green-600"
-                          : e.status === "Inactive"
-                          ? "bg-gray-100 text-gray-600"
-                          : e.status === "Resigned"
-                          ? "bg-yellow-100 text-yellow-600"
-                          : "bg-red-100 text-red-600"
-                      }`}
-                    >
-                      {e.status}
-                    </span>
-                  </td>
-                  <td className="border px-3 py-2">
-                    <button
-                      onClick={() => editEmployee(e.id)}
-                      className="text-blue-600 hover:underline mr-3"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteEmployee(e.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="8" className="text-center py-4 text-gray-500 italic">
-                  No employees found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      {/* Enhanced Employee Table */}
+      <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 hover:border-green-200 transition-all duration-300 overflow-hidden">
+        <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Employee Records</h3>
+              <p className="text-white/80 text-sm">{employees.length} employees</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {employees.length === 0 ? (
+            <div className="text-center py-12">
+              <svg className="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <p className="text-xl font-semibold text-gray-500">No employees found</p>
+              <p className="text-gray-400 mt-2">Add your first employee above</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b-2 border-gray-200">
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Employee ID</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Name</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Designation</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Department</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Employment Type</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Hire Date</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Status</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((e, index) => (
+                    <tr key={e._id || e.id || e.empId || `emp-${index}`} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                      <td className="py-4 px-4">
+                        <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-sm font-semibold font-mono">
+                          {e.employeeId || e.empId}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 font-medium text-gray-800">{e.name}</td>
+                      <td className="py-4 px-4 text-gray-600">{e.position || e.designation}</td>
+                      <td className="py-4 px-4 text-gray-600">{e.department}</td>
+                      <td className="py-4 px-4 text-gray-600">{e.employmentType}</td>
+                      <td className="py-4 px-4 text-gray-600">{e.hireDate}</td>
+                      <td className="py-4 px-4">
+                        <span
+                          className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                            e.status === "Active"
+                              ? "bg-gradient-to-r from-green-400 to-green-600 text-white"
+                              : e.status === "Inactive"
+                              ? "bg-gradient-to-r from-gray-400 to-gray-600 text-white"
+                              : e.status === "Resigned"
+                              ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white"
+                              : e.status === "On Leave"
+                              ? "bg-gradient-to-r from-blue-400 to-blue-600 text-white"
+                              : "bg-gradient-to-r from-red-400 to-red-600 text-white"
+                          }`}
+                        >
+                          {e.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex gap-2">
+                          <button
+                            key={`edit-emp-${e._id || e.id}`}
+                            onClick={() => editEmployee(e._id || e.id)}
+                            disabled={loading}
+                            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            key={`delete-emp-${e._id || e.id}`}
+                            onClick={() => deleteEmployee(e._id || e.id)}
+                            disabled={loading}
+                            className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -2,12 +2,12 @@
   width: 100vw;
   min-width: 100vw;
   max-width: 100vw;
-  background: linear-gradient(90deg, #232526 0%, #414345 100%);
-  color: #f5f5f5;
+  background: linear-gradient(90deg, #f7f3f0 0%, #faf6f2 100%);
+  color: #ff9900;
   padding: 30px 0;
   border-radius: 0;
   font-family: "Poppins", "Segoe UI", Arial, sans-serif;
-  box-shadow: 0 4px 24px rgba(34, 34, 34, 0.15);
+  box-shadow: 0 4px 24px rgba(210, 180, 140, 0.15);
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -16,11 +16,10 @@
 
 .form-card, .order-card, .crm-card, .case-card {
   background: #fff;
-  color: #232526;
   padding: 24px 32px;
   border-radius: 12px;
   margin-bottom: 25px;
-  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
+  box-shadow: 0 2px 12px rgba(210, 180, 140, 0.08);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -29,7 +28,7 @@
 }
 
 button {
-  background: #ee7829;
+  background: #cd853f;
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -41,23 +40,23 @@ button {
 }
 
 button:hover {
-  background: #ff924d;
-  color: #232526;
+  background: #daa520;
+  color: #fff;
 }
 
 select, input {
   width: 100%;
   padding: 10px 12px;
   margin-bottom: 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #deb887;
   border-radius: 8px;
-  background: #f7f7f7;
-  color: #232526;
+  background: #fefcfa;
+  color: #5d4e37;
   font-size: 1rem;
   transition: border-color 0.2s;
 }
 input:focus, select:focus {
-  border-color: #ee7829;
+  border-color: #cd853f;
 }
 
 .crm-table {
@@ -65,15 +64,15 @@ input:focus, select:focus {
   max-width: 1200px;
   border-collapse: collapse;
   background: #fff;
-  color: #232526;
-  box-shadow: 0 2px 12px rgba(34, 34, 34, 0.08);
+  color: #5d4e37;
+  box-shadow: 0 2px 12px rgba(210, 180, 140, 0.08);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 25px;
 }
 
 .crm-table thead {
-  background: #ee7829;
+  background: #cd853f;
   color: #fff;
 }
 
@@ -81,16 +80,16 @@ input:focus, select:focus {
   padding: 16px;
   text-align: left;
   font-weight: 600;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid #deb887;
 }
 
 .crm-table tbody tr {
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #deb887;
   transition: background-color 0.2s;
 }
 
 .crm-table tbody tr:hover {
-  background-color: #f7f7f7;
+  background-color: #fef9f5;
 }
 
 .crm-table td {
@@ -107,13 +106,13 @@ input:focus, select:focus {
 }
 
 .segment-badge.vip {
-  background: #fbbf24;
-  color: #78350f;
+  background: #daa520;
+  color: #8b4513;
 }
 
 .segment-badge.regular {
-  background: #d1d5db;
-  color: #374151;
+  background: #deb887;
+  color: #5d4e37;
 }
 
 .logs-list {
@@ -125,11 +124,11 @@ input:focus, select:focus {
 
 .logs-list li {
   padding: 4px 0;
-  color: #232526;
+  color: #5d4e37;
 }
 
 .logs-list .no-logs {
-  color: #999;
+  color: #bc9a6a;
   font-style: italic;
 }
 
@@ -139,7 +138,7 @@ input:focus, select:focus {
 }
 
 .btn-manage {
-  background: #ee7829;
+  background: #cd853f;
   color: #fff;
   border: none;
   padding: 8px 12px;
@@ -151,21 +150,21 @@ input:focus, select:focus {
 }
 
 .btn-manage:hover {
-  background: #d66d21;
+  background: #b8860b;
 }
 
 .expanded-row {
-  background: #f5f5f5 !important;
+  background: #fef9f5 !important;
 }
 
 .expanded-row td {
   padding: 20px !important;
-  border-top: 2px solid #ddd;
+  border-top: 2px solid #deb887;
 }
 
 .log-management h4 {
   margin: 0 0 15px 0;
-  color: #232526;
+  color: #5d4e37;
   font-size: 1rem;
 }
 
@@ -174,7 +173,7 @@ input:focus, select:focus {
   background: #fff;
   padding: 15px;
   border-radius: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid #deb887;
 }
 
 .logs-list-edit {
@@ -209,7 +208,7 @@ input:focus, select:focus {
 
 .log-display span {
   flex: 1;
-  color: #232526;
+  color: #5d4e37;
   font-size: 0.95rem;
 }
 
@@ -223,17 +222,17 @@ input:focus, select:focus {
 .log-input {
   flex: 1;
   padding: 8px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #deb887;
   border-radius: 6px;
   font-size: 0.9rem;
-  color: #232526;
-  background: #fff;
+  color: #5d4e37;
+  background: #fefcfa;
 }
 
 .log-input:focus {
-  border-color: #ee7829;
+  border-color: #cd853f;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(238, 120, 41, 0.1);
+  box-shadow: 0 0 0 3px rgba(205, 133, 63, 0.1);
 }
 
 .btn-edit, .btn-save, .btn-cancel, .btn-delete-log, .btn-add-log {
@@ -296,13 +295,13 @@ input:focus, select:focus {
 }
 
 .btn-add-log {
-  background: #ee7829;
+  background: #cd853f;
   color: #fff;
   padding: 8px 16px;
 }
 
 .btn-add-log:hover {
-  background: #d66d21;
+  background: #daa520;
 }
 
 .no-logs {

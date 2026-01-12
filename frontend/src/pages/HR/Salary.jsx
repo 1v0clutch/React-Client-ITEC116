@@ -147,128 +147,256 @@ export default function Salary({ data = {} }) {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Employee Salary</h2>
-
-      {/* Search Bar */}
-      <div className="flex mb-4">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by Employee ID (e.g. EMP-001)"
-          className="border p-2 rounded w-full"
-        />
-        <button
-          onClick={handleSearch}
-          className="ml-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Search
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">Employee Salary Management</h2>
+            <p className="text-white/80 text-sm">Calculate & Track Employee Salary Records</p>
+          </div>
+        </div>
       </div>
 
-      {/* Salary Form */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <input
-          className="border p-2 rounded"
-          value={salary.empId}
-          readOnly
-          placeholder="Employee ID"
-        />
-        <input
-          className="border p-2 rounded"
-          value={salary.name}
-          readOnly
-          placeholder="Employee Name"
-        />
-        <input
-          className="border p-2 rounded"
-          value={salary.department}
-          readOnly
-          placeholder="Department"
-        />
-        <input
-          type="number"
-          className="border p-2 rounded"
-          value={salary.baseSalary}
-          onChange={(e) => setSalary({ ...salary, baseSalary: e.target.value })}
-          placeholder="Base Salary"
-        />
-        <input
-          type="number"
-          className="border p-2 rounded"
-          value={salary.bonus}
-          onChange={(e) => setSalary({ ...salary, bonus: e.target.value })}
-          placeholder="Bonus"
-        />
-        <input
-          type="number"
-          className="border p-2 rounded"
-          value={salary.deductions}
-          onChange={(e) =>
-            setSalary({ ...salary, deductions: e.target.value })
-          }
-          placeholder="Deductions"
-        />
+      {/* Enhanced Search Bar */}
+      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-2 border-gray-100 hover:border-blue-200 transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-gradient-to-r from-blue-500 to-cyan-600 rounded-xl p-2 shadow-lg">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800">Search Employee</h3>
+        </div>
+        
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by Employee ID (e.g. EMP-001)"
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+            />
+          </div>
+          <button
+            onClick={handleSearch}
+            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Search
+          </button>
+        </div>
       </div>
 
-      <button
-        onClick={addSalaryRecord}
-        className="mb-6 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-      >
-        Add Salary Record
-      </button>
+      {/* Enhanced Salary Form */}
+      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-2 border-gray-100 hover:border-green-200 transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-2 shadow-lg">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800">Salary Calculation</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              Employee ID
+            </label>
+            <input
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 group-hover:border-blue-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={salary.empId}
+              readOnly
+              placeholder="Employee ID"
+            />
+          </div>
+          
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Employee Name
+            </label>
+            <input
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 group-hover:border-green-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={salary.name}
+              readOnly
+              placeholder="Employee Name"
+            />
+          </div>
+          
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Department
+            </label>
+            <input
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 group-hover:border-purple-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={salary.department}
+              readOnly
+              placeholder="Department"
+            />
+          </div>
+          
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Base Salary
+            </label>
+            <input
+              type="number"
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 group-hover:border-indigo-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={salary.baseSalary}
+              onChange={(e) => setSalary({ ...salary, baseSalary: e.target.value })}
+              placeholder="Base Salary"
+            />
+          </div>
+          
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              Bonus
+            </label>
+            <input
+              type="number"
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 group-hover:border-yellow-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={salary.bonus}
+              onChange={(e) => setSalary({ ...salary, bonus: e.target.value })}
+              placeholder="Bonus"
+            />
+          </div>
+          
+          <div className="flex flex-col group">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
+              Deductions
+            </label>
+            <input
+              type="number"
+              className="border-2 border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 group-hover:border-red-300 transition-all duration-200 bg-gray-50 focus:bg-white"
+              value={salary.deductions}
+              onChange={(e) =>
+                setSalary({ ...salary, deductions: e.target.value })
+              }
+              placeholder="Deductions"
+            />
+          </div>
+        </div>
 
-      {/* Salary Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border border-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-3 py-2 text-left">Employee ID</th>
-              <th className="border px-3 py-2 text-left">Name</th>
-              <th className="border px-3 py-2 text-left">Department</th>
-              <th className="border px-3 py-2 text-left">Base Salary</th>
-              <th className="border px-3 py-2 text-left">Bonus</th>
-              <th className="border px-3 py-2 text-left">Deductions</th>
-              <th className="border px-3 py-2 text-left">Total Salary</th>
-              <th className="border px-3 py-2 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {salaryList.length > 0 ? (
-              salaryList.map((s) => (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="border px-3 py-2">{s.empId}</td>
-                  <td className="border px-3 py-2">{s.name}</td>
-                  <td className="border px-3 py-2">{s.department}</td>
-                  <td className="border px-3 py-2">₱{s.baseSalary}</td>
-                  <td className="border px-3 py-2">₱{s.bonus}</td>
-                  <td className="border px-3 py-2">₱{s.deductions}</td>
-                  <td className="border px-3 py-2 font-semibold">
-                    ₱{s.totalSalary.toLocaleString()}
-                  </td>
-                  <td className="border px-3 py-2">
-                    <button
-                      onClick={() => printSlip(s)}
-                      className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
-                    >
-                      Print Slip
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="8"
-                  className="text-center py-4 text-gray-500 italic"
-                >
-                  No salary records found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={addSalaryRecord}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Salary Record
+          </button>
+        </div>
+      </div>
+
+      {/* Enhanced Salary Table */}
+      <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-100 hover:border-indigo-200 transition-all duration-300 overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Salary Records</h3>
+              <p className="text-white/80 text-sm">{salaryList.length} salary records</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          {salaryList.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b-2 border-gray-200">
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Employee ID</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Name</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Department</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Base Salary</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Bonus</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Deductions</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Total Salary</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salaryList.map((s) => (
+                    <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200">
+                      <td className="py-4 px-4">
+                        <span className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                          {s.empId}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 font-medium text-gray-800">{s.name}</td>
+                      <td className="py-4 px-4">
+                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-lg text-sm font-medium">
+                          {s.department}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-gray-600">₱{parseFloat(s.baseSalary || 0).toLocaleString()}</td>
+                      <td className="py-4 px-4 text-gray-600">₱{parseFloat(s.bonus || 0).toLocaleString()}</td>
+                      <td className="py-4 px-4 text-gray-600">₱{parseFloat(s.deductions || 0).toLocaleString()}</td>
+                      <td className="py-4 px-4">
+                        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-lg font-bold text-lg">
+                          ₱{s.totalSalary.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <button
+                          onClick={() => printSlip(s)}
+                          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                          </svg>
+                          Print Slip
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <svg className="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xl font-semibold text-gray-500">No salary records found</p>
+              <p className="text-gray-400 mt-2">Add salary records above to see them here</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -661,8 +661,6 @@ exports.deleteProject = async (req, res) => {
     });
   }
 };
-<<<<<<< HEAD
-=======
 
 // ✅ Update task progress
 exports.updateTaskProgress = async (req, res) => {
@@ -902,4 +900,3 @@ exports.getProjectMaterialStatus = async (req, res) => {
     });
   }
 };
->>>>>>> module_9

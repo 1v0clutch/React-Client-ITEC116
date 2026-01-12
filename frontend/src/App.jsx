@@ -60,7 +60,7 @@ import DependencySetup from "./pages/ProjectManagement/DependencySetup";
 import Employee from "./pages/ProjectManagement/Employee";
 import ProjectList from "./pages/ProjectManagement/ProjectList";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://localhost:8000/api";
 
 function App() {
   const [data, setData] = useState({
@@ -108,9 +108,9 @@ function App() {
 
   return (
     <Router>
-      <div className="flex">
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
         <Sidebar />
-        <div className="ml-56 p-5 w-full bg-gray-50 min-h-screen">
+        <div className="ml-56 p-6 w-full min-h-screen">
           <Routes>
             {/* Procurement */}
             <Route path="/procurement/suppliers" element={<Suppliers />} />

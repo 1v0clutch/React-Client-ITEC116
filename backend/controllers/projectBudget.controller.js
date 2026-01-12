@@ -6,9 +6,7 @@ const axios = require("axios");
 const INVENTORY_API = "http://localhost:8000/api/inventory";
 const PROCUREMENT_API = "http://localhost:8000/api/procurement";
 
-<<<<<<< HEAD
 // ✅ Sync all tasks from Project
-=======
 // ✅ Helper: Calculate total actualCost from all tasks
 const calculateTotalActualCost = (tasks) => {
   return tasks.reduce((sum, task) => sum + (task.actualCost || 0), 0);
@@ -228,7 +226,6 @@ exports.getAllProjectBudgets = async (req, res) => {
 };
 
 // Sync all tasks from Project
->>>>>>> module_9
 exports.syncProjectBudget = async (req, res) => {
   try {
     const { projectId } = req.params;
@@ -326,9 +323,7 @@ exports.getBudgetByProject = async (req, res) => {
     const budget = await ProjectBudget.findOne({ project: projectId });
     if (!budget)
       return res.status(404).json({ message: "Project budget not found" });
-<<<<<<< HEAD
     res.status(200).json(budget);
-=======
 
     // Calculate material costs
     const materialData = await calculateMaterialCosts(
@@ -352,7 +347,6 @@ exports.getBudgetByProject = async (req, res) => {
       materialCost: materialData.totalMaterialCost,
       materialBreakdown: materialData.materialBreakdown,
     });
->>>>>>> module_9
   } catch (err) {
     console.error("Error fetching project budget:", err);
     res.status(500).json({ message: "Failed to fetch project budget" });
